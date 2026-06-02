@@ -19,7 +19,6 @@ export const TradeDataProvider = ({ children }) => {
           const rawProduct = row['PRODUCT'] || '';
           const rawHsCode = String(row['HS Code'] || '');
           
-          // Strip out formatting commas safely before applying float translation
           let cleanAmount = row['Amount($)'];
           if (cleanAmount !== undefined && cleanAmount !== null) {
             cleanAmount = parseFloat(cleanAmount.toString().replace(/,/g, ''));
@@ -44,10 +43,14 @@ export const TradeDataProvider = ({ children }) => {
             Brand: row['Brand'] || 'UNBRANDED / GRAY',
             Exporter: row['Exporter'] || 'UNKNOWN EXPORTER',
             Importer: row['Importer'] || 'UNKNOWN IMPORTER',
+            Quantity: row['Quantity'] !== undefined ? row['Quantity'] : 0,
+            QuantityUnit: row['Quantity Unit'] || 'PCS',
+            Weight: row['Weight(Kg)'] !== undefined ? row['Weight(Kg)'] : 0,
             Amount: isNaN(cleanAmount) ? 0 : cleanAmount,
             UnitPrice: isNaN(cleanUnitPrice) ? 0 : cleanUnitPrice,
             OriginCountry: row['Origin Country'] || 'UNKNOWN',
             DestinationCountry: row['Destination Country'] || 'UNKNOWN',
+            TransportationMode: row['Mode of Transportation'] || 'UNKNOWN',
             hsRisk
           };
         });
