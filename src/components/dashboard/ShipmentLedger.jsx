@@ -102,7 +102,6 @@ export default function ShipmentLedger() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
-      {/* Upper Control Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -131,7 +130,6 @@ export default function ShipmentLedger() {
         </div>
       </div>
 
-      {/* Main Ledger Table */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -175,7 +173,6 @@ export default function ShipmentLedger() {
           </table>
         </div>
 
-        {/* Pagination Panel */}
         {tradeData.length > 0 && (
           <div className="flex items-center justify-between p-4 bg-slate-900 border-t border-slate-700 text-xs font-mono text-slate-300">
             <div>
