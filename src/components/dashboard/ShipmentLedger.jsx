@@ -8,12 +8,23 @@ import {
   getPaginationRowModel,
   flexRender 
 } from '@tanstack/react-table';
-import { Search, ArrowUpDown, ShieldAlert, Download, Filter } from 'lucide-react';
+import { Search, ArrowUpDown, ShieldAlert, Download } from 'lucide-react';
 
 export default function ShipmentLedger() {
   const { tradeData, uploadFile } = useTradeData();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
+
+  // Dynamically extract unique values for dropdown filtering based on column ID
+  const getUniqueColumnValues = (columnId) => {
+    const values = new Set();
+    tradeData.forEach(row => {
+      if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
+        values.add(row[columnId]);
+      }
+    });
+    return Array.from(values).sort();
+  };
 
   const columns = useMemo(() => [
     {
@@ -53,6 +64,21 @@ export default function ShipmentLedger() {
       cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{getValue()}</span>
     },
     {
+      accessorKey: 'Quantity',
+      header: 'Qty',
+      cell: ({ getValue }) => <span className="font-mono text-slate-100 font-semibold">{Number(getValue() || 0).toLocaleString()}</span>
+    },
+    {
+      accessorKey: 'QuantityUnit',
+      header: 'Unit',
+      cell: ({ getValue }) => <span className="text-slate-300 font-mono text-xs uppercase">{getValue()}</span>
+    },
+    {
+      accessorKey: 'Weight',
+      header: 'Weight (Kg)',
+      cell: ({ getValue }) => <span className="font-mono text-slate-200">{Number(getValue() || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+    },
+    {
       accessorKey: 'Amount',
       header: 'Value (USD)',
       cell: ({ getValue }) => {
@@ -79,6 +105,15 @@ export default function ShipmentLedger() {
       cell: ({ getValue }) => <span className="text-slate-200 text-xs font-medium">{getValue()}</span>
     },
     {
+      accessorKey: 'TransportationMode',
+      header: 'Transit Mode',
+      cell: ({ getValue }) => (
+        <span className="text-xs font-mono font-bold tracking-wider px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 uppercase">
+          {getValue()}
+        </span>
+      )
+    },
+    {
       id: 'forensicAlert',
       header: 'Risk State',
       cell: ({ row }) => row.original.hsRisk === 'high' ? (
@@ -89,7 +124,7 @@ export default function ShipmentLedger() {
         <span className="text-slate-400 text-xs font-mono">PASSED</span>
       )
     }
-  ], []);
+  ], [tradeData]);
 
   const table = useReactTable({
     data: tradeData,
@@ -104,7 +139,6 @@ export default function ShipmentLedger() {
     initialState: { pagination: { pageSize: 15 } }
   });
 
-  // Dynamically calculate total value based strictly on rows that pass active filters
   const filteredTotalValue = useMemo(() => {
     return table.getFilteredRowModel().rows.reduce((sum, row) => {
       const amt = parseFloat(row.original.Amount);
@@ -117,7 +151,7 @@ export default function ShipmentLedger() {
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto">
       {/* Upper Control Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
         <div>
@@ -154,32 +188,40 @@ export default function ShipmentLedger() {
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id} className="bg-slate-900 border-b border-slate-700">
-                  {headerGroup.headers.map(header => (
-                    <th key={header.id} className="px-4 py-3 text-xs font-bold tracking-wider text-slate-200 font-mono select-none border-r border-slate-800 last:border-0">
-                      {/* Column Header Sorting Trigger */}
-                      <div 
-                        onClick={header.column.getToggleSortingHandler()}
-                        className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors mb-2"
-                      >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-400" />}
-                      </div>
+                  {headerGroup.headers.map(header => {
+                    const uniqueValues = header.column.getCanFilter() 
+                      ? getUniqueColumnValues(header.column.id) 
+                      : [];
 
-                      {/* Column-Specific Inputs */}
-                      {header.column.getCanFilter() ? (
-                        <div className="relative flex items-center">
-                          <Filter size={10} className="absolute left-2 text-slate-500" />
-                          <input
-                            type="text"
-                            value={(header.column.getFilterValue() ?? '')}
-                            onChange={e => header.column.setFilterValue(e.target.value)}
-                            placeholder="Filter..."
-                            className="w-full bg-slate-950 text-[11px] font-mono pl-5 pr-2 py-1 rounded border border-slate-700 focus:outline-none focus:border-slate-500 text-slate-200 placeholder:text-slate-600 font-normal"
-                          />
+                    return (
+                      <th key={header.id} className="px-3 py-3 text-xs font-bold tracking-wider text-slate-200 font-mono select-none border-r border-slate-800 last:border-0 min-w-[90px]">
+                        {/* Column Header Sorting Trigger */}
+                        <div 
+                          onClick={header.column.getToggleSortingHandler()}
+                          className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors mb-2"
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                          {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-400 shrink-0" />}
                         </div>
-                      ) : null}
-                    </th>
-                  ))}
+
+                        {/* Dropdown Select Filters */}
+                        {header.column.getCanFilter() && uniqueValues.length > 0 ? (
+                          <select
+                            value={(header.column.getFilterValue() ?? '')}
+                            onChange={e => header.column.setFilterValue(e.target.value || undefined)}
+                            className="w-full bg-slate-950 text-[11px] font-mono px-1 py-1 rounded border border-slate-700 focus:outline-none focus:border-slate-500 text-slate-200 cursor-pointer font-normal"
+                          >
+                            <option value="">All</option>
+                            {uniqueValues.map(val => (
+                              <option key={val} value={val}>{val}</option>
+                            ))}
+                          </select>
+                        ) : (
+                          <div className="h-6"></div> /* Layout placeholder for non-filterable items */
+                        )}
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
@@ -189,7 +231,7 @@ export default function ShipmentLedger() {
                 table.getRowModel().rows.map(row => (
                   <tr key={row.id} className="hover:bg-slate-700/40 transition-colors">
                     {row.getVisibleCells().map(cell => (
-                      <td key={cell.id} className="px-4 py-3.5 text-sm align-middle">
+                      <td key={cell.id} className="px-3 py-3 text-sm align-middle">
                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                       </td>
                     ))}
@@ -204,18 +246,18 @@ export default function ShipmentLedger() {
               )}
             </tbody>
 
-            {/* Forensic Summary Totals Row Footer */}
+            {/* Summary Totals Footer Row */}
             {tradeData.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-900/90 font-mono border-t-2 border-slate-600 font-bold text-sm text-slate-100">
-                  <td className="px-4 py-4 text-emerald-400 tracking-wide">SUMMARY</td>
-                  <td colSpan={5} className="px-4 py-4 text-slate-400 text-right text-xs uppercase font-medium">
+                  <td className="px-3 py-4 text-emerald-400 tracking-wide">SUMMARY</td>
+                  <td colSpan={8} className="px-3 py-4 text-slate-400 text-right text-xs uppercase font-medium">
                     Filtered Set Aggregate Value:
                   </td>
-                  <td className="px-4 py-4 text-emerald-400 font-black border-x border-slate-800">
+                  <td className="px-3 py-4 text-emerald-400 font-black border-x border-slate-800">
                     ${filteredTotalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
-                  <td colSpan={4} className="bg-slate-900/40"></td>
+                  <td colSpan={5} className="bg-slate-900/40"></td>
                 </tr>
               </tfoot>
             )}
