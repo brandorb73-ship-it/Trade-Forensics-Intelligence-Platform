@@ -18,58 +18,64 @@ export default function ShipmentLedger() {
     {
       accessorKey: 'Date',
       header: 'Date',
-      cell: ({ value }) => <span className="whitespace-nowrap inline-block min-w-[100px] text-slate-100 font-medium">{value}</span>
+      cell: ({ getValue }) => <span className="whitespace-nowrap inline-block min-w-[100px] text-slate-100 font-medium">{getValue()}</span>
     },
     {
       accessorKey: 'HSCode',
       header: 'HS Code',
-      cell: ({ row }) => (
+      cell: ({ getValue, row }) => (
         <span className={`font-mono px-2 py-0.5 rounded text-xs font-bold ${
           row.original.hsRisk === 'high' ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40' : 'bg-slate-700 text-slate-200'
         }`}>
-          {row.getValue('HSCode')}
+          {getValue()}
         </span>
       )
     },
     {
       accessorKey: 'Product',
       header: 'Product Description',
-      cell: ({ value }) => <span className="truncate max-w-xs block font-semibold text-slate-200">{value}</span>
+      cell: ({ getValue }) => <span className="truncate max-w-xs block font-semibold text-slate-200">{getValue()}</span>
     },
     {
       accessorKey: 'Brand',
       header: 'Brand Ecosystem',
-      cell: ({ value }) => <span className="text-emerald-400 font-bold tracking-wide">{value}</span>
+      cell: ({ getValue }) => <span className="text-emerald-400 font-bold tracking-wide">{getValue()}</span>
     },
     {
       accessorKey: 'Exporter',
       header: 'Exporter (Source)',
-      cell: ({ value }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{value}</span>
+      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{getValue()}</span>
     },
     {
       accessorKey: 'Importer',
       header: 'Importer (Target)',
-      cell: ({ value }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{value}</span>
+      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{getValue()}</span>
     },
     {
       accessorKey: 'Amount',
       header: 'Value (USD)',
-      cell: ({ value }) => <span className="font-mono font-bold text-slate-100">${Number(value).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+      cell: ({ getValue }) => {
+        const val = getValue();
+        return <span className="font-mono font-bold text-slate-100">${Number(val).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>;
+      }
     },
     {
       accessorKey: 'UnitPrice',
       header: 'Unit Price',
-      cell: ({ value }) => <span className="font-mono font-bold text-amber-400">${Number(value).toFixed(2)}</span>
+      cell: ({ getValue }) => {
+        const val = getValue();
+        return <span className="font-mono font-bold text-amber-400">${Number(val).toFixed(2)}</span>;
+      }
     },
     {
       accessorKey: 'OriginCountry',
       header: 'Origin',
-      cell: ({ value }) => <span className="text-slate-200 text-xs font-medium">{value}</span>
+      cell: ({ getValue }) => <span className="text-slate-200 text-xs font-medium">{getValue()}</span>
     },
     {
       accessorKey: 'DestinationCountry',
       header: 'Destination',
-      cell: ({ value }) => <span className="text-slate-200 text-xs font-medium">{value}</span>
+      cell: ({ getValue }) => <span className="text-slate-200 text-xs font-medium">{getValue()}</span>
     },
     {
       id: 'forensicAlert',
@@ -102,6 +108,7 @@ export default function ShipmentLedger() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1600px] mx-auto">
+      {/* Upper Control Bar */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -130,6 +137,7 @@ export default function ShipmentLedger() {
         </div>
       </div>
 
+      {/* Main Ledger Table */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -173,6 +181,7 @@ export default function ShipmentLedger() {
           </table>
         </div>
 
+        {/* Pagination Panel */}
         {tradeData.length > 0 && (
           <div className="flex items-center justify-between p-4 bg-slate-900 border-t border-slate-700 text-xs font-mono text-slate-300">
             <div>
