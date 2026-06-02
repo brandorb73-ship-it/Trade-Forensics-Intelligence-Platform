@@ -15,11 +15,22 @@ export const TradeDataProvider = ({ children }) => {
       skipEmptyLines: true,
       complete: (results) => {
         const enriched = results.data.map((row, index) => {
+          
           const rawProduct = row['PRODUCT'] || '';
           const rawHsCode = String(row['HS Code'] || '');
-          const rawAmount = parseFloat(row['Amount($)']);
-          const rawUnitPrice = parseFloat(row['Unit Price($)']);
+          
+          // Strip out formatting commas safely before applying float translation
+          let cleanAmount = row['Amount($)'];
+          if (cleanAmount !== undefined && cleanAmount !== null) {
+            cleanAmount = parseFloat(cleanAmount.toString().replace(/,/g, ''));
+          }
+          
+          let cleanUnitPrice = row['Unit Price($)'];
+          if (cleanUnitPrice !== undefined && cleanUnitPrice !== null) {
+            cleanUnitPrice = parseFloat(cleanUnitPrice.toString().replace(/,/g, ''));
+          }
 
+          // Forensics Rule Engine: Detect Disguised Shipments
           let hsRisk = 'low';
           if (rawProduct.toUpperCase().includes('SEMAGLUTIDE') && rawHsCode.startsWith('9101')) {
             hsRisk = 'high'; 
@@ -33,8 +44,8 @@ export const TradeDataProvider = ({ children }) => {
             Brand: row['Brand'] || 'UNBRANDED / GRAY',
             Exporter: row['Exporter'] || 'UNKNOWN EXPORTER',
             Importer: row['Importer'] || 'UNKNOWN IMPORTER',
-            Amount: isNaN(rawAmount) ? 0 : rawAmount,
-            UnitPrice: isNaN(rawUnitPrice) ? 0 : rawUnitPrice,
+            Amount: isNaN(cleanAmount) ? 0 : cleanAmount,
+            UnitPrice: isNaN(cleanUnitPrice) ? 0 : cleanUnitPrice,
             OriginCountry: row['Origin Country'] || 'UNKNOWN',
             DestinationCountry: row['Destination Country'] || 'UNKNOWN',
             hsRisk
