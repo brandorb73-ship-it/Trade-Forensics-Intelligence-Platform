@@ -17,6 +17,9 @@ export default function ShipmentLedger() {
 
   // Dynamically extract unique values for dropdown filtering based on column ID
   const getUniqueColumnValues = (columnId) => {
+    if (columnId === 'forensicAlert') {
+      return ['PASSED', 'HS DISGUISE'];
+    }
     const values = new Set();
     tradeData.forEach(row => {
       if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
@@ -116,6 +119,11 @@ export default function ShipmentLedger() {
     {
       id: 'forensicAlert',
       header: 'Risk State',
+      // Custom filter function to check high vs low risk states
+      filterFn: (row, columnId, filterValue) => {
+        const status = row.original.hsRisk === 'high' ? 'HS DISGUISE' : 'PASSED';
+        return status === filterValue;
+      },
       cell: ({ row }) => row.original.hsRisk === 'high' ? (
         <div className="flex items-center gap-1.5 text-rose-400 text-xs font-bold tracking-wider bg-rose-950/40 border border-rose-800/60 px-2 py-0.5 rounded animate-pulse">
           <ShieldAlert size={13} /> HS DISGUISE
@@ -139,11 +147,18 @@ export default function ShipmentLedger() {
     initialState: { pagination: { pageSize: 15 } }
   });
 
-  const filteredTotalValue = useMemo(() => {
-    return table.getFilteredRowModel().rows.reduce((sum, row) => {
+  // Dynamically calculate aggregates strictly for filtered sets
+  const aggregates = useMemo(() => {
+    return table.getFilteredRowModel().rows.reduce((acc, row) => {
+      const qty = parseFloat(row.original.Quantity);
+      const wgt = parseFloat(row.original.Weight);
       const amt = parseFloat(row.original.Amount);
-      return sum + (isNaN(amt) ? 0 : amt);
-    }, 0);
+
+      acc.quantity += isNaN(qty) ? 0 : qty;
+      acc.weight += isNaN(wgt) ? 0 : wgt;
+      acc.amount += isNaN(amt) ? 0 : amt;
+      return acc;
+    }, { quantity: 0, weight: 0, amount: 0 });
   }, [table.getFilteredRowModel().rows]);
 
   const handleFileChange = (e) => {
@@ -189,7 +204,7 @@ export default function ShipmentLedger() {
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id} className="bg-slate-900 border-b border-slate-700">
                   {headerGroup.headers.map(header => {
-                    const uniqueValues = header.column.getCanFilter() 
+                    const uniqueValues = header.column.id === 'forensicAlert' || header.column.getCanFilter()
                       ? getUniqueColumnValues(header.column.id) 
                       : [];
 
@@ -205,7 +220,7 @@ export default function ShipmentLedger() {
                         </div>
 
                         {/* Dropdown Select Filters */}
-                        {header.column.getCanFilter() && uniqueValues.length > 0 ? (
+                        {(header.column.getCanFilter() || header.column.id === 'forensicAlert') && uniqueValues.length > 0 ? (
                           <select
                             value={(header.column.getFilterValue() ?? '')}
                             onChange={e => header.column.setFilterValue(e.target.value || undefined)}
@@ -217,7 +232,7 @@ export default function ShipmentLedger() {
                             ))}
                           </select>
                         ) : (
-                          <div className="h-6"></div> /* Layout placeholder for non-filterable items */
+                          <div className="h-6"></div>
                         )}
                       </th>
                     );
@@ -246,16 +261,27 @@ export default function ShipmentLedger() {
               )}
             </tbody>
 
-            {/* Summary Totals Footer Row */}
+            {/* Comprehensive Summary Footer */}
             {tradeData.length > 0 && (
               <tfoot>
-                <tr className="bg-slate-900/90 font-mono border-t-2 border-slate-600 font-bold text-sm text-slate-100">
-                  <td className="px-3 py-4 text-emerald-400 tracking-wide">SUMMARY</td>
-                  <td colSpan={8} className="px-3 py-4 text-slate-400 text-right text-xs uppercase font-medium">
-                    Filtered Set Aggregate Value:
+                <tr className="bg-slate-900/90 font-mono border-t-2 border-slate-600 font-bold text-xs text-slate-100">
+                  <td className="px-3 py-4 text-emerald-400 tracking-wide text-sm font-black">SUMMARY</td>
+                  <td colSpan={5} className="px-3 py-4 text-slate-400 text-right uppercase font-medium">
+                    Filtered Dataset Aggregate Totals:
                   </td>
-                  <td className="px-3 py-4 text-emerald-400 font-black border-x border-slate-800">
-                    ${filteredTotalValue.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                  {/* Quantity Total */}
+                  <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
+                    {aggregates.quantity.toLocaleString()}
+                  </td>
+                  {/* Unit Column Empty Buffer */}
+                  <td className="bg-slate-900/40"></td>
+                  {/* Weight Total */}
+                  <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
+                    {aggregates.weight.toLocaleString(undefined, {maximumFractionDigits: 2})} kg
+                  </td>
+                  {/* Amount Total */}
+                  <td className="px-3 py-4 text-emerald-400 font-black border-r border-slate-800 text-sm">
+                    ${aggregates.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                   <td colSpan={5} className="bg-slate-900/40"></td>
                 </tr>
