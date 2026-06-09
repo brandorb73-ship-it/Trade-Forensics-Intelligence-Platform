@@ -3,7 +3,8 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { Network, Users, AlertCircle, Building2, CheckCircle } from 'lucide-react';
 
 export default function EntityIntelligence() {
-  const { tradeData = [] } = useTradeData();
+  const contextData = useTradeData();
+  const tradeData = contextData && contextData.tradeData ? contextData.tradeData : [];
   const [activeEntityView, setActiveEntityView] = useState('ALL_NETWORKS');
 
   const entityAnalysis = useMemo(() => {
