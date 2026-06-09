@@ -3,6 +3,7 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { useTradeData } from './ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
+import { ShieldAlert, AlertTriangle, Layers, ArrowRight, TrendingUp, FileText } from 'lucide-react';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
