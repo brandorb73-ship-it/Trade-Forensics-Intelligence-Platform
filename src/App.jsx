@@ -1,29 +1,52 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TradeDataProvider } from './context/TradeDataContext';
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
+import HSIntelligence from './components/dashboard/HSIntelligence';
 
-function App() {
+export default function App() {
+  const [activeTab, setActiveTab] = useState('ledger');
+
+  const tabs = [
+    { id: 'ledger', label: 'Shipment Ledger' },
+    { id: 'hs-intel', label: 'HS Intelligence' }
+  ];
+
   return (
     <TradeDataProvider>
-      <div className="min-h-screen bg-slate-900 text-slate-100 selection:bg-slate-700 selection:text-white">
-        {/* Navigation / Header Frame */}
-        <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50 px-6 py-4">
-          <div className="max-w-[1600px] mx-auto flex justify-between items-center">
-            <div className="flex items-center gap-3">
-              <div className="h-8 w-8 bg-gradient-to-tr from-rose-600 to-amber-500 rounded-lg shadow-md flex items-center justify-center font-black text-white text-sm">BO</div>
-              <span className="font-bold tracking-tight text-lg text-slate-100">BrandOrb <span className="text-slate-400 font-light">Forensics</span></span>
+      <div className="min-h-screen bg-slate-950 text-slate-200">
+        
+        {/* Global Tab Navigation */}
+        <nav className="bg-slate-900 border-b border-slate-700">
+          <div className="max-w-[1800px] mx-auto px-6 flex items-center gap-8">
+            <div className="py-4 font-black text-white tracking-tighter text-lg">
+              BrandOrb<span className="text-emerald-500">.io</span>
             </div>
-            <div className="text-xs font-mono text-slate-500">Security Target: Active Session</div>
+            
+            <div className="flex items-center gap-1">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`px-5 py-4 text-sm font-bold border-b-2 transition-colors ${
+                    activeTab === tab.id 
+                      ? 'border-emerald-500 text-white' 
+                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
-        </header>
+        </nav>
 
-        {/* Primary View Workspace */}
-        <main className="py-4">
-          <ShipmentLedger />
+        {/* Tab View Container */}
+        <main className="max-w-[1800px] mx-auto py-6">
+          {activeTab === 'ledger' && <ShipmentLedger />}
+          {activeTab === 'hs-intel' && <HSIntelligence />}
         </main>
+        
       </div>
     </TradeDataProvider>
   );
 }
-
-export default App;
