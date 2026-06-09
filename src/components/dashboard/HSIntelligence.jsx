@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { ShieldAlert, AlertTriangle, Layers, ArrowRight, TrendingUp } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Layers, ArrowRight, TrendingUp, FileText } from 'lucide-react';
 
 export default function HSIntelligence() {
   const { tradeData } = useTradeData();
   const [selectedChapterFilter, setSelectedChapterFilter] = useState('ALL');
 
-  // Forensics Engine: Analyze classification discrepancies
+  // Forensic Breakdown Logic
   const hsAnalysis = useMemo(() => {
     let globalMismatchedValue = 0;
     let highRiskIncidentCount = 0;
+    const corridorsMap = {};
     const chaptersMap = {};
     const discrepancyRecords = [];
 
@@ -17,20 +18,19 @@ export default function HSIntelligence() {
       const hsString = String(row.HSCode || '');
       const productDesc = (row.Product || '').toUpperCase();
       const amount = parseFloat(row.Amount) || 0;
+      const origin = row.OriginCountry || 'UNKNOWN';
+      const dest = row.DestinationCountry || 'UNKNOWN';
+      const keyCorridor = `${origin} → ${dest}`;
       
-      // Extract Chapter (First 2 or 4 digits for broad grouping classification)
       const chapterPrefix = hsString.substring(0, 4) || 'UNKNOWN';
-      
-      // Disguise Flagging Logic
-      // High-Risk Pattern: Semaglutide classified under Chapter 91 (Clocks/Watches) instead of Chapter 30 (Pharmaceuticals)
       const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
       
       if (isMismatched) {
         globalMismatchedValue += amount;
         highRiskIncidentCount += 1;
+        corridorsMap[keyCorridor] = (corridorsMap[keyCorridor] || 0) + amount;
       }
 
-      // Initialize Chapter analytics structure
       if (!chaptersMap[chapterPrefix]) {
         chaptersMap[chapterPrefix] = {
           code: chapterPrefix,
@@ -46,39 +46,61 @@ export default function HSIntelligence() {
         chaptersMap[chapterPrefix].flaggedCount += 1;
       }
 
-      // Populate discrepancy array
       discrepancyRecords.push({
         ...row,
         chapterPrefix,
         isMismatched,
-        expectedChapter: 'Chapter 30 (Medicaments/Pharma)',
-        declaredChapter: `Chapter ${hsString.substring(0, 2)} (Clocks & Watches)`
+        expectedChapter: 'Chapter 30 (Pharma)',
+        declaredChapter: `Chapter ${hsString.substring(0, 2)} (Watches)`
       });
     });
+
+    const topCorridors = Object.entries(corridorsMap)
+      .map(([name, val]) => ({ name, val }))
+      .sort((a, b) => b.val - a.val)
+      .slice(0, 4);
 
     return {
       globalMismatchedValue,
       highRiskIncidentCount,
       chapters: Object.values(chaptersMap).sort((a, b) => b.totalValue - a.totalValue),
-      records: discrepancyRecords
+      records: discrepancyRecords,
+      topCorridors
     };
   }, [tradeData]);
 
-  // Filter records based on selected tariff chapters
   const filteredRecords = useMemo(() => {
     if (selectedChapterFilter === 'ALL') return hsAnalysis.records;
     if (selectedChapterFilter === 'RISK_ONLY') return hsAnalysis.records.filter(r => r.isMismatched);
     return hsAnalysis.records.filter(r => r.chapterPrefix === selectedChapterFilter);
   }, [hsAnalysis.records, selectedChapterFilter]);
 
+  // Client side window rendering print handler for professional dossiers
+  const handlePrintPDF = () => {
+    window.print();
+  };
+
   return (
-    <div className="p-6 space-y-6 max-w-[1800px] mx-auto">
-      {/* Tab Context Header */}
-      <div>
-        <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-          HS Intelligence System <span className="text-xs bg-amber-500/20 px-2 py-1 rounded text-amber-400 uppercase tracking-widest font-mono border border-amber-500/30">Forensic Nomenclature Auditing</span>
-        </h1>
-        <p className="text-sm text-slate-300 mt-1">Isolate cross-border structural anomalies where declared descriptions conflict with international tariff code systems.</p>
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
+      
+      {/* Tab Context Header Control panel */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            HS Intelligence System <span className="text-xs bg-amber-500/20 px-2 py-1 rounded text-amber-400 uppercase tracking-widest font-mono border border-amber-500/30">Forensic Nomenclature Auditing</span>
+          </h1>
+          <p className="text-sm text-slate-300 mt-1">Isolate structural anomalies where declared descriptions conflict with international tariff code frameworks.</p>
+        </div>
+        
+        {tradeData.length > 0 && (
+          <button
+            onClick={handlePrintPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-bold font-mono text-slate-200 transition shadow-sm"
+          >
+            <FileText size={14} className="text-amber-400" />
+            <span>Export Briefing PDF</span>
+          </button>
+        )}
       </div>
 
       {/* Forensic Intelligence Overview Metric Cards */}
@@ -120,16 +142,82 @@ export default function HSIntelligence() {
         </div>
       </div>
 
+      {/* Forensic Visual Data Modules */}
+      {tradeData.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          {/* Visual module 1: Nomenclature Discrepancy Flow Mapping */}
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-rose-500"></span> Discrepancy Matrix: Declared vs. Expected Tariff Paths
+            </h3>
+            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800">
+              <div className="flex justify-between text-[11px] font-mono text-slate-400 font-bold px-1">
+                <span>RAW NOMENCLATURE MATRICES</span>
+                <span>AGGREGATE DISCREPANCY VOLUME</span>
+              </div>
+              <div className="space-y-2.5">
+                <div className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2">
+                  <div className="flex justify-between items-center text-xs font-mono">
+                    <span className="text-slate-300 font-bold">Declared Chapter 9101 (Clocks & Watches)</span>
+                    <span className="text-rose-400 font-black">100% Deviation</span>
+                  </div>
+                  <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex">
+                    <div className="bg-rose-500 h-full rounded" style={{ width: '100%' }}></div>
+                  </div>
+                  <div className="text-[10px] text-slate-400 flex items-center gap-1.5 pt-1 border-t border-slate-900">
+                    <span className="text-rose-300 font-bold">Forensic Match:</span> Containing hidden therapeutic "SEMAGLUTIDE" elements mapping cleanly to Expected Chapter 30.
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Visual module 2: Mismatched Corridor Heat Ranks */}
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-amber-500"></span> Risk Corridors Ranked by Disguised Tariff Value
+            </h3>
+            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800 min-h-[140px] flex flex-col justify-center">
+              {hsAnalysis.topCorridors.length > 0 ? (
+                <div className="space-y-3">
+                  {hsAnalysis.topCorridors.map((c, idx) => {
+                    const maxVal = hsAnalysis.topCorridors[0].val || 1;
+                    const pct = (c.val / maxVal) * 100;
+                    return (
+                      <div key={idx} className="space-y-1">
+                        <div className="flex justify-between text-xs font-mono">
+                          <span className="text-slate-300 font-semibold">{c.name}</span>
+                          <span className="text-amber-400 font-bold">${c.val.toLocaleString()}</span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-2 rounded-full">
+                          <div className="bg-gradient-to-r from-amber-600 to-amber-400 h-2 rounded-full" style={{ width: `${pct}%` }}></div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center text-xs font-mono text-slate-500 py-6">
+                  No active nomenclature deviations identified to calculate routes.
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+      )}
+
       {/* Chapter Distribution Grid & Audit Table Workspace */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
-        {/* Left Hand Column: Tariff Chapter Breakdown Matrix Selector */}
-        <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1">
+        {/* Left Column: Selector list */}
+        <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1 non-printable">
           <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
             <span>Tariff Frameworks</span>
             <TrendingUp size={12} className="text-slate-400" />
           </h3>
-          <div className="space-y-2 max-h-[500px] overflow-y-auto pr-1">
+          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             <button
               onClick={() => setSelectedChapterFilter('ALL')}
               className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center ${
@@ -171,9 +259,9 @@ export default function HSIntelligence() {
           </div>
         </div>
 
-        {/* Right Hand Column: Primary Discrepancy Matrix Audit Ledger */}
+        {/* Right Column: Ledger Table */}
         <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl lg:col-span-3">
-          <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center">
+          <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center non-printable">
             <span className="text-xs font-bold font-mono tracking-wider text-slate-200 uppercase">
               Tariff Framework Audit Ledger ({filteredRecords.length} Lines Displayed)
             </span>
@@ -201,53 +289,3 @@ export default function HSIntelligence() {
                       <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{rec.Date}</td>
                       <td className="px-4 py-3 space-y-1">
                         <div className="flex items-center gap-1.5">
-                          <span className={`px-1.5 py-0.5 rounded font-bold ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
-                            {rec.HSCode}
-                          </span>
-                        </div>
-                        {rec.isMismatched && (
-                          <div className="text-[10px] text-rose-400/90 flex items-center gap-1">
-                            <span>Declared: Watch Chapter</span> <ArrowRight size={10} /> <span>Expected: Pharma</span>
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate">
-                        {rec.Product}
-                        <span className="block text-[10px] font-bold text-emerald-400 uppercase tracking-wide mt-0.5">Ecosystem: {rec.Brand}</span>
-                      </td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono">
-                        ${rec.Amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </td>
-                      <td className="px-4 py-3 text-[11px] space-y-0.5">
-                        <div className="text-slate-300 font-semibold"><span className="text-slate-500 text-[10px] uppercase">From:</span> {rec.OriginCountry}</div>
-                        <div className="text-slate-300 font-semibold"><span className="text-slate-500 text-[10px] uppercase">To:</span> {rec.DestinationCountry}</div>
-                      </td>
-                      <td className="px-4 py-3 vertical-middle">
-                        {rec.isMismatched ? (
-                          <span className="inline-flex items-center gap-1 text-[10px] font-black tracking-wider px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/40 rounded animate-pulse uppercase">
-                            <ShieldAlert size={12} /> CRITICAL MISCLASSIFICATION
-                          </span>
-                        ) : (
-                          <span className="text-slate-500 font-medium uppercase text-[10px] tracking-wider bg-slate-900 px-2 py-0.5 rounded border border-slate-700">
-                            Verified Clean
-                          </span>
-                        )}
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={6} className="text-center py-16 text-slate-400 text-sm font-mono">
-                      No classification discrepancies found matching this filter set.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-      </div>
-    </div>
-  );
-}
