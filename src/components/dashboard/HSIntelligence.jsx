@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TradeDataProvider } from './context/TradeDataContext';
+import { useTradeData } from '../../context/TradeDataContext';
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
