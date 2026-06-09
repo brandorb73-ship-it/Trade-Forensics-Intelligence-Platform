@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { TradeDataProvider } from './context/TradeDataContext';
+import { TradeDataProvider } from './context/TradeDataContext'; // <-- This must be exactly here!
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
@@ -43,23 +43,23 @@ export default function App() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-5 py-4 text-xs uppercase font-mono font-black tracking-wider transition-all border-b-2 ${
+                    className={`px-5 py-4 text-xs uppercase font-mono font-black tracking-wider transition-all border-b-2 cursor-pointer ${
                       activeTab === tab.id 
                         ? 'border-emerald-500 text-white bg-slate-950/20' 
                         : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-800/20'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div className="text-[10px] font-mono font-bold tracking-widest text-slate-500 uppercase">
+              Forensic Auditing Framework v2.4
             </div>
           </div>
-          
-          <div className="text-[10px] font-mono font-bold tracking-widest text-slate-500 uppercase">
-            Forensic Auditing Framework v2.4
-          </div>
-        </div>
-      </nav>
+        </nav>
 
         {/* Tab View Component Mounting Frame */}
         <main className="max-w-[1800px] mx-auto py-4">
