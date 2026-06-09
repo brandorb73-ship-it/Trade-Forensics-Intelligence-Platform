@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import ShipmentLedger from './components/dashboard/ShipmentLedger';
+import { useTradeData } from './ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
 
