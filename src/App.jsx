@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// Import BOTH the Provider and Hook as named exports using curly braces
-import { TradeDataProvider } from './context/TradeDataContext'; 
+import { TradeDataProvider } from './context/TradeDataContext'; // <-- MUST HAVE CURLY BRACES
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
@@ -61,7 +60,7 @@ export default function App() {
           </div>
         </nav>
 
-        {/* Tab Router Mount Frame */}
+        {/* Tab Target Frame */}
         <main className="max-w-[1800px] mx-auto py-4">
           {activeTab === 'ledger' && <ShipmentLedger />}
           {activeTab === 'hs-intel' && <HSIntelligence />}
