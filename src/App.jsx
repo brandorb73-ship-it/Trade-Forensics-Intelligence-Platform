@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { TradeDataProvider } from './context/TradeDataContext';
+// Import BOTH the Provider and Hook as named exports using curly braces
+import { TradeDataProvider } from './context/TradeDataContext'; 
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
@@ -15,7 +16,6 @@ export default function App() {
 
   return (
     <TradeDataProvider>
-      {/* Inject custom print engine styling profiles directly into the head element */}
       <style>{`
         @media print {
           body { background: #ffffff !important; color: #000000 !important; }
@@ -30,7 +30,7 @@ export default function App() {
 
       <div className="min-h-screen bg-slate-950 text-slate-200">
         
-        {/* Global Multi-Tab Corporate Navigation Panel */}
+        {/* Navigation */}
         <nav className="bg-slate-900 border-b border-slate-800 non-printable">
           <div className="max-w-[1800px] mx-auto px-6 flex items-center justify-between">
             <div className="flex items-center gap-10">
@@ -61,7 +61,7 @@ export default function App() {
           </div>
         </nav>
 
-        {/* Tab View Component Mounting Frame */}
+        {/* Tab Router Mount Frame */}
         <main className="max-w-[1800px] mx-auto py-4">
           {activeTab === 'ledger' && <ShipmentLedger />}
           {activeTab === 'hs-intel' && <HSIntelligence />}
