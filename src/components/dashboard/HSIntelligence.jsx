@@ -3,7 +3,8 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { ShieldAlert, AlertTriangle, Layers, ArrowRight, TrendingUp, FileText } from 'lucide-react';
 
 export default function HSIntelligence() {
-  const { tradeData = [] } = useTradeData();
+  const contextData = useTradeData();
+  const tradeData = contextData && contextData.tradeData ? contextData.tradeData : [];
   const [selectedChapterFilter, setSelectedChapterFilter] = useState('ALL');
  
   const tabs = [
