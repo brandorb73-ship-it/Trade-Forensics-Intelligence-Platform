@@ -2,9 +2,10 @@ import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
 import { ShieldAlert, AlertTriangle, Layers, ArrowRight, TrendingUp, FileText } from 'lucide-react';
 
-export default function App() {
-  const [activeTab, setActiveTab] = useState('ledger');
-
+export default function HSIntelligence() {
+  const { tradeData = [] } = useTradeData();
+  const [selectedChapterFilter, setSelectedChapterFilter] = useState('ALL');
+ 
   const tabs = [
     { id: 'ledger', label: 'Shipment Ledger Matrix' },
     { id: 'hs-intel', label: 'HS Intelligence Portal' },
