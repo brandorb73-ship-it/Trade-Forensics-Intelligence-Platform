@@ -78,4 +78,4 @@ export const TradeDataProvider = ({ children }) => {
   );
 };
 
-export const useTradeData = () => useContext(TradeDataContext);
+export default TradeDataProvider;
