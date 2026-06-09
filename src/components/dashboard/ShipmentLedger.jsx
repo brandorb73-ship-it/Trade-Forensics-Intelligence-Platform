@@ -8,31 +8,62 @@ import {
   getPaginationRowModel,
   flexRender 
 } from '@tanstack/react-table';
-import { Search, ArrowUpDown, ShieldAlert, Download } from 'lucide-react';
+import { Search, ArrowUpDown, ShieldAlert, Download, FileSpreadsheet } from 'lucide-react';
 
 export default function ShipmentLedger() {
   const { tradeData, uploadFile } = useTradeData();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
 
-  // Dynamically extract unique values for dropdown filtering based on column ID
+  // Helper to safely format or extract Month-Year groups from raw date strings
+  const getMonthYearString = (dateStr) => {
+    if (!dateStr || dateStr === 'N/A') return 'N/A';
+    const dateObj = new Date(dateStr);
+    if (isNaN(dateObj.getTime())) {
+      // Fallback parser for standard DD-MMM-YY formats (e.g. 9-Mar-26)
+      const parts = dateStr.split('-');
+      if (parts.length >= 2) {
+        const monthStr = parts[1].substring(0, 3);
+        const yearStr = parts[2] ? (parts[2].length === 2 ? `20${parts[2]}` : parts[2]) : '';
+        return `${monthStr} ${yearStr}`.trim();
+      }
+      return dateStr;
+    }
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+  };
+
+  // Dynamically extract unique values for header filter dropdowns
   const getUniqueColumnValues = (columnId) => {
     if (columnId === 'forensicAlert') {
       return ['PASSED', 'HS DISGUISE'];
     }
+    
     const values = new Set();
     tradeData.forEach(row => {
-      if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
+      if (columnId === 'Date') {
+        values.add(getMonthYearString(row.Date));
+      } else if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
         values.add(row[columnId]);
       }
     });
-    return Array.from(values).sort();
+    return Array.from(values).sort((a, b) => {
+      if (columnId === 'Date') {
+        // Sort months chronologically backward
+        return new Date(`01 ${b}`) - new Date(`01 ${a}`);
+      }
+      return String(a).localeCompare(String(b));
+    });
   };
 
   const columns = useMemo(() => [
     {
       accessorKey: 'Date',
       header: 'Date',
+      // Custom filter function to check Month & Year matches
+      filterFn: (row, columnId, filterValue) => {
+        return getMonthYearString(row.original.Date) === filterValue;
+      },
       cell: ({ getValue }) => <span className="whitespace-nowrap inline-block min-w-[100px] text-slate-100 font-medium">{getValue()}</span>
     },
     {
@@ -119,7 +150,6 @@ export default function ShipmentLedger() {
     {
       id: 'forensicAlert',
       header: 'Risk State',
-      // Custom filter function to check high vs low risk states
       filterFn: (row, columnId, filterValue) => {
         const status = row.original.hsRisk === 'high' ? 'HS DISGUISE' : 'PASSED';
         return status === filterValue;
@@ -147,7 +177,7 @@ export default function ShipmentLedger() {
     initialState: { pagination: { pageSize: 15 } }
   });
 
-  // Dynamically calculate aggregates strictly for filtered sets
+  // Dynamically calculate aggregates strictly for active filtered row frames
   const aggregates = useMemo(() => {
     return table.getFilteredRowModel().rows.reduce((acc, row) => {
       const qty = parseFloat(row.original.Quantity);
@@ -165,9 +195,54 @@ export default function ShipmentLedger() {
     if (e.target.files?.[0]) uploadFile(e.target.files[0]);
   };
 
+  // Safe client-side spreadsheet compilation engine for isolated row frames
+  const exportFilteredLedger = () => {
+    const activeRows = table.getFilteredRowModel().rows.map(row => row.original);
+    if (activeRows.length === 0) return;
+
+    // Build original clean column sequence mapping
+    const headers = [
+      'Date', 'HS Code', 'PRODUCT', 'Exporter', 'Importer', 'Brand', 
+      'Quantity', 'Quantity Unit', 'Weight(Kg)', 'Amount($)', 'Unit Price($)', 
+      'Origin Country', 'Destination Country', 'Mode of Transportation', 'Risk State'
+    ];
+
+    const csvRows = [headers.join(',')];
+
+    activeRows.forEach(row => {
+      const values = [
+        `"${row.Date}"`,
+        `"${row.HSCode}"`,
+        `"${row.Product.replace(/"/g, '""')}"`,
+        `"${row.Exporter.replace(/"/g, '""')}"`,
+        `"${row.Importer.replace(/"/g, '""')}"`,
+        `"${row.Brand.replace(/"/g, '""')}"`,
+        row.Quantity,
+        `"${row.QuantityUnit}"`,
+        row.Weight,
+        row.Amount,
+        row.UnitPrice,
+        `"${row.OriginCountry}"`,
+        `"${row.DestinationCountry}"`,
+        `"${row.TransportationMode}"`,
+        `"${row.hsRisk === 'high' ? 'HS DISGUISE' : 'PASSED'}"`
+      ];
+      csvRows.push(values.join(','));
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
+    const encodedUri = encodeURI(csvContent);
+    const downloadLink = document.createElement("a");
+    downloadLink.setAttribute("href", encodedUri);
+    downloadLink.setAttribute("download", `BrandOrb_Filtered_Manifest_${new Date().toISOString().slice(0,10)}.csv`);
+    document.body.appendChild(downloadLink);
+    downloadLink.click();
+    document.body.removeChild(downloadLink);
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto">
-      {/* Upper Control Bar */}
+      {/* Upper Control Workspace Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -177,6 +252,16 @@ export default function ShipmentLedger() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+          {tradeData.length > 0 && (
+            <button
+              onClick={exportFilteredLedger}
+              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 border border-emerald-700 rounded-lg text-sm font-bold text-white cursor-pointer transition shadow-sm"
+            >
+              <FileSpreadsheet size={16} />
+              <span>Export Filtered Matrix</span>
+            </button>
+          )}
+
           <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-sm font-semibold text-white cursor-pointer transition shadow-sm">
             <Download size={16} />
             <span>Load Customs CSV</span>
@@ -196,7 +281,7 @@ export default function ShipmentLedger() {
         </div>
       </div>
 
-      {/* Main Ledger Table */}
+      {/* Main Ledger Table Layout frame */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
@@ -209,7 +294,7 @@ export default function ShipmentLedger() {
                       : [];
 
                     return (
-                      <th key={header.id} className="px-3 py-3 text-xs font-bold tracking-wider text-slate-200 font-mono select-none border-r border-slate-800 last:border-0 min-w-[90px]">
+                      <th key={header.id} className="px-3 py-3 text-xs font-bold tracking-wider text-slate-200 font-mono select-none border-r border-slate-800 last:border-0 min-w-[95px]">
                         {/* Column Header Sorting Trigger */}
                         <div 
                           onClick={header.column.getToggleSortingHandler()}
@@ -219,14 +304,14 @@ export default function ShipmentLedger() {
                           {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-400 shrink-0" />}
                         </div>
 
-                        {/* Dropdown Select Filters */}
+                        {/* Dropdown Select Filter Blocks */}
                         {(header.column.getCanFilter() || header.column.id === 'forensicAlert') && uniqueValues.length > 0 ? (
                           <select
                             value={(header.column.getFilterValue() ?? '')}
                             onChange={e => header.column.setFilterValue(e.target.value || undefined)}
                             className="w-full bg-slate-950 text-[11px] font-mono px-1 py-1 rounded border border-slate-700 focus:outline-none focus:border-slate-500 text-slate-200 cursor-pointer font-normal"
                           >
-                            <option value="">All</option>
+                            <option value="">{header.column.id === 'Date' ? 'All Months' : 'All'}</option>
                             {uniqueValues.map(val => (
                               <option key={val} value={val}>{val}</option>
                             ))}
@@ -261,7 +346,7 @@ export default function ShipmentLedger() {
               )}
             </tbody>
 
-            {/* Comprehensive Summary Footer */}
+            {/* Summary Totals Footer Row */}
             {tradeData.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-900/90 font-mono border-t-2 border-slate-600 font-bold text-xs text-slate-100">
@@ -273,7 +358,7 @@ export default function ShipmentLedger() {
                   <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
                     {aggregates.quantity.toLocaleString()}
                   </td>
-                  {/* Unit Column Empty Buffer */}
+                  {/* Unit Column Buffer */}
                   <td className="bg-slate-900/40"></td>
                   {/* Weight Total */}
                   <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
@@ -290,7 +375,7 @@ export default function ShipmentLedger() {
           </table>
         </div>
 
-        {/* Pagination Panel */}
+        {/* Pagination Panel Control Wrapper */}
         {tradeData.length > 0 && (
           <div className="flex items-center justify-between p-4 bg-slate-900 border-t border-slate-700 text-xs font-mono text-slate-300">
             <div>
