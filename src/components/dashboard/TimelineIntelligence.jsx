@@ -15,14 +15,20 @@ export default function TimelineIntelligence() {
     const entityReroutingMap = {};
     const timelineEvents = [];
 
-    // SAFE FILTER & SORT: Strip out any items missing a valid chronological date asset before sorting
+    // Safe chronological sorting pass
     const sortedData = [...tradeData]
-      .filter(row => row && row.Date && row.Date !== 'N/A' && !isNaN(new Date(row.Date).getTime()))
-      .sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
+      .filter(row => row && row.Date && row.Date !== 'N/A')
+      .sort((a, b) => {
+        const timeA = new Date(a.Date).getTime();
+        const timeB = new Date(b.Date).getTime();
+        return isNaN(timeA) || isNaN(timeB) ? 0 : timeA - timeB;
+      });
 
     sortedData.forEach(row => {
-      const dateStr = row.Date;
-      const monthBucket = dateStr.substring(0, 7); // Extract Year-Month (YYYY-MM)
+      const dateStr = row.Date || '';
+      if (dateStr.length < 7) return; 
+      
+      const monthBucket = dateStr.substring(0, 7); // YYYY-MM
       const amount = parseFloat(row.Amount) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
@@ -30,66 +36,71 @@ export default function TimelineIntelligence() {
       const productDesc = (row.Product || '').toUpperCase();
       const hsString = String(row.HSCode || '');
 
-      // Baseline monthly global trade volumes
+      // Build baseline mapping records
       monthlyVolumeMap[monthBucket] = (monthlyVolumeMap[monthBucket] || 0) + amount;
 
-      // Track Importer specific time trends
       if (!importerMonthlyMap[importer]) importerMonthlyMap[importer] = {};
       importerMonthlyMap[importer][monthBucket] = (importerMonthlyMap[importer][monthBucket] || 0) + amount;
 
-      // Track Corridor transitions per exporter
       if (!entityReroutingMap[exporter]) entityReroutingMap[exporter] = [];
       if (!entityReroutingMap[exporter].includes(corridor)) {
         entityReroutingMap[exporter].push(corridor);
       }
 
-      // 1. Rule Evaluation: Technical Nomenclature Flag
+      // Check Forensic Rulesets
       const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
 
-      // 2. Rule Evaluation: Sudden Importer Velocity Burst
-      const history = importerMonthlyMap[importer];
+      const history = importerMonthlyMap[importer] || {};
       const currentMonthVolume = history[monthBucket] || 0;
       const monthsWithData = Object.values(history);
-      const averageHistoricalVolume = monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length;
+      const averageHistoricalVolume = monthsWithData.length > 0 
+        ? monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length 
+        : 0;
       
       const isVolumeSpike = currentMonthVolume > 50000 && currentMonthVolume > (averageHistoricalVolume * 2.5);
-
-      // 3. Rule Evaluation: Supply Chain Structural Rerouting
       const totalRoutesUsedByExporter = entityReroutingMap[exporter].length;
       const isSuddenReroute = totalRoutesUsedByExporter > 1 && isMismatched;
 
-      if (isMismatched || isVolumeSpike || isSuddenReroute) {
-        let anomalyType = 'SUSPICIOUS_TIMING';
-        let severity = 'MEDIUM';
-        let summary = 'Unusual chronological batching of manifest declarations.';
+      // Ensure every record gets assigned fallback tracking properties so it can't crash string formatters
+      let anomalyType = 'NORMAL_FLOW';
+      let severity = 'LOW';
+      let summary = 'Standard operational baseline flow configuration.';
 
-        if (isVolumeSpike) {
-          anomalyType = 'VOLUME_SPIKE';
-          severity = 'HIGH';
-          summary = `Sudden operational growth. Monthly imports scaled abruptly past baseline limits.`;
-        }
-        if (isSuddenReroute) {
-          anomalyType = 'POST_LAWSUIT_REROUTE';
-          severity = 'CRITICAL';
-          summary = `Structural route switch identified for exporter counterparty shifting into alternative trade zones.`;
-        }
-
-        timelineEvents.push({
-          ...row,
-          anomalyType,
-          severity,
-          summary,
-          monthBucket
-        });
+      if (isVolumeSpike) {
+        anomalyType = 'VOLUME_SPIKE';
+        severity = 'HIGH';
+        summary = `Sudden operational growth. Monthly imports scaled abruptly past historical baseline limits.`;
+      } else if (isSuddenReroute) {
+        anomalyType = 'POST_LAWSUIT_REROUTE';
+        severity = 'CRITICAL';
+        summary = `Structural route switch identified for exporter counterparty shifting into alternative trade zones.`;
+      } else if (isMismatched) {
+        anomalyType = 'SUSPICIOUS_TIMING';
+        severity = 'MEDIUM';
+        summary = `Unusual chronological batching of mismatching manifest item declarations.`;
       }
+
+      timelineEvents.push({
+        ...row,
+        anomalyType,
+        severity,
+        summary,
+        monthBucket
+      });
     });
 
-    // Sort final output so most recent alerts hit the top of the feed safely
-    return timelineEvents.sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
+    // Return the items with highest risks listed first
+    return timelineEvents.sort((a, b) => {
+      const severityWeight = { 'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0 };
+      return (severityWeight[b.severity] || 0) - (severityWeight[a.severity] || 0);
+    });
   }, [tradeData]);
 
+  // Clean filter handling logic
   const filteredEvents = useMemo(() => {
-    if (activeTimelineFilter === 'ALL_ANOMALIES') return timelineAnalysis;
+    if (activeTimelineFilter === 'ALL_ANOMALIES') {
+      return timelineAnalysis.filter(e => e.anomalyType !== 'NORMAL_FLOW');
+    }
     return timelineAnalysis.filter(e => e.anomalyType === activeTimelineFilter);
   }, [timelineAnalysis, activeTimelineFilter]);
 
@@ -102,9 +113,9 @@ export default function TimelineIntelligence() {
   }, [timelineAnalysis]);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section text-slate-100">
       
-      {/* Header Framework */}
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -127,7 +138,7 @@ export default function TimelineIntelligence() {
         )}
       </div>
 
-      {/* Analytical Risk Metrics Summary */}
+      {/* Metrics Summary Panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between">
           <div className="space-y-1">
@@ -160,10 +171,10 @@ export default function TimelineIntelligence() {
         </div>
       </div>
 
-      {/* Main Forensic View Splitter */}
+      {/* Dynamic Workspace split views layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
-        {/* Left Control Column */}
+        {/* Navigation Filters */}
         <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 lg:col-span-1 non-printable">
           <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
             <span>Temporal Filters</span>
@@ -176,8 +187,10 @@ export default function TimelineIntelligence() {
                 activeTimelineFilter === 'ALL_ANOMALIES' ? 'bg-slate-900 border border-slate-600 text-white font-bold' : 'bg-slate-900/40 border border-transparent text-slate-400 hover:bg-slate-900/70 hover:text-slate-200'
               }`}
             >
-              <span>All Temporal Anomalies</span>
-              <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold">{timelineAnalysis.length}</span>
+              <span>All Highlighted Anomalies</span>
+              <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold">
+                {timelineAnalysis.filter(e => e.anomalyType !== 'NORMAL_FLOW').length}
+              </span>
             </button>
 
             <button
@@ -202,7 +215,7 @@ export default function TimelineIntelligence() {
           </div>
         </div>
 
-        {/* Right Sequential Event Stream Output */}
+        {/* Chronological Stream Output */}
         <div className="lg:col-span-3 space-y-4">
           <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-xs font-bold font-mono text-slate-300 flex justify-between items-center non-printable">
             <span>CHRONOLOGICAL VELOCITY OUTLIERS ({filteredEvents.length} SCANNED INCIDENTS)</span>
@@ -213,7 +226,7 @@ export default function TimelineIntelligence() {
             <div className="space-y-4 max-h-[700px] overflow-y-auto pr-2">
               {filteredEvents.map((evt, idx) => (
                 <div 
-                  key={evt.id || idx} 
+                  key={evt.id ?? idx} 
                   className={`p-5 rounded-xl border transition-all ${
                     evt.severity === 'CRITICAL' 
                       ? 'bg-rose-950/20 border-rose-900/70 hover:border-rose-700' 
@@ -225,44 +238,44 @@ export default function TimelineIntelligence() {
                   <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800/60 pb-3 mb-3 font-mono text-xs">
                     <div className="flex items-center gap-2.5">
                       <span className="px-2 py-0.5 bg-slate-950 rounded text-slate-400 font-bold tracking-tight">
-                        {evt.Date}
+                        {evt.Date || 'N/A'}
                       </span>
                       <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
                         evt.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
                         evt.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
                         'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
                       }`}>
-                        {evt.anomalyType.replace(/_/g, ' ')}
+                        {(evt.anomalyType || 'ALERT').replace(/_/g, ' ')}
                       </span>
                     </div>
                     <div className="text-slate-100 font-bold">
-                      Value: ${Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                      Value: ${evt.Amount ? Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
                     <div className="md:col-span-2 space-y-2">
                       <p className="text-slate-200 leading-relaxed font-medium">
-                        <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary}
+                        <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary || ''}
                       </p>
                       <div className="text-slate-400 text-[11px] truncate">
-                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product} (HS: {evt.HSCode})
+                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})
                       </div>
                     </div>
                     
                     <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800 space-y-1.5 text-[11px]">
                       <div className="truncate text-slate-300">
                         <span className="text-slate-500 font-bold uppercase text-[9px] block">Exporter node</span>
-                        {evt.Exporter}
+                        {evt.Exporter || 'UNKNOWN'}
                       </div>
                       <div className="truncate text-slate-300">
                         <span className="text-slate-500 font-bold uppercase text-[9px] block">Importer node</span>
-                        {evt.Importer}
+                        {evt.Importer || 'UNKNOWN'}
                       </div>
                       <div className="text-cyan-400 font-semibold flex items-center gap-1 mt-1">
-                        <span>{evt.OriginCountry}</span>
+                        <span>{evt.OriginCountry || 'UNKNOWN'}</span>
                         <ArrowRight size={10} className="text-slate-500" />
-                        <span>{evt.DestinationCountry}</span>
+                        <span>{evt.DestinationCountry || 'UNKNOWN'}</span>
                       </div>
                     </div>
                   </div>
@@ -271,7 +284,7 @@ export default function TimelineIntelligence() {
             </div>
           ) : (
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-16 text-center text-xs font-mono text-slate-500">
-              No chronological velocity outliers detected within the current subset filters.
+              No historical chronological spikes or outliers found matching criteria filters.
             </div>
           )}
         </div>
