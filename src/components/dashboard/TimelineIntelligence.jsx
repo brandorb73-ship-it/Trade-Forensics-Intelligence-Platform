@@ -15,15 +15,14 @@ export default function TimelineIntelligence() {
     const entityReroutingMap = {};
     const timelineEvents = [];
 
-    // Sort trade records chronologically to process flows sequentially
-    const sortedData = [...tradeData].sort((a, b) => new Date(a.Date) - new Date(b.Date));
+    // SAFE FILTER & SORT: Strip out any items missing a valid chronological date asset before sorting
+    const sortedData = [...tradeData]
+      .filter(row => row && row.Date && row.Date !== 'N/A' && !isNaN(new Date(row.Date).getTime()))
+      .sort((a, b) => new Date(a.Date).getTime() - new Date(b.Date).getTime());
 
     sortedData.forEach(row => {
-      const dateStr = row.Date || '';
-      if (dateStr === 'N/A' || !dateStr) return;
-
-      // Extract Year-Month bucket (YYYY-MM)
-      const monthBucket = dateStr.substring(0, 7); 
+      const dateStr = row.Date;
+      const monthBucket = dateStr.substring(0, 7); // Extract Year-Month (YYYY-MM)
       const amount = parseFloat(row.Amount) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
@@ -38,13 +37,13 @@ export default function TimelineIntelligence() {
       if (!importerMonthlyMap[importer]) importerMonthlyMap[importer] = {};
       importerMonthlyMap[importer][monthBucket] = (importerMonthlyMap[importer][monthBucket] || 0) + amount;
 
-      // Track Corridor transitions per exporter (to pinpoint sudden rerouting)
+      // Track Corridor transitions per exporter
       if (!entityReroutingMap[exporter]) entityReroutingMap[exporter] = [];
       if (!entityReroutingMap[exporter].includes(corridor)) {
         entityReroutingMap[exporter].push(corridor);
       }
 
-      // 1. Rule Evaluation: Technical Nomenclature Flag (Semaglutide Misclassifications)
+      // 1. Rule Evaluation: Technical Nomenclature Flag
       const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
 
       // 2. Rule Evaluation: Sudden Importer Velocity Burst
@@ -53,14 +52,12 @@ export default function TimelineIntelligence() {
       const monthsWithData = Object.values(history);
       const averageHistoricalVolume = monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length;
       
-      // If a single month spikes significantly over their rolling operational baseline
       const isVolumeSpike = currentMonthVolume > 50000 && currentMonthVolume > (averageHistoricalVolume * 2.5);
 
       // 3. Rule Evaluation: Supply Chain Structural Rerouting
       const totalRoutesUsedByExporter = entityReroutingMap[exporter].length;
       const isSuddenReroute = totalRoutesUsedByExporter > 1 && isMismatched;
 
-      // Classify and inject anomalous event footprints
       if (isMismatched || isVolumeSpike || isSuddenReroute) {
         let anomalyType = 'SUSPICIOUS_TIMING';
         let severity = 'MEDIUM';
@@ -87,8 +84,8 @@ export default function TimelineIntelligence() {
       }
     });
 
-    // Sort final ledger back so newest risk indicators float to the top
-    return timelineEvents.sort((a, b) => new Date(b.Date) - new Date(a.Date));
+    // Sort final output so most recent alerts hit the top of the feed safely
+    return timelineEvents.sort((a, b) => new Date(b.Date).getTime() - new Date(a.Date).getTime());
   }, [tradeData]);
 
   const filteredEvents = useMemo(() => {
@@ -96,7 +93,6 @@ export default function TimelineIntelligence() {
     return timelineAnalysis.filter(e => e.anomalyType === activeTimelineFilter);
   }, [timelineAnalysis, activeTimelineFilter]);
 
-  // Generate tactical summary counts
   const counters = useMemo(() => {
     return {
       spikes: timelineAnalysis.filter(e => e.anomalyType === 'VOLUME_SPIKE').length,
