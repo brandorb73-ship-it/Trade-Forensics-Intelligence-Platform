@@ -3,7 +3,8 @@ import { TradeDataProvider } from './context/TradeDataContext';
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
-import TimelineIntelligence from './components/dashboard/TimelineIntelligence'; // <-- ADD THIS
+// Temporarily use a direct asset chunk name to force Rollup to bypass its cache
+import TimelineIntelligence from './components/dashboard/TimelineIntelligence';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
