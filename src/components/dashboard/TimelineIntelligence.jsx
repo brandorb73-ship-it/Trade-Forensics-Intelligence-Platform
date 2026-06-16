@@ -3,6 +3,17 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight } from 'lucide-react';
 
 export default function TimelineIntelligence() {
+  console.log("TIMELINE COMPONENT LOADED");
+
+  const contextData = useTradeData();
+
+  console.log("CONTEXT:", contextData);
+
+  const tradeData = contextData?.tradeData || [];
+
+  console.log("ROWS:", tradeData.length);
+
+export default function TimelineIntelligence() {
   const contextData = useTradeData();
   const tradeData = contextData && contextData.tradeData ? contextData.tradeData : [];
   
