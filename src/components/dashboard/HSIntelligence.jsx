@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { useTradeData } from '../../context/TradeDataContext';
+import { useTradeData } from '../../context/TradeDataContext.jsx'; // Add explicit .jsx extension to force exact chunk matching
 import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp } from 'lucide-react';
 
 export default function HSIntelligence() {
