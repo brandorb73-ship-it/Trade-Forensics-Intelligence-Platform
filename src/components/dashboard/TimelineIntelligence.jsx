@@ -263,13 +263,12 @@ const monthBucket = !isNaN(parsedDate)
                       </span>
                     </div>
                     <div className="text-slate-100 font-bold">
-                      Value: ${
-  evt['Amount($)']
-    ? Number(String(evt['Amount($)']).replace(/,/g,''))
-        .toLocaleString(undefined,{minimumFractionDigits:2})
-    : '0.00'
-}
-                    </div>
+  {`Value: $${Number(
+    String(evt['Amount($)'] || 0).replace(/,/g, '')
+  ).toLocaleString(undefined, {
+    minimumFractionDigits: 2
+  })}`}
+</div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
