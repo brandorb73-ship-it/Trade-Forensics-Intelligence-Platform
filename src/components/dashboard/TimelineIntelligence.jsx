@@ -8,6 +8,8 @@ export default function TimelineIntelligence() {
   
   const [activeTimelineFilter, setActiveTimelineFilter] = useState('ALL_ANOMALIES');
 
+  console.log('Timeline sample row:', tradeData?.[0]);
+
   // Forensic Time-Series Engine
   const timelineAnalysis = useMemo(() => {
     const monthlyVolumeMap = {};
@@ -28,13 +30,19 @@ export default function TimelineIntelligence() {
       const dateStr = row.Date || '';
       if (dateStr.length < 7) return; 
       
-      const monthBucket = dateStr.substring(0, 7); // YYYY-MM
-      const amount = parseFloat(row.Amount) || 0;
+      const parsedDate = new Date(dateStr);
+
+const monthBucket = !isNaN(parsedDate)
+  ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
+  : 'UNKNOWN';
+      const amount = Number(
+  String(row['Amount($)'] || 0).replace(/,/g, '')
+) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
       const corridor = `${row.OriginCountry || 'UNKNOWN'} → ${row.DestinationCountry || 'UNKNOWN'}`;
-      const productDesc = (row.Product || '').toUpperCase();
-      const hsString = String(row.HSCode || '');
+     const productDesc = (row['PRODUCT'] || '').toUpperCase();
+      const hsString = String(row['HS Code'] || '');
 
       // Build baseline mapping records
       monthlyVolumeMap[monthBucket] = (monthlyVolumeMap[monthBucket] || 0) + amount;
