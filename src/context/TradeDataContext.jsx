@@ -71,11 +71,14 @@ export const TradeDataProvider = ({ children }) => {
     reader.readAsText(file);
   };
 
-  return (
+return (
     <TradeDataContext.Provider value={{ tradeData, setTradeData, uploadFile, isLoading, processRawData }}>
       {children}
     </TradeDataContext.Provider>
   );
 };
+
+// ADD THIS LINE HERE - IT WAS COMPLETELY MISSING
+export const useTradeData = () => useContext(TradeDataContext);
 
 export default TradeDataProvider;
