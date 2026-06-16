@@ -3,21 +3,15 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight } from 'lucide-react';
 
 export default function TimelineIntelligence() {
-  console.log("TIMELINE COMPONENT LOADED");
-
   const contextData = useTradeData();
-
-  console.log("CONTEXT:", contextData);
-
   const tradeData = contextData?.tradeData || [];
 
+  console.log("TIMELINE COMPONENT LOADED");
+  console.log("CONTEXT:", contextData);
   console.log("ROWS:", tradeData.length);
 
-export default function TimelineIntelligence() {
-  const contextData = useTradeData();
-  const tradeData = contextData && contextData.tradeData ? contextData.tradeData : [];
-  
-  const [activeTimelineFilter, setActiveTimelineFilter] = useState('ALL_ANOMALIES');
+  const [activeTimelineFilter, setActiveTimelineFilter] =
+    useState('ALL_ANOMALIES');
 
   console.log('Timeline sample row:', tradeData?.[0]);
 
@@ -51,7 +45,8 @@ const monthBucket = !isNaN(parsedDate)
 ) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
-      const corridor = `${row.OriginCountry || 'UNKNOWN'} → ${row.DestinationCountry || 'UNKNOWN'}`;
+      const corridor =
+ `${row['Origin Country'] || 'UNKNOWN'} → ${row['Destination Country'] || 'UNKNOWN'}`;
      const productDesc = (row['PRODUCT'] || '').toUpperCase();
       const hsString = String(row['HS Code'] || '');
 
@@ -268,7 +263,12 @@ const monthBucket = !isNaN(parsedDate)
                       </span>
                     </div>
                     <div className="text-slate-100 font-bold">
-                      Value: ${evt.Amount ? Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
+                      Value: ${
+  evt['Amount($)']
+    ? Number(String(evt['Amount($)']).replace(/,/g,''))
+        .toLocaleString(undefined,{minimumFractionDigits:2})
+    : '0.00'
+}
                     </div>
                   </div>
 
@@ -278,7 +278,7 @@ const monthBucket = !isNaN(parsedDate)
                         <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary || ''}
                       </p>
                       <div className="text-slate-400 text-[11px] truncate">
-                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})
+                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt['PRODUCT'] || 'UNSPECIFIED'} (HS: {evt['HS Code'] || 'N/A'})
                       </div>
                     </div>
                     
