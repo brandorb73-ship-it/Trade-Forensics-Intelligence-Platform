@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { TradeDataProvider } from './context/TradeDataContext'; // <-- MUST HAVE CURLY BRACES
+import { TradeDataProvider } from './context/TradeDataContext'; 
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
+import TimelineIntelligence from './components/dashboard/TimelineIntelligence'; // <-- ADD THIS
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
@@ -10,7 +11,8 @@ export default function App() {
   const tabs = [
     { id: 'ledger', label: 'Shipment Ledger Matrix' },
     { id: 'hs-intel', label: 'HS Intelligence Portal' },
-    { id: 'entity-intel', label: 'Entity Network Analysis' }
+    { id: 'entity-intel', label: 'Entity Network Analysis' },
+    { id: 'timeline-intel', label: 'Timeline Intelligence' } // <-- ADD THIS
   ];
 
   return (
