@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext.jsx'; // Add explicit .jsx extension to force exact chunk matching
-import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info } from 'lucide-react';
 
 export default function HSIntelligence() {
   const contextData = useTradeData();
@@ -79,6 +79,8 @@ export default function HSIntelligence() {
 
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
+      
+      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
         <div>
           <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
@@ -101,6 +103,28 @@ export default function HSIntelligence() {
         )}
       </div>
 
+      {/* Forensic Intelligence Briefing Notice - Diagnostic Red Flag Breakdown */}
+      <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3">
+        <h2 className="text-sm font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2">
+          <Info size={16} /> Diagnostic Risk Analysis: Strategic Misdeclaration Framework
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1">PRODUCT SPECIES RISK</span>
+            Semaglutide is a strictly regulated biopharmaceutical requiring temperature-controlled logistics chain integrity and health import licensing tokens. Misclassifying it avoids drug import declarations entirely.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-emerald-400 font-bold block border-b border-slate-800 pb-1 mb-1">BRAND INTEL & GRAY MARKETS</span>
+            The lack of legitimate pharmaceutical distribution credentials paired with high-value gray market branded items signals parallel distribution networks circumventing official, audited pharma trade routes.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-cyan-400 font-bold block border-b border-slate-800 pb-1 mb-1">TARIFF EVASION DYNAMICS</span>
+            Utilizing HS Chapter 9101 (Precious Metal Watches) strips out the regulatory "Pharma" risk profiling markers in automated regional container clearing systems, intentionally blinding compliance audits.
+          </div>
+        </div>
+      </div>
+
+      {/* Top Counters Metrics Layout Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between">
           <div className="space-y-1">
@@ -139,6 +163,7 @@ export default function HSIntelligence() {
         </div>
       </div>
 
+      {/* Mid-Tier Graphical Matrix & Ranked Corridor Breakdowns */}
       {tradeData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
@@ -197,6 +222,7 @@ export default function HSIntelligence() {
         </div>
       )}
 
+      {/* Split Navigation and Table Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1 non-printable">
           <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
@@ -226,6 +252,7 @@ export default function HSIntelligence() {
           </div>
         </div>
 
+        {/* Audit Data Table Container Frame */}
         <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl lg:col-span-3">
           <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center non-printable">
             <span className="text-xs font-bold font-mono tracking-wider text-slate-200 uppercase">
@@ -239,6 +266,7 @@ export default function HSIntelligence() {
                 <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Nomenclature Map</th>
+                  <th className="px-4 py-3">Brand</th>
                   <th className="px-4 py-3">Product Description</th>
                   <th className="px-4 py-3 text-right">Value (USD)</th>
                   <th className="px-4 py-3">Corridor Paths</th>
@@ -255,11 +283,12 @@ export default function HSIntelligence() {
                           {rec.HSCode}
                         </span>
                       </td>
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[120px] truncate">{rec.Brand || 'UNBRANDED'}</td>
                       <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate">{rec.Product}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-100">
+                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono">
                         ${rec.Amount ? Number(rec.Amount).toLocaleString() : '0.00'}
                       </td>
-                      <td className="px-4 py-3 text-[11px]">
+                      <td className="px-4 py-3 text-[11px] whitespace-nowrap">
                         <div>{rec.OriginCountry} → {rec.DestinationCountry}</div>
                       </td>
                       <td className="px-4 py-3">
@@ -269,7 +298,7 @@ export default function HSIntelligence() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-16 text-slate-500">No records to load.</td>
+                    <td colSpan={7} className="text-center py-16 text-slate-500">No records to load.</td>
                   </tr>
                 )}
               </tbody>
