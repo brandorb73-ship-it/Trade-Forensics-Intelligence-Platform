@@ -8,7 +8,7 @@ import PriceForensics from './components/dashboard/PriceForensics';
 import CountryRiskIntelligence from './components/dashboard/CountryRiskIntelligence';
 import BrandIntelligence from './components/dashboard/BrandIntelligence';
 import GlobalAnalyticsMatrix from './components/dashboard/GlobalAnalyticsMatrix';
-import ComprehensiveReportHub from './components/analytics/ComprehensiveReportHub';
+import ComprehensiveReportHub from './components/dashboard/ComprehensiveReportHub';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
