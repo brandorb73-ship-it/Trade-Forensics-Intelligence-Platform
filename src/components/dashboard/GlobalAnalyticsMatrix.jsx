@@ -456,7 +456,7 @@ export default function GlobalAnalyticsVisualHub() {
                     return (
                       <td 
                         key={dst} 
-                        onClick={() => cellValue > 0 && setSelectedCell(isSelected ? null : { origin, dst })}
+                   onClick={() => cellValue > 0 && setSelectedCell(isSelected ? null : { origin, dest: dst })}
                         className={`p-3 border border-slate-800 text-center transition-all ${bgStyle} ${cellValue > 0 ? 'cursor-pointer shadow-inner' : 'cursor-default'} ${isSelected ? 'ring-2 ring-white border-transparent z-10 scale-[1.01]' : ''}`}
                       >
                         <div className="text-xs font-black">
