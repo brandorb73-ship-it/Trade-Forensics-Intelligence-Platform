@@ -36,7 +36,6 @@ export default function TimelineIntelligence() {
         ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
         : 'UNKNOWN';
 
-      // FIX: Access normalized context values directly instead of old raw CSV keys
       const amount = Number(row.Amount) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
@@ -256,7 +255,6 @@ export default function TimelineIntelligence() {
                         {(evt.anomalyType || 'ALERT').replace(/_/g, ' ')}
                       </span>
                     </div>
-                    {/* FIX: Access normalized amount property safely */}
                     <div className="text-slate-100 font-bold">
                       Value: ${evt.Amount ? Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                     </div>
@@ -267,7 +265,6 @@ export default function TimelineIntelligence() {
                       <p className="text-slate-200 leading-relaxed font-medium">
                         <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary || ''}
                       </p>
-                      {/* FIX: Access normalized product and hscode properties safely */}
                       <div className="text-slate-400 text-[11px] truncate">
                         <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})
                       </div>
@@ -282,9 +279,7 @@ export default function TimelineIntelligence() {
                         <span className="text-slate-500 font-bold uppercase text-[9px] block">Importer node</span>
                         {evt.Importer || 'UNKNOWN'}
                       </div>
-                      {/* FIX: Access normalized origin and destination properties safely */}
                       <div className="text-cyan-400 font-semibold flex items-center gap-1 mt-1">
-                        <span>{row => row.OriginCountry || 'UNKNOWN'}</span>
                         <span>{evt.OriginCountry || 'UNKNOWN'}</span>
                         <ArrowRight size={10} className="text-slate-500" />
                         <span>{evt.DestinationCountry || 'UNKNOWN'}</span>
