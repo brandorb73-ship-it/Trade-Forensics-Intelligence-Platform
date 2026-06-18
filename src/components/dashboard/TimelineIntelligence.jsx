@@ -1,13 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight } from 'lucide-react';
+import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight, Info, ShieldCheck } from 'lucide-react';
 
 export default function TimelineIntelligence() {
   const contextData = useTradeData();
   const tradeData = contextData?.tradeData || [];
-
-  console.log("TIMELINE COMPONENT LOADED");
-  console.log("ROWS:", tradeData.length);
 
   const [activeTimelineFilter, setActiveTimelineFilter] = useState('ALL_ANOMALIES');
 
@@ -18,7 +15,6 @@ export default function TimelineIntelligence() {
     const entityReroutingMap = {};
     const timelineEvents = [];
 
-    // Safe chronological sorting pass
     const sortedData = [...tradeData]
       .filter(row => row && row.Date && row.Date !== 'N/A')
       .sort((a, b) => {
@@ -43,7 +39,6 @@ export default function TimelineIntelligence() {
       const productDesc = (row.Product || '').toUpperCase();
       const hsString = String(row.HSCode || '');
 
-      // Build baseline mapping records
       monthlyVolumeMap[monthBucket] = (monthlyVolumeMap[monthBucket] || 0) + amount;
 
       if (!importerMonthlyMap[importer]) importerMonthlyMap[importer] = {};
@@ -54,7 +49,6 @@ export default function TimelineIntelligence() {
         entityReroutingMap[exporter].push(corridor);
       }
 
-      // Check Forensic Rulesets
       const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
 
       const history = importerMonthlyMap[importer] || {};
@@ -68,7 +62,6 @@ export default function TimelineIntelligence() {
       const totalRoutesUsedByExporter = entityReroutingMap[exporter].length;
       const isSuddenReroute = totalRoutesUsedByExporter > 1 && isMismatched;
 
-      // Assign fallback tracking properties
       let anomalyType = 'NORMAL_FLOW';
       let severity = 'LOW';
       let summary = 'Standard operational baseline flow configuration.';
@@ -96,14 +89,12 @@ export default function TimelineIntelligence() {
       });
     });
 
-    // Return the items with highest risks listed first
     return timelineEvents.sort((a, b) => {
       const severityWeight = { 'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0 };
       return (severityWeight[b.severity] || 0) - (severityWeight[a.severity] || 0);
     });
   }, [tradeData]);
 
-  // Clean filter handling logic
   const filteredEvents = useMemo(() => {
     if (activeTimelineFilter === 'ALL_ANOMALIES') {
       return timelineAnalysis.filter(e => e.anomalyType !== 'NORMAL_FLOW');
@@ -145,6 +136,27 @@ export default function TimelineIntelligence() {
         )}
       </div>
 
+      {/* Forensic Intelligence Briefing Notice */}
+      <div className="bg-slate-900 border-l-4 border-cyan-500 p-5 rounded-xl shadow-md space-y-3">
+        <h2 className="text-sm font-black tracking-wider text-cyan-400 font-mono uppercase flex items-center gap-2">
+          <Info size={16} /> Technical Risk Dossier: Split-Batching & Misdeclaration Indicators
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1">1. SPLIT BATCHING TIMING</span>
+            High-frequency concurrent shipments of small token dollar values indicate deliberate "structuring." Moving commercial cargo via duplicate declarations on a single calendar day is a mechanism used to artificially remain under de minimis automated screening profiles.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1">2. PEPTIDE MISCLASSIFICATION</span>
+            Declaring regulated cold-chain biopharmaceuticals (Semaglutide) under Chapter 9101 (Precious Metal Wristwatches) completely bypasses automated drug licensing controls and health import checks, creating immediate illicit market entry points.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-rose-400 font-bold block border-b border-slate-800 pb-1 mb-1">3. REGIONAL RISK VECTOR</span>
+            The Malaysia → Singapore transit channel functions as a highly active cross-border logistics channel. Using generic descriptive consumer hardware tags across this pathway exploits bulk freight corridors to conceal high-demand black-market pharmaceutical goods.
+          </div>
+        </div>
+      </div>
+
       {/* Metrics Summary Panels */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between">
@@ -178,7 +190,7 @@ export default function TimelineIntelligence() {
         </div>
       </div>
 
-      {/* Dynamic Workspace split views layout */}
+      {/* Workspace splits views layout */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
         {/* Navigation Filters */}
@@ -265,8 +277,10 @@ export default function TimelineIntelligence() {
                       <p className="text-slate-200 leading-relaxed font-medium">
                         <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary || ''}
                       </p>
-                      <div className="text-slate-400 text-[11px] truncate">
-                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})
+                      <div className="text-slate-400 text-[11px] truncate space-y-1">
+                        <div><span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})</div>
+                        {/* BRAND VALUE ADDED HERE */}
+                        <div><span className="font-bold text-slate-400">Brand Designation:</span> <span className="text-emerald-400 font-bold">{evt.Brand || 'UNBRANDED / GRAY'}</span></div>
                       </div>
                     </div>
                     
