@@ -7,13 +7,9 @@ export default function TimelineIntelligence() {
   const tradeData = contextData?.tradeData || [];
 
   console.log("TIMELINE COMPONENT LOADED");
-  console.log("CONTEXT:", contextData);
   console.log("ROWS:", tradeData.length);
 
-  const [activeTimelineFilter, setActiveTimelineFilter] =
-    useState('ALL_ANOMALIES');
-
-  console.log('Timeline sample row:', tradeData?.[0]);
+  const [activeTimelineFilter, setActiveTimelineFilter] = useState('ALL_ANOMALIES');
 
   // Forensic Time-Series Engine
   const timelineAnalysis = useMemo(() => {
@@ -36,19 +32,17 @@ export default function TimelineIntelligence() {
       if (dateStr.length < 7) return; 
       
       const parsedDate = new Date(dateStr);
+      const monthBucket = !isNaN(parsedDate)
+        ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
+        : 'UNKNOWN';
 
-const monthBucket = !isNaN(parsedDate)
-  ? `${parsedDate.getFullYear()}-${String(parsedDate.getMonth() + 1).padStart(2, '0')}`
-  : 'UNKNOWN';
-      const amount = Number(
-  String(row['Amount($)'] || 0).replace(/,/g, '')
-) || 0;
+      // FIX: Access normalized context values directly instead of old raw CSV keys
+      const amount = Number(row.Amount) || 0;
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
-      const corridor =
- `${row['Origin Country'] || 'UNKNOWN'} → ${row['Destination Country'] || 'UNKNOWN'}`;
-     const productDesc = (row['PRODUCT'] || '').toUpperCase();
-      const hsString = String(row['HS Code'] || '');
+      const corridor = `${row.OriginCountry || 'UNKNOWN'} → ${row.DestinationCountry || 'UNKNOWN'}`;
+      const productDesc = (row.Product || '').toUpperCase();
+      const hsString = String(row.HSCode || '');
 
       // Build baseline mapping records
       monthlyVolumeMap[monthBucket] = (monthlyVolumeMap[monthBucket] || 0) + amount;
@@ -75,7 +69,7 @@ const monthBucket = !isNaN(parsedDate)
       const totalRoutesUsedByExporter = entityReroutingMap[exporter].length;
       const isSuddenReroute = totalRoutesUsedByExporter > 1 && isMismatched;
 
-      // Ensure every record gets assigned fallback tracking properties so it can't crash string formatters
+      // Assign fallback tracking properties
       let anomalyType = 'NORMAL_FLOW';
       let severity = 'LOW';
       let summary = 'Standard operational baseline flow configuration.';
@@ -262,13 +256,10 @@ const monthBucket = !isNaN(parsedDate)
                         {(evt.anomalyType || 'ALERT').replace(/_/g, ' ')}
                       </span>
                     </div>
+                    {/* FIX: Access normalized amount property safely */}
                     <div className="text-slate-100 font-bold">
-  {`Value: $${Number(
-    String(evt['Amount($)'] || 0).replace(/,/g, '')
-  ).toLocaleString(undefined, {
-    minimumFractionDigits: 2
-  })}`}
-</div>
+                      Value: ${evt.Amount ? Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
+                    </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono">
@@ -276,8 +267,9 @@ const monthBucket = !isNaN(parsedDate)
                       <p className="text-slate-200 leading-relaxed font-medium">
                         <span className="text-slate-400 font-bold">Audit Insight:</span> {evt.summary || ''}
                       </p>
+                      {/* FIX: Access normalized product and hscode properties safely */}
                       <div className="text-slate-400 text-[11px] truncate">
-                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt['PRODUCT'] || 'UNSPECIFIED'} (HS: {evt['HS Code'] || 'N/A'})
+                        <span className="font-bold text-slate-300">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})
                       </div>
                     </div>
                     
@@ -290,7 +282,9 @@ const monthBucket = !isNaN(parsedDate)
                         <span className="text-slate-500 font-bold uppercase text-[9px] block">Importer node</span>
                         {evt.Importer || 'UNKNOWN'}
                       </div>
+                      {/* FIX: Access normalized origin and destination properties safely */}
                       <div className="text-cyan-400 font-semibold flex items-center gap-1 mt-1">
+                        <span>{row => row.OriginCountry || 'UNKNOWN'}</span>
                         <span>{evt.OriginCountry || 'UNKNOWN'}</span>
                         <ArrowRight size={10} className="text-slate-500" />
                         <span>{evt.DestinationCountry || 'UNKNOWN'}</span>
