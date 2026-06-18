@@ -29,6 +29,12 @@ export const TradeDataProvider = ({ children }) => {
             cleanUnitPrice = parseFloat(cleanUnitPrice.toString().replace(/,/g, ''));
           }
 
+          // Dynamic Formatting Cleanup for Quantities to ensure pricing metrics calculate accurately
+          let cleanQuantity = row['Quantity'];
+          if (cleanQuantity !== undefined && cleanQuantity !== null) {
+            cleanQuantity = parseFloat(cleanQuantity.toString().replace(/,/g, ''));
+          }
+
           // Forensics Rule Engine: Detect Disguised Shipments
           let hsRisk = 'low';
           if (rawProduct.toUpperCase().includes('SEMAGLUTIDE') && rawHsCode.startsWith('9101')) {
@@ -43,7 +49,7 @@ export const TradeDataProvider = ({ children }) => {
             Brand: row['Brand'] || 'UNBRANDED / GRAY',
             Exporter: row['Exporter'] || 'UNKNOWN EXPORTER',
             Importer: row['Importer'] || 'UNKNOWN IMPORTER',
-            Quantity: row['Quantity'] !== undefined ? row['Quantity'] : 0,
+            Quantity: isNaN(cleanQuantity) ? 0 : cleanQuantity,
             QuantityUnit: row['Quantity Unit'] || 'PCS',
             Weight: row['Weight(Kg)'] !== undefined ? row['Weight(Kg)'] : 0,
             Amount: isNaN(cleanAmount) ? 0 : cleanAmount,
@@ -71,14 +77,13 @@ export const TradeDataProvider = ({ children }) => {
     reader.readAsText(file);
   };
 
-return (
+  return (
     <TradeDataContext.Provider value={{ tradeData, setTradeData, uploadFile, isLoading, processRawData }}>
       {children}
     </TradeDataContext.Provider>
   );
 };
 
-// ADD THIS LINE HERE - IT WAS COMPLETELY MISSING
 export const useTradeData = () => useContext(TradeDataContext);
 
 export default TradeDataProvider;
