@@ -1,10 +1,9 @@
 import React, { useMemo, useState } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Shield, Award, Layers, FileText, Globe, Info, Activity, ChevronDown, ChevronUp, UserX } from 'lucide-react';
+import { Shield, Layers, FileText, Info, Activity, ChevronDown, ChevronUp, UserX } from 'lucide-react';
 
 export default function BrandIntelligence() {
   const { tradeData = [] } = useTradeData() || {};
-  // Track which brand rows are expanded to view corporate entities
   const [expandedBrands, setExpandedBrands] = useState({});
 
   const toggleBrandExpand = (brand) => {
@@ -23,8 +22,8 @@ export default function BrandIntelligence() {
           value: 0, 
           totalIncidents: 0,
           origins: new Set(),
-          destinations: new Set(),
-          intermediariesMap: {} // Map entity names to their specific transaction data
+          destinations: new Set(), // Now accurately tracks true varying endpoints
+          intermediariesMap: {}
         };
       }
       
@@ -32,16 +31,24 @@ export default function BrandIntelligence() {
       stats[b].value += Number(row.Amount) || 0;
       stats[b].totalIncidents += 1;
       
-      const imp = row.Importer || 'UNKNOWN IMPORTER NODE';
+      const imp = row.Importer || 'UNKNOWN TARGET CONSIGNEE';
       const impUpper = imp.toUpperCase();
-      const exp = row.Exporter || 'UNKNOWN EXPORTER NODE';
+      const exp = row.Exporter || 'UNKNOWN SHADOW EXPORTER';
       const origin = row.OriginCountry || 'UNKNOWN ORIGIN';
       const amount = Number(row.Amount) || 0;
+      
+      // Dynamic fallback detection for variable destination data targets
+      const destinationField = (row.DestinationCountry || row.Destination || 'UNSPECIFIED REGION').toUpperCase();
 
-      // Forensic logic to isolate unauthorized intermediaries or logistical shell entities
+      // Forensic logic to extract unverified secondary broker entities
       if (impUpper.includes('TRADING') || impUpper.includes('LOGISTICS') || impUpper.includes('LIMITED') || impUpper.includes('ANY') || impUpper.includes('*')) {
         if (!stats[b].intermediariesMap[imp]) {
-          stats[b].intermediariesMap[imp] = { name: imp, suspectedExporters: new Set(), totalValue: 0, routeTouched: origin };
+          stats[b].intermediariesMap[imp] = { 
+            name: imp, 
+            suspectedExporters: new Set(), 
+            totalValue: 0, 
+            routeTouched: `${origin} → ${destinationField}` 
+          };
         }
         stats[b].intermediariesMap[imp].suspectedExporters.add(exp);
         stats[b].intermediariesMap[imp].totalValue += amount;
@@ -51,7 +58,9 @@ export default function BrandIntelligence() {
         const cleanOrigin = row.OriginCountry.split('→')[0].trim().toUpperCase();
         stats[b].origins.add(cleanOrigin);
       }
-      stats[b].destinations.add("UNITED STATES (U.S. CUSTOMS ENTRY)");
+      
+      // Push the TRUE variable record destination directly to the unique set
+      stats[b].destinations.add(destinationField);
     });
 
     return stats;
@@ -75,16 +84,13 @@ export default function BrandIntelligence() {
         </button>
       </div>
 
-      {/* Corporate Evidentiary Summary Panel */}
+      {/* Forensic Channel Validation Panel */}
       <div className="bg-[#111827] border-l-4 border-blue-500 p-5 rounded-xl space-y-3 print-break-avoid">
         <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
           <Activity size={14}/> Forensic Channel Validation Assessment
         </h3>
         <p className="text-xs text-slate-200 font-mono leading-relaxed">
           <strong>Methodology of Determination:</strong> Channels are classified as <em>Unauthorized / High Risk</em> when proprietary molecules are held by unverified non-manufacturer entities (e.g., intermediate trading houses, freight forwarders) instead of authorized chemical/pharmaceutical license holders. 
-        </p>
-        <p className="text-xs text-slate-300 font-mono leading-relaxed">
-          <strong>Interactive Drill-Down:</strong> Click on any brand's <em>Diversion Risk Channels</em> badge in the table below to reveal the unmasked corporate entity names, transaction balances, and suspected origin vectors pulled directly from shipping manifests.
         </p>
       </div>
 
@@ -119,18 +125,19 @@ export default function BrandIntelligence() {
                     <td className="p-3 text-white font-bold">{brandAnalytics[brand].volume.toLocaleString()}</td>
                     <td className="p-3 text-slate-200 leading-tight">
                       <div className="font-bold text-white uppercase text-[11px]">
-                        {Array.from(brandAnalytics[brand].origins).join(', ') || 'UNVERIFIED CORRIDOR'}
+                        {Array.from(brandAnalytics[brand].origins).join(', ') || 'UNVERIFIED ORIGIN'}
                       </div>
-                      <div className="text-slate-400 text-[10px] mt-0.5">
-                        → {Array.from(brandAnalytics[brand].destinations)[0]}
+                      <div className="text-amber-400 font-bold text-[10px] mt-1 uppercase tracking-tight">
+                        {/* FIXED: No longer hardcoded. Pulls dynamically from dataset destination values */}
+                        → {Array.from(brandAnalytics[brand].destinations).join(' / ')}
                       </div>
                     </td>
                     <td className="p-3">
                       <button 
                         onClick={() => toggleBrandExpand(brand)}
-                        className={`px-2.5 py-1 border rounded font-black text-[11px] flex items-center gap-1.5 cursor-pointer transition-all ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400 hover:bg-amber-900/40' : 'bg-red-950/40 border-red-800 text-red-400'}`}
+                        className={`px-2.5 py-1 border rounded font-black text-[11px] flex items-center gap-1.5 cursor-pointer transition-all ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400 hover:bg-amber-900/40' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
                       >
-                        {channelsCount > 0 ? `${channelsCount} Unauthorized Intermediaries` : 'High-Risk Intermediaries'}
+                        {channelsCount} Unauthorized Intermediaries
                         {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
                       </button>
                     </td>
@@ -139,7 +146,7 @@ export default function BrandIntelligence() {
                     </td>
                   </tr>
 
-                  {/* Sub-Layer: Entity Intelligence Panel (Revealed upon toggle or during print) */}
+                  {/* Sub-Layer: Entity Intelligence Expanded Panel */}
                   {(isExpanded || window.matchMedia('print').matches) && (
                     <tr>
                       <td colSpan="6" className="bg-[#0f172a] p-4 border-b border-slate-800">
@@ -157,10 +164,10 @@ export default function BrandIntelligence() {
                                     <div className="text-xs font-mono font-bold text-emerald-400">${inter.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                   </div>
                                   <div className="text-[11px] font-mono text-slate-300 space-y-1 pt-1 border-t border-slate-800/60">
-                                    <div><span className="text-slate-500 font-bold uppercase text-[10px]">Route Intercepted:</span> {inter.routeTouched}</div>
+                                    <div><span className="text-slate-500 font-bold uppercase text-[10px]">Real Dynamic Flow Leg:</span> {inter.routeTouched}</div>
                                     <div>
-                                      <span className="text-slate-500 font-bold uppercase text-[10px]">Associated Exporter Linked:</span>{' '}
-                                      <span className="text-slate-200 break-all">{Array.from(inter.suspectedExporters).join(', ') || 'Direct / Concealed Node'}</span>
+                                      <span className="text-slate-500 font-bold uppercase text-[10px]">Associated Exporter:</span>{' '}
+                                      <span className="text-slate-200 break-all">{Array.from(inter.suspectedExporters).join(', ') || 'Concealed Node'}</span>
                                     </div>
                                   </div>
                                 </div>
@@ -190,7 +197,6 @@ export default function BrandIntelligence() {
         <div className="text-slate-300 space-y-1 pl-5">
           <div>• Potentially relevant to unauthorized parallel importation claims.</div>
           <div>• Supports corporate market diversion identification and commercial scale modeling metrics.</div>
-          <div>• Validates high-risk distribution footprints across primary entry hubs.</div>
         </div>
       </div>
 
