@@ -4,6 +4,7 @@ import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
 import TimelineIntelligence from './components/dashboard/TimelineIntelligence';
+import PriceForensics from './components/dashboard/PriceForensics';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
@@ -12,7 +13,8 @@ export default function App() {
     { id: 'ledger', label: 'Shipment Ledger Matrix' },
     { id: 'hs-intel', label: 'HS Intelligence Portal' },
     { id: 'entity-intel', label: 'Entity Network Analysis' },
-    { id: 'timeline-intel', label: 'Timeline Intelligence' }
+    { id: 'timeline-intel', label: 'Timeline Intelligence' },
+    { id: 'price-forensics', label: 'Price Forensics Engine' }
   ];
 
   return (
@@ -67,8 +69,8 @@ export default function App() {
           {activeTab === 'ledger' && <ShipmentLedger />}
           {activeTab === 'hs-intel' && <HSIntelligence />}
           {activeTab === 'entity-intel' && <EntityIntelligence />}
-          {/* FIXED: Added missing rendering logic down here */}
           {activeTab === 'timeline-intel' && <TimelineIntelligence />}
+          {activeTab === 'price-forensics' && <PriceForensics />}
         </main>
         
       </div>
