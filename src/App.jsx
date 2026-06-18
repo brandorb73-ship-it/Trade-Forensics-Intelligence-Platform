@@ -22,7 +22,7 @@ export default function App() {
     { id: 'country-intel', label: 'Country Risk' },
     { id: 'brand-intel', label: 'Brand Security' },
     { id: 'global-visuals', label: '📊 Analytics Visual Hub' },
-{ id: 'comprehensive-analysis-report', label: '📋 Comprehensive Analysis & Report' }
+    { id: 'comprehensive-analysis-report', label: '📋 Comprehensive Analysis & Report' }
   ];
 
   return (
@@ -38,7 +38,7 @@ export default function App() {
           span, div, p, h1, h2, h3, h4 { color: #000000 !important; text-shadow: none !important; }
           .text-rose-400, .text-rose-500, .text-amber-400, .text-emerald-400, .text-cyan-400 { color: #000000 !important; font-weight: bold !important; }
           .id-print-section { max-w-full !important; padding: 0 !important; margin: 0 !important; display: block !important; }
-          .print-break-avoid { page-break-inside: avoid !important; break-inside: avoid !avoid !important; margin-bottom: 20px !important; }
+          .print-break-avoid { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 20px !important; }
           .print-force-visible { display: block !important; opacity: 1 !important; visibility: visible !important; }
         }
       `}</style>
@@ -78,8 +78,7 @@ export default function App() {
           {activeTab === 'country-intel' && <CountryRiskIntelligence />}
           {activeTab === 'brand-intel' && <BrandIntelligence />}
           {activeTab === 'global-visuals' && <GlobalAnalyticsMatrix />}
-       {activeTab === 'comprehensive-analysis-report' && (
-  <ComprehensiveReportHub />
+          {activeTab === 'comprehensive-analysis-report' && <ComprehensiveReportHub />}
         </main>
       </div>
     </TradeDataProvider>
