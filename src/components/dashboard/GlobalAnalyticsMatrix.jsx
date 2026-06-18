@@ -1,10 +1,30 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { BarChart3, Map, Network, TrendingDown, Clock, Plane, Ship, AlertCircle, FileText, Grid, Activity } from 'lucide-react';
+import { 
+  BarChart3, 
+  Map, 
+  Network, 
+  TrendingDown, 
+  Clock, 
+  Plane, 
+  Ship, 
+  AlertCircle, 
+  FileText, 
+  Grid, 
+  Activity, 
+  Eye, 
+  AlertTriangle,
+  ArrowRight,
+  TrendingUp,
+  Fingerprint,
+  Layers,
+  Globe
+} from 'lucide-react';
 
 export default function GlobalAnalyticsVisualHub() {
   const { tradeData = [] } = useTradeData() || {};
   const [selectedCell, setSelectedCell] = useState(null);
+  const [activeMetricTab, setActiveMetricTab] = useState('VALUE'); // VALUE | QUANTITY
 
   // Deep Forensic Data Processing Engine
   const advancedMetrics = useMemo(() => {
@@ -15,10 +35,11 @@ export default function GlobalAnalyticsVisualHub() {
     const timelineEvents = [];
     const logisticalVectors = { AIR: 0, OCEAN: 0, MULTIMODAL: 0 };
     
-    // Cross-tabulation frequency matrix mapping [Origin][Destination] -> accumulated value
+    // Cross-tabulation frequency matrix mapping [Origin][Destination]
     const crossTabMatrix = {};
     let maxCrossTabValue = 0;
     let totalValue = 0;
+    let totalQuantity = 0;
 
     tradeData.forEach((row, idx) => {
       if (!row) return;
@@ -33,15 +54,18 @@ export default function GlobalAnalyticsVisualHub() {
       const vector = row.LogisticalVector ? row.LogisticalVector.toUpperCase() : 'AIR';
 
       totalValue += val;
+      totalQuantity += qty;
       origins.add(origin);
       destinations.add(dest);
 
       // 1. Re-aggregate restored Brand Metrics for Compression Visualization
       if (!brands[bName]) {
-        brands[bName] = { val: 0, qty: 0, modes: {} };
+        brands[bName] = { val: 0, qty: 0, modes: {}, originPoints: new Set(), destPoints: new Set() };
       }
       brands[bName].val += val;
       brands[bName].qty += qty;
+      brands[bName].originPoints.add(origin);
+      brands[bName].destPoints.add(dest);
       brands[bName].modes[vector] = (brands[bName].modes[vector] || 0) + val;
 
       // 2. Track Logistical Transport Vectors
@@ -52,21 +76,29 @@ export default function GlobalAnalyticsVisualHub() {
       }
 
       // 3. Populate Unmasked Entity Network Data Links
-      if (idx < 6) { 
-        entityLinks.push({ brand: bName, importer, exporter, origin, dest, value: val });
-      }
+      entityLinks.push({ 
+        brand: bName, 
+        importer, 
+        exporter, 
+        origin, 
+        dest, 
+        value: val,
+        qty: qty,
+        date: date
+      });
 
       // 4. Chronological Timeline Sequencing
-      timelineEvents.push({ date, brand: bName, value: val, qty, vector, origin });
+      timelineEvents.push({ date, brand: bName, value: val, qty, vector, origin, dest, importer });
 
       // 5. Cross-Tabulation Matrix Construction
       if (!crossTabMatrix[origin]) {
         crossTabMatrix[origin] = {};
       }
       if (!crossTabMatrix[origin][dest]) {
-        crossTabMatrix[origin][dest] = { totalValue: 0, records: [] };
+        crossTabMatrix[origin][dest] = { totalValue: 0, totalQty: 0, records: [] };
       }
       crossTabMatrix[origin][dest].totalValue += val;
+      crossTabMatrix[origin][dest].totalQty += qty;
       crossTabMatrix[origin][dest].records.push(row);
 
       if (crossTabMatrix[origin][dest].totalValue > maxCrossTabValue) {
@@ -76,12 +108,13 @@ export default function GlobalAnalyticsVisualHub() {
 
     return { 
       brands, 
-      origins: Array.from(origins), 
-      destinations: Array.from(destinations), 
-      entityLinks, 
+      origins: Array.from(origins).sort(), 
+      destinations: Array.from(destinations).sort(), 
+      entityLinks: entityLinks.sort((a, b) => b.value - a.value), 
       logisticalVectors, 
-      timelineEvents, 
+      timelineEvents: timelineEvents.sort((a, b) => new Date(a.date) - new Date(b.date)), 
       totalValue,
+      totalQuantity,
       crossTabMatrix,
       maxCrossTabValue
     };
@@ -97,17 +130,58 @@ export default function GlobalAnalyticsVisualHub() {
   return (
     <div className="space-y-8 text-slate-100 id-print-section">
       
-      {/* Header View */}
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4 non-printable">
+      {/* Top Banner & Control Board */}
+      <div className="flex flex-col lg:flex-row justify-between lg:items-center border-b border-slate-800 pb-5 gap-4 non-printable">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <BarChart3 className="text-blue-500" size={24} /> High-Fidelity Forensic Visual Suite
+            <BarChart3 className="text-blue-500" size={26} /> High-Fidelity Forensic Visual Suite
           </h1>
           <p className="text-sm text-slate-300 mt-1">Multi-dimensional trade flow topologies, brand value compression matrices, and real entity dependency mappings.</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 text-slate-200">
-          <FileText size={14} className="text-blue-400" /> Print Charts Report
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="bg-[#0b0f19] border border-slate-800 rounded-lg p-1 flex">
+            <button 
+              onClick={() => setActiveMetricTab('VALUE')}
+              className={`px-3 py-1.5 rounded-md font-mono text-xs font-bold uppercase transition-all cursor-pointer ${activeMetricTab === 'VALUE' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Financial ($)
+            </button>
+            <button 
+              onClick={() => setActiveMetricTab('QUANTITY')}
+              className={`px-3 py-1.5 rounded-md font-mono text-xs font-bold uppercase transition-all cursor-pointer ${activeMetricTab === 'QUANTITY' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}
+            >
+              Volume (Qty)
+            </button>
+          </div>
+          <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 text-slate-200 cursor-pointer transition-colors">
+            <FileText size={14} className="text-blue-400" /> Print Charts Report
+          </button>
+        </div>
+      </div>
+
+      {/* Overview Analytics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 print:grid-cols-3">
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Total Tracked Asset Value</span>
+            <div className="text-xl font-black text-emerald-400 font-mono">${advancedMetrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+          </div>
+          <TrendingUp className="text-emerald-500/30" size={36} />
+        </div>
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Gross Diversion Quantity</span>
+            <div className="text-xl font-black text-white font-mono">{advancedMetrics.totalQuantity.toLocaleString()} Units</div>
+          </div>
+          <Layers className="text-blue-500/30" size={36} />
+        </div>
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Geographic Lane Intersects</span>
+            <div className="text-xl font-black text-amber-400 font-mono">{advancedMetrics.origins.length} Org × {advancedMetrics.destinations.length} Dest</div>
+          </div>
+          <Globe className="text-amber-500/30" size={36} />
+        </div>
       </div>
 
       {/* 1. Brand Value Compression & Variance Analytics */}
@@ -128,8 +202,13 @@ export default function GlobalAnalyticsVisualHub() {
             return (
               <div key={brand} className="space-y-1.5 font-mono">
                 <div className="flex justify-between text-xs font-bold text-white">
-                  <span className="tracking-tight text-slate-200 text-sm">{brand}</span>
-                  <span className="text-emerald-400 text-sm font-black">${bData.val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  <span className="tracking-tight text-slate-200 text-sm font-black">{brand}</span>
+                  <span className="text-emerald-400 text-sm font-black">
+                    {activeMetricTab === 'VALUE' 
+                      ? `$${bData.val.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+                      : `${bData.qty.toLocaleString()} Units`
+                    }
+                  </span>
                 </div>
                 <div className="w-full bg-slate-950 h-3 rounded-full overflow-hidden border border-slate-800 flex">
                   <div 
@@ -138,8 +217,8 @@ export default function GlobalAnalyticsVisualHub() {
                   />
                 </div>
                 <div className="flex justify-between text-[11px] text-slate-400 pt-0.5">
-                  <span>Audited Quantity: <strong className="text-white">{bData.qty.toLocaleString()} units</strong></span>
-                  <span>Implied Mean Sourcing Rate: <strong className="text-amber-400">${computedUnitVal.toFixed(2)} / unit</strong></span>
+                  <span>Audited Volume: <strong className="text-white">{bData.qty.toLocaleString()} units</strong></span>
+                  <span>Implied Sourcing Value: <strong className="text-amber-400">${computedUnitVal.toFixed(2)} / unit</strong></span>
                 </div>
               </div>
             );
@@ -165,15 +244,15 @@ export default function GlobalAnalyticsVisualHub() {
             <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest block">Identified Origins</span>
             <div className="flex flex-wrap gap-2 justify-center">
               {advancedMetrics.origins.map(org => (
-                <span key={org} className="bg-slate-900 border border-slate-800 text-white font-mono text-xs px-3 py-1.5 rounded-lg font-bold">{org}</span>
+                <span key={org} className="bg-slate-900 border border-slate-800 text-slate-100 font-mono text-xs px-3 py-1.5 rounded-lg font-black">{org}</span>
               ))}
             </div>
           </div>
 
-          <div className="flex flex-col items-center justify-center p-3 border border-dashed border-amber-600/40 rounded-xl bg-amber-950/10">
+          <div className="flex flex-col items-center justify-center p-4 border border-dashed border-amber-600/40 rounded-xl bg-amber-950/10">
             <span className="text-[10px] font-mono font-black text-amber-400 uppercase tracking-widest">Transshipment Bypass Loop</span>
-            <div className="text-xs font-mono text-white mt-1 font-bold">Malaysia / Singapore FTZ</div>
-            <div className="text-[9px] font-mono text-slate-400 mt-0.5">Customs Document Intercept</div>
+            <div className="text-xs font-mono text-white mt-1.5 font-black flex items-center gap-1"><Ship size={12}/> Malaysia / Singapore FTZ</div>
+            <div className="text-[9px] font-mono text-slate-400 mt-1">Customs Document Intercept & Split</div>
           </div>
 
           <div className="space-y-2">
@@ -201,22 +280,26 @@ export default function GlobalAnalyticsVisualHub() {
         </div>
 
         <div className="bg-[#0b0f19] rounded-xl p-6 border border-slate-900 space-y-4">
-          <div className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest">Unmasked Supply Chain Relationships</div>
+          <div className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <Fingerprint size={12} className="text-blue-400"/> Primary Risk Node Corridors
+          </div>
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {advancedMetrics.entityLinks.map((link, idx) => (
+            {advancedMetrics.entityLinks.slice(0, 6).map((link, idx) => (
               <div key={idx} className="bg-[#111827] border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs bg-blue-950 border border-blue-900 text-blue-400 font-black px-2 py-0.5 rounded uppercase">{link.brand}</span>
+                  <span className="text-xs bg-blue-950 border border-blue-900 text-blue-400 font-black px-2 py-0.5 rounded uppercase tracking-wide">{link.brand}</span>
                   <span className="text-xs text-emerald-400 font-bold">${link.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 font-mono text-[11px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-900 items-center">
-                  <div className="text-slate-200 truncate font-black" title={link.exporter}>{link.exporter}</div>
-                  <div className="text-center text-amber-500 font-black text-xs">➔</div>
+                  <div className="text-slate-100 truncate font-black" title={link.exporter}>{link.exporter}</div>
+                  <div className="text-center text-amber-500 font-black text-xs flex items-center justify-center gap-0.5">
+                    <span>➔</span>
+                  </div>
                   <div className="text-blue-400 truncate font-black text-right" title={link.importer}>{link.importer}</div>
                 </div>
                 <div className="text-[10px] font-mono text-slate-400 flex justify-between">
-                  <span>Origin: <strong className="text-white">{link.origin}</strong></span>
-                  <span>Destination: <strong className="text-white">{link.dest}</strong></span>
+                  <span>Origin Node: <strong className="text-slate-200">{link.origin}</strong></span>
+                  <span>Destination Node: <strong className="text-slate-200">{link.dest}</strong></span>
                 </div>
               </div>
             ))}
@@ -247,11 +330,11 @@ export default function GlobalAnalyticsVisualHub() {
                 return (
                   <div key={mode} className="space-y-1 font-mono">
                     <div className="flex justify-between text-xs font-bold text-white">
-                      <span className="flex items-center gap-1.5 uppercase">
-                        {mode === 'AIR' ? <Plane size={12} className="text-blue-400" /> : <Ship size={12} className="text-teal-400" />}
+                      <span className="flex items-center gap-1.5 uppercase font-black">
+                        {mode === 'AIR' ? <Plane size={13} className="text-blue-400" /> : <Ship size={13} className="text-teal-400" />}
                         {mode} CARGO
                       </span>
-                      <span className="text-purple-400">${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                      <span className="text-purple-400 font-bold">${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                     </div>
                     <div className="w-full bg-slate-950 h-2.5 rounded-full border border-slate-900 overflow-hidden">
                       <div className="bg-gradient-to-r from-purple-600 to-blue-500 h-full rounded-full" style={{ width: `${pct}%` }} />
@@ -264,59 +347,87 @@ export default function GlobalAnalyticsVisualHub() {
 
           <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
             <strong className="text-white uppercase tracking-wider block text-[10px] mb-0.5">Transport Summary:</strong>
-            Air logistics dominate unverified pipelines for temperature-sensitive cargo. High speed minimizes transit friction, allowing brokers to rapidly supply unauthorized markets.
+            Air logistics dominate unverified pipelines for traffic validation loops. High speed minimizes transit friction, allowing brokers to rapidly supply unauthorized target hubs.
           </div>
         </div>
 
-        {/* Chronological Shipment Timeline */}
-<div className="bg-[#111827] border border-slate-800 rounded-xl p-6 flex flex-col justify-between print-break-avoid">
-  <div>
-    <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-      <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
-        <Clock size={16} className="text-amber-400" /> 4B. Chronological Shipment Timeline
-      </h3>
-    </div>
-<div className="bg-[#0b0f19] p-4 rounded-xl border border-slate-900 space-y-3 max-h-[165px] overflow-y-auto print:max-h-none print:overflow-visible">
-      {advancedMetrics.timelineEvents.map((evt, idx) => (
-        <div key={idx} className="border-l-2 border-amber-500 pl-3 py-0.5 font-mono text-[11px] space-y-0.5 print-break-avoid">
-          <div className="flex justify-between font-bold text-white">
-            <span>{evt.date} — {evt.brand}</span>
-            <span className="text-amber-400">${evt.value.toLocaleString()}</span>
+        {/* Chronological Shipment Timeline with Page-Print Fixes */}
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 flex flex-col justify-between print-break-avoid">
+          <div>
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+              <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
+                <Clock size={16} className="text-amber-400" /> 4B. Chronological Shipment Timeline
+              </h3>
+            </div>
+
+            <div className="bg-[#0b0f19] p-4 rounded-xl border border-slate-900 space-y-3 max-h-[165px] overflow-y-auto print:max-h-none print:overflow-visible">
+              {advancedMetrics.timelineEvents.map((evt, idx) => (
+                <div key={idx} className="border-l-2 border-amber-500 pl-3 py-0.5 font-mono text-[11px] space-y-0.5 print-break-avoid">
+                  <div className="flex justify-between font-bold text-white">
+                    <span className="font-black">{evt.date} — {evt.brand}</span>
+                    <span className="text-amber-400">${evt.value.toLocaleString()}</span>
+                  </div>
+                  <div className="text-[10px] text-slate-300">
+                    Sourced from <span className="text-slate-100 font-bold">{evt.origin}</span> via <span className="text-slate-100 font-bold">{evt.vector}</span> lines to <span className="text-blue-400 font-bold truncate">{evt.importer.slice(0, 20)}...</span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
-          <div className="text-[10px] text-slate-400">
-            Sourced from <span className="text-slate-200 font-bold">{evt.origin}</span> via <span className="text-slate-200 font-bold">{evt.vector}</span> transit lines.
+
+          <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
+            <strong className="text-white uppercase tracking-wider block text-[10px] mb-0.5">Temporal Trend Assessment:</strong>
+            The timeline exposes highly coordinated shipping clusters over compressed periods, indicating strategic stocking behaviors aligned with arbitrage opportunities.
           </div>
         </div>
-      ))}
-    </div>
-  </div>
-
-  <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300 non-printable">
-    <strong className="text-white uppercase tracking-wider block text-[10px] mb-0.5">Temporal Trend Assessment:</strong>
-    The timeline exposes highly coordinated shipping clusters over compressed periods, indicating strategic stocking behaviors aligned with arbitrage opportunities.
-  </div>
-</div>
 
       </div>
 
-      {/* 5. NEW VISUAL: Geographic Cross-Tabulation Risk Grid (Heat Density Layout) */}
+      {/* 5. Geographic Cross-Tabulation Risk Grid (Optimized UI & Fixed Event Intercept) */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print-break-avoid">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-          <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
-            <Grid size={16} className="text-red-400" /> 5. Geographic Cross-Tabulation Risk Grid
-          </h3>
+          <div className="flex items-center gap-2">
+            <Grid size={16} className="text-red-400" /> 
+            <h3 className="text-sm font-mono font-black text-white uppercase tracking-wider">
+              5. Geographic Cross-Tabulation Risk Grid
+            </h3>
+          </div>
           <span className="text-[10px] bg-red-950/60 border border-red-800 text-red-400 font-mono font-bold px-2 py-0.5 rounded">
             Density Heat Mapping Engine
           </span>
         </div>
 
+        {/* Matrix Risk Index Legend Section */}
+        <div className="mb-4 bg-[#0b0f19] border border-slate-800 p-3 rounded-lg flex flex-wrap items-center gap-6 text-[10px] font-mono">
+          <span className="text-slate-200 font-black uppercase tracking-wider flex items-center gap-1.5">
+            <AlertTriangle size={12} className="text-amber-500" /> Matrix Risk Index Legend:
+          </span>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-slate-950 border border-slate-800 rounded"></div>
+            <span className="text-slate-300 font-black">Clear / Baseline Line ($0)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-blue-950/50 border border-blue-900/50 rounded"></div>
+            <span className="text-blue-300 font-black">Low Value Fragmented Diversion (&lt;$1k)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-amber-900/60 border border-amber-700/60 rounded"></div>
+            <span className="text-amber-200 font-black">Transshipment Bypass Activity ($1k–$2k)</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 bg-red-900/70 border border-red-800/60 rounded"></div>
+            <span className="text-red-200 font-black">Critical Value Displacement Volatility (&gt;$3k)</span>
+          </div>
+        </div>
+
+        {/* High-Contrast Grid Layout */}
         <div className="overflow-x-auto bg-[#0b0f19] p-5 rounded-xl border border-slate-900">
-          <table className="w-full text-left font-mono text-[11px] border-collapse min-w-[500px]">
+          <table className="w-full text-left font-mono text-[11px] border-collapse min-w-[750px]">
             <thead>
-              <tr>
-                <th className="p-2 border border-slate-800 text-slate-500 font-black uppercase text-[10px]">ORIGIN \ DEST</th>
+              <tr className="bg-[#090d16]">
+                <th className="p-3 border border-slate-800 text-slate-200 font-black uppercase text-[10px] tracking-wider">ORIGIN \ DEST</th>
                 {advancedMetrics.destinations.map(dst => (
-                  <th key={dst} className="p-2 border border-slate-800 text-white font-black uppercase tracking-tight text-center">
+                  <th key={dst} className="p-3 border border-slate-800 text-slate-200 font-black uppercase tracking-tight text-center max-w-[140px] leading-tight text-[10px]">
                     {dst}
                   </th>
                 ))}
@@ -324,34 +435,39 @@ export default function GlobalAnalyticsVisualHub() {
             </thead>
             <tbody>
               {advancedMetrics.origins.map(origin => (
-                <tr key={origin}>
-                  <td className="p-2 border border-slate-800 text-slate-200 font-black bg-slate-900/40 uppercase">
+                <tr key={origin} className="hover:bg-slate-900/30 transition-colors">
+                  <td className="p-3 border border-slate-800 text-slate-100 font-black bg-[#0d1322] uppercase tracking-wide text-[11px]">
                     {origin}
                   </td>
                   {advancedMetrics.destinations.map(dst => {
                     const cellData = advancedMetrics.crossTabMatrix[origin]?.[dst];
                     const cellValue = cellData ? cellData.totalValue : 0;
+                    const cellQty = cellData ? cellData.totalQty : 0;
                     const isSelected = selectedCell?.origin === origin && selectedCell?.dest === dst;
                     
-                    // Dynamic background calculation based on density concentration values
-                    let bgStyle = 'bg-slate-950 text-slate-600';
+                    let bgStyle = 'bg-slate-950 text-slate-500 font-medium';
                     if (cellValue > 0) {
                       const ratio = cellValue / (advancedMetrics.maxCrossTabValue || 1);
-                      if (ratio > 0.7) bgStyle = 'bg-red-900/70 text-white font-black hover:bg-red-800/80';
-                      else if (ratio > 0.3) bgStyle = 'bg-amber-900/60 text-amber-200 font-bold hover:bg-amber-800/70';
-                      else bgStyle = 'bg-blue-950/50 text-blue-300 hover:bg-blue-900/40';
+                      if (ratio > 0.7) bgStyle = 'bg-red-900/70 text-red-100 font-black hover:bg-red-800/80 border border-red-800';
+                      else if (ratio > 0.3) bgStyle = 'bg-amber-900/60 text-amber-100 font-bold hover:bg-amber-800/70 border border-amber-800/60';
+                      else bgStyle = 'bg-blue-950/50 text-blue-200 font-medium hover:bg-blue-900/40 border border-blue-900/40';
                     }
 
                     return (
                       <td 
                         key={dst} 
                         onClick={() => cellValue > 0 && setSelectedCell(isSelected ? null : { origin, dst })}
-                        className={`p-3 border border-slate-800 text-center cursor-pointer transition-all ${bgStyle} ${isSelected ? 'ring-2 ring-white border-transparent' : ''}`}
+                        className={`p-3 border border-slate-800 text-center transition-all ${bgStyle} ${cellValue > 0 ? 'cursor-pointer shadow-inner' : 'cursor-default'} ${isSelected ? 'ring-2 ring-white border-transparent z-10 scale-[1.01]' : ''}`}
                       >
-                        {cellValue > 0 ? `$${cellValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0'}
-                        {cellValue > 0 && (
-                          <span className="block text-[9px] opacity-75 mt-0.5">({cellData.records.length} Batches)</span>
-                        )}
+                        <div className="text-xs font-black">
+                          {activeMetricTab === 'VALUE'
+                            ? `$${cellValue > 0 ? cellValue.toLocaleString(undefined, { maximumFractionDigits: 0 }) : '0'}`
+                            : `${cellQty > 0 ? cellQty.toLocaleString() : '0'}`
+                          }
+                        </div>
+                        <div className={`text-[9px] mt-0.5 tracking-tight font-mono font-black ${cellValue > 0 ? 'text-slate-200 opacity-90' : 'text-slate-700'}`}>
+                          ({cellData ? cellData.records.length : 0} Batches)
+                        </div>
                       </td>
                     );
                   })}
@@ -361,31 +477,48 @@ export default function GlobalAnalyticsVisualHub() {
           </table>
         </div>
 
-        {/* Drill-down Unmasked Entity Drawer Panel */}
+        {/* Drill-down Unmasked Corporate Entity Footprint Ledger Panel */}
         {selectedCell && (
-          <div className="mt-4 p-4 bg-[#0f172a] border border-red-900/50 rounded-xl space-y-3 animate-fadeIn">
+          <div className="mt-4 p-4 bg-[#0a0f1d] border border-red-900/50 rounded-xl space-y-3 animate-fadeIn">
             <div className="flex justify-between items-center border-b border-slate-800 pb-2">
               <span className="text-xs text-red-400 font-black font-mono uppercase tracking-wider flex items-center gap-1.5">
-                <Activity size={13} /> Corridor Ledger Breakdown: {selectedCell.origin} ➔ {selectedCell.dest}
+                <Eye size={14} className="text-red-400" /> Unmasked Corridor Footprint Ledger: {selectedCell.origin} ➔ {selectedCell.dest}
               </span>
               <button 
                 onClick={() => setSelectedCell(null)} 
-                className="text-[10px] font-mono text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700 cursor-pointer"
+                className="text-[10px] font-mono text-slate-300 hover:text-white bg-slate-800 px-2.5 py-1 rounded border border-slate-700 cursor-pointer hover:bg-slate-700 transition-colors"
               >
                 Clear Sub-Ledger
               </button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[250px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible">
               {filteredCellRecords.map((row, i) => (
-                <div key={i} className="bg-[#111827] border border-slate-800 p-3 rounded-lg font-mono text-xs space-y-1.5">
-                  <div className="flex justify-between font-bold text-white">
-                    <span className="text-blue-400 text-[11px] uppercase">{row.Brand || 'UNBRANDED'}</span>
-                    <span className="text-emerald-400">${Number(row.Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                <div key={i} className="bg-[#111827] border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-3 print-break-avoid">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs bg-blue-950 border border-blue-900 text-blue-400 font-black px-2 py-0.5 rounded uppercase tracking-wide">
+                      {row.Brand || 'UNCLASSIFIED'}
+                    </span>
+                    <span className="text-xs text-emerald-400 font-black font-mono">
+                      ${Number(row.Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                    </span>
                   </div>
-                  <div className="text-[11px] space-y-0.5 text-slate-300 pt-1 border-t border-slate-800/60">
-                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Unmasked Consignee:</span> {row.Importer}</div>
-                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Unmasked Shippers:</span> {row.Exporter}</div>
-                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Manifest ID / Date:</span> {row.Date || 'Active Leg'} | {row.Quantity || 0} Units</div>
+                  
+                  {/* Correctly wired key parameters displaying explicit entity names */}
+                  <div className="grid grid-cols-1 gap-1.5 font-mono text-[11px] bg-slate-950/80 p-3 rounded-lg border border-slate-900">
+                    <div>
+                      <span className="text-slate-500 font-black uppercase text-[9px] block tracking-wider">Unmasked Target Consignee:</span> 
+                      <span className="text-blue-400 font-bold break-all">{row.Importer || 'UNKNOWN INTERMEDIARY BUYER'}</span>
+                    </div>
+                    <div className="border-t border-slate-900/60 my-1"></div>
+                    <div>
+                      <span className="text-slate-500 font-black uppercase text-[9px] block tracking-wider">Unmasked Shadow Exporter:</span> 
+                      <span className="text-slate-200 font-bold break-all">{row.Exporter || 'UNKNOWN BROKER ENTRY'}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="text-[10px] font-mono text-slate-400 flex justify-between items-center pt-1">
+                    <span>Manifest Date: <strong className="text-slate-200 font-bold">{row.Date || 'Active Leg'}</strong></span>
+                    <span>Volume: <strong className="text-amber-400 font-bold">{row.Quantity || 0} Units</strong></span>
                   </div>
                 </div>
               ))}
@@ -393,9 +526,21 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
         )}
 
-        <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
-          <strong className="text-white uppercase tracking-wider block text-[11px] mb-1">Cross-Tabulation Density Analysis:</strong>
-          This operational heat grid isolates concentrations of high-value supply leakage at a glance. By selecting an active cell, analysts can instantly unpack the unmasked corporate entity footprints driving parallel trades along specific geopolitical geographic paths.
+        {/* Forensic Briefing & Contextual Intelligence */}
+        <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300 space-y-3">
+          <div>
+            <strong className="text-white uppercase tracking-wider block text-[11px] mb-1">
+              Cross-Tabulation Forensic Briefing:
+            </strong>
+            <p className="leading-relaxed text-slate-300">
+              This operational grid isolates multi-directional trade anomalies by correlating supply origins against declaration targets. Rather than tracking isolated transactions, it highlights structural lane diversions where commercial assets break away from traditional authorized trade routes.
+            </p>
+          </div>
+          <div className="border-t border-slate-800/80 pt-2 text-[11px] text-slate-400 leading-relaxed space-y-1">
+            <strong className="text-amber-400 uppercase tracking-wider block text-[10px] mb-0.5">Strategic Lane Interpretation:</strong>
+            <div>• <strong className="text-red-400 uppercase">High Density Outliers (Red Nodes):</strong> High-risk anomalies indicating deep value diversion, unexpected volume accumulation, or circular channel loading back into traditional production hubs.</div>
+            <div>• <strong className="text-amber-400 uppercase">Transshipment Bypass Clusters (Amber Nodes):</strong> Classical bypass behavior where cargo swaps custom identifiers or documentation records inside intermediate Free Trade Zones (FTZs) to disguise primary manufacturing origin points before seeking final distribution clearances.</div>
+          </div>
         </div>
       </div>
 
