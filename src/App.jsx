@@ -8,7 +8,7 @@ import PriceForensics from './components/dashboard/PriceForensics';
 import CountryRiskIntelligence from './components/dashboard/CountryRiskIntelligence';
 import BrandIntelligence from './components/dashboard/BrandIntelligence';
 import GlobalAnalyticsMatrix from './components/dashboard/GlobalAnalyticsMatrix';
-import LitigationIntelligence from './components/dashboard/LitigationIntelligence';
+import ComprehensiveReportHub from './components/analytics/ComprehensiveReportHub';
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('ledger');
@@ -22,7 +22,7 @@ export default function App() {
     { id: 'country-intel', label: 'Country Risk' },
     { id: 'brand-intel', label: 'Brand Security' },
     { id: 'global-visuals', label: '📊 Analytics Visual Hub' },
-    { id: 'litigation-report', label: '⚖️ Comprehensive Litigation Dossier' }
+{ id: 'comprehensive-analysis-report', label: '📋 Comprehensive Analysis & Report' }
   ];
 
   return (
@@ -78,7 +78,8 @@ export default function App() {
           {activeTab === 'country-intel' && <CountryRiskIntelligence />}
           {activeTab === 'brand-intel' && <BrandIntelligence />}
           {activeTab === 'global-visuals' && <GlobalAnalyticsMatrix />}
-          {activeTab === 'litigation-report' && <LitigationIntelligence />}
+       {activeTab === 'comprehensive-analysis-report' && (
+  <ComprehensiveReportHub />
         </main>
       </div>
     </TradeDataProvider>
