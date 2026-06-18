@@ -3,7 +3,6 @@ import { TradeDataProvider } from './context/TradeDataContext';
 import ShipmentLedger from './components/dashboard/ShipmentLedger';
 import HSIntelligence from './components/dashboard/HSIntelligence';
 import EntityIntelligence from './components/dashboard/EntityIntelligence';
-// Temporarily use a direct asset chunk name to force Rollup to bypass its cache
 import TimelineIntelligence from './components/dashboard/TimelineIntelligence';
 
 export default function App() {
@@ -13,7 +12,7 @@ export default function App() {
     { id: 'ledger', label: 'Shipment Ledger Matrix' },
     { id: 'hs-intel', label: 'HS Intelligence Portal' },
     { id: 'entity-intel', label: 'Entity Network Analysis' },
-    { id: 'timeline-intel', label: 'Timeline Intelligence' } // <-- ADD THIS
+    { id: 'timeline-intel', label: 'Timeline Intelligence' }
   ];
 
   return (
@@ -68,6 +67,8 @@ export default function App() {
           {activeTab === 'ledger' && <ShipmentLedger />}
           {activeTab === 'hs-intel' && <HSIntelligence />}
           {activeTab === 'entity-intel' && <EntityIntelligence />}
+          {/* FIXED: Added missing rendering logic down here */}
+          {activeTab === 'timeline-intel' && <TimelineIntelligence />}
         </main>
         
       </div>
