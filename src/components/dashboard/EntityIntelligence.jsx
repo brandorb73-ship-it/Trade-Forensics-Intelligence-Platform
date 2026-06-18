@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Network, Users, AlertCircle, Building2, CheckCircle, FileText } from 'lucide-react';
+import { Network, Users, AlertCircle, Building2, CheckCircle, FileText, Info, Award } from 'lucide-react';
 
 export default function EntityIntelligence() {
   const contextData = useTradeData();
@@ -12,6 +12,7 @@ export default function EntityIntelligence() {
   const networkAnalysis = useMemo(() => {
     const exportersMap = {};
     const importersMap = {};
+    const globalBrandsSeen = new Set();
     let totalHighRiskVolume = 0;
     const networksList = [];
 
@@ -19,11 +20,16 @@ export default function EntityIntelligence() {
       const exporterName = (row.Exporter || 'UNKNOWN EXPORTER').toUpperCase();
       const importerName = (row.Importer || 'UNKNOWN IMPORTER').toUpperCase();
       const productDesc = (row.Product || '').toUpperCase();
+      const brandName = (row.Brand || 'UNBRANDED').toUpperCase();
       const hsString = String(row.HSCode || '');
       const amount = parseFloat(row.Amount) || 0;
       const qty = parseFloat(row.Quantity) || 0;
       const qtyUnit = row.QuantityUnit || 'PCS';
       const weight = parseFloat(row.Weight) || 0;
+
+      if (row.Brand) {
+        globalBrandsSeen.add(brandName);
+      }
 
       // Match exact high-risk nomenclature criteria passed from the core context engine
       const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
@@ -34,20 +40,22 @@ export default function EntityIntelligence() {
 
       // Track Exporter Profile Matrices
       if (!exportersMap[exporterName]) {
-        exportersMap[exporterName] = { name: exporterName, totalValue: 0, tradeCount: 0, riskCount: 0, partners: new Set() };
+        exportersMap[exporterName] = { name: exporterName, totalValue: 0, tradeCount: 0, riskCount: 0, partners: new Set(), brands: new Set() };
       }
       exportersMap[exporterName].totalValue += amount;
       exportersMap[exporterName].tradeCount += 1;
       exportersMap[exporterName].partners.add(importerName);
+      exportersMap[exporterName].brands.add(brandName);
       if (isMismatched) exportersMap[exporterName].riskCount += 1;
 
       // Track Importer Profile Matrices
       if (!importersMap[importerName]) {
-        importersMap[importerName] = { name: importerName, totalValue: 0, tradeCount: 0, riskCount: 0, partners: new Set() };
+        importersMap[importerName] = { name: importerName, totalValue: 0, tradeCount: 0, riskCount: 0, partners: new Set(), brands: new Set() };
       }
       importersMap[importerName].totalValue += amount;
       importersMap[importerName].tradeCount += 1;
       importersMap[importerName].partners.add(exporterName);
+      importersMap[importerName].brands.add(brandName);
       if (isMismatched) importersMap[importerName].riskCount += 1;
 
       // Flatten out for node linkage calculations
@@ -56,6 +64,7 @@ export default function EntityIntelligence() {
         exporter: exporterName,
         importer: importerName,
         product: row.Product,
+        brand: row.Brand || 'UNBRANDED',
         amount,
         quantity: qty,
         quantityUnit: qtyUnit,
@@ -66,18 +75,19 @@ export default function EntityIntelligence() {
     });
 
     const topExporters = Object.values(exportersMap)
-      .map(e => ({ ...e, uniquePartners: e.partners.size }))
+      .map(e => ({ ...e, uniquePartners: e.partners.size, uniqueBrands: e.brands.size }))
       .sort((a, b) => b.totalValue - a.totalValue);
 
     const topImporters = Object.values(importersMap)
-      .map(i => ({ ...i, uniquePartners: i.partners.size }))
+      .map(i => ({ ...i, uniquePartners: i.partners.size, uniqueBrands: i.brands.size }))
       .sort((a, b) => b.totalValue - a.totalValue);
 
     return {
       exporters: topExporters,
       importers: topImporters,
       links: networksList,
-      totalHighRiskVolume
+      totalHighRiskVolume,
+      totalBrandsCount: globalBrandsSeen.size
     };
   }, [tradeData]);
 
@@ -114,8 +124,29 @@ export default function EntityIntelligence() {
         )}
       </div>
 
+      {/* Network & Counterparty Forensic Red Flag Analysis Briefing */}
+      <div className="bg-slate-900 border-l-4 border-emerald-500 p-5 rounded-xl shadow-md space-y-3">
+        <h2 className="text-sm font-black tracking-wider text-emerald-400 font-mono uppercase flex items-center gap-2">
+          <Info size={16} /> Counterparty Dossier: Entity Network & Brand Red Flags
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1">REPEATED NODE RELATIONSHIPS</span>
+            High-frequency trading clusters operating between matching pairs of shell addresses suggest closed loops or artificial distribution entities structured exclusively to manage parallel imports.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1">BRAND SEGREGATION ANOMALIES</span>
+            Flagged logistics routes show premium consumer product brands and biopharmaceuticals moving together inside single misdeclared containers, indicating a shared, highly opaque illicit supply pipeline.
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <span className="text-rose-400 font-bold block border-b border-slate-800 pb-1 mb-1">SHELL INTERDICTION PROFILE</span>
+            Exporters and importers with high volumes but minimal unique partners signal lack of broad market presence—classic markers of single-use trading desks deployed to shield ultimate beneficial owners.
+          </div>
+        </div>
+      </div>
+
       {/* Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
         <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase">Total Documented Exporters</span>
@@ -133,6 +164,16 @@ export default function EntityIntelligence() {
           </div>
           <div className="p-3 rounded-lg bg-slate-900 border border-slate-700 text-slate-300">
             <Users size={22} />
+          </div>
+        </div>
+
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between">
+          <div className="space-y-1">
+            <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase">Monitored Brand Vectors</span>
+            <span className="text-2xl font-black text-emerald-400 font-mono">{networkAnalysis.totalBrandsCount}</span>
+          </div>
+          <div className="p-3 rounded-lg bg-slate-900 border border-slate-700 text-emerald-400">
+            <Award size={22} />
           </div>
         </div>
 
@@ -194,6 +235,7 @@ export default function EntityIntelligence() {
                 <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
                   <th className="px-4 py-3">Shipper / Exporter</th>
                   <th className="px-4 py-3">Consignee / Importer</th>
+                  <th className="px-4 py-3">Brand Vector</th>
                   <th className="px-4 py-3 text-right">Quantity</th>
                   <th className="px-4 py-3 text-right">Net Weight</th>
                   <th className="px-4 py-3 text-right">Value (USD)</th>
@@ -204,8 +246,9 @@ export default function EntityIntelligence() {
                 {filteredLinks.length > 0 ? (
                   filteredLinks.map((link, i) => (
                     <tr key={link.id || i} className={`hover:bg-slate-700/30 transition-colors ${link.isRisk ? 'bg-rose-950/10' : ''}`}>
-                      <td className="px-4 py-3 text-slate-200 max-w-[180px] truncate font-bold">{link.exporter}</td>
-                      <td className="px-4 py-3 text-slate-300 max-w-[180px] truncate">{link.importer}</td>
+                      <td className="px-4 py-3 text-slate-200 max-w-[150px] truncate font-bold">{link.exporter}</td>
+                      <td className="px-4 py-3 text-slate-300 max-w-[150px] truncate">{link.importer}</td>
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[110px] truncate">{link.brand}</td>
                       <td className="px-4 py-3 text-right font-medium text-slate-300">
                         {link.quantity ? link.quantity.toLocaleString() : '0'} <span className="text-[10px] text-slate-500">{link.quantityUnit}</span>
                       </td>
@@ -226,7 +269,7 @@ export default function EntityIntelligence() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="text-center py-16 text-slate-500">No trading entity links found.</td>
+                    <td colSpan={7} className="text-center py-16 text-slate-500">No trading entity links found.</td>
                   </tr>
                 )}
               </tbody>
