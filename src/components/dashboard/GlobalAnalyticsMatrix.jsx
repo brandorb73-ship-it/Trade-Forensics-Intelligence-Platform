@@ -269,34 +269,33 @@ export default function GlobalAnalyticsVisualHub() {
         </div>
 
         {/* Chronological Shipment Timeline */}
-        <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 flex flex-col justify-between print-break-avoid">
-          <div>
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
-              <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
-                <Clock size={16} className="text-amber-400" /> 4B. Chronological Shipment Timeline
-              </h3>
-            </div>
-
-            <div className="bg-[#0b0f19] p-4 rounded-xl border border-slate-900 space-y-3 max-h-[165px] overflow-y-auto">
-              {advancedMetrics.timelineEvents.slice(0, 4).map((evt, idx) => (
-                <div key={idx} className="border-l-2 border-amber-500 pl-3 py-0.5 font-mono text-[11px] space-y-0.5">
-                  <div className="flex justify-between font-bold text-white">
-                    <span>{evt.date} — {evt.brand}</span>
-                    <span className="text-amber-400">${evt.value.toLocaleString()}</span>
-                  </div>
-                  <div className="text-[10px] text-slate-400">
-                    Sourced from <span className="text-slate-200 font-bold">{evt.origin}</span> via <span className="text-slate-200 font-bold">{evt.vector}</span> transit lines.
-                  </div>
-                </div>
-              ))}
-            </div>
+<div className="bg-[#111827] border border-slate-800 rounded-xl p-6 flex flex-col justify-between print-break-avoid">
+  <div>
+    <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
+      <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
+        <Clock size={16} className="text-amber-400" /> 4B. Chronological Shipment Timeline
+      </h3>
+    </div>
+<div className="bg-[#0b0f19] p-4 rounded-xl border border-slate-900 space-y-3 max-h-[165px] overflow-y-auto print:max-h-none print:overflow-visible">
+      {advancedMetrics.timelineEvents.map((evt, idx) => (
+        <div key={idx} className="border-l-2 border-amber-500 pl-3 py-0.5 font-mono text-[11px] space-y-0.5 print-break-avoid">
+          <div className="flex justify-between font-bold text-white">
+            <span>{evt.date} — {evt.brand}</span>
+            <span className="text-amber-400">${evt.value.toLocaleString()}</span>
           </div>
-
-          <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
-            <strong className="text-white uppercase tracking-wider block text-[10px] mb-0.5">Temporal Trend Assessment:</strong>
-            The timeline exposes highly coordinated shipping clusters over compressed periods, indicating strategic stocking behaviors aligned with arbitrage opportunities.
+          <div className="text-[10px] text-slate-400">
+            Sourced from <span className="text-slate-200 font-bold">{evt.origin}</span> via <span className="text-slate-200 font-bold">{evt.vector}</span> transit lines.
           </div>
         </div>
+      ))}
+    </div>
+  </div>
+
+  <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300 non-printable">
+    <strong className="text-white uppercase tracking-wider block text-[10px] mb-0.5">Temporal Trend Assessment:</strong>
+    The timeline exposes highly coordinated shipping clusters over compressed periods, indicating strategic stocking behaviors aligned with arbitrage opportunities.
+  </div>
+</div>
 
       </div>
 
