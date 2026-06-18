@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { DollarSign, AlertTriangle, TrendingDown, FileText, Info, BarChart2, ShieldAlert, ArrowDownRight } from 'lucide-react';
+import { DollarSign, AlertTriangle, TrendingDown, FileText, Info, BarChart2, ShieldAlert, ArrowDownRight, ArrowRight } from 'lucide-react';
 
 export default function PriceForensics() {
   const contextData = useTradeData();
