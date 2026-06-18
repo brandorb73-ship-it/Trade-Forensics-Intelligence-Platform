@@ -1,9 +1,15 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Shield, Award, Layers, FileText, Globe, Info, Activity } from 'lucide-react';
+import { Shield, Award, Layers, FileText, Globe, Info, Activity, ChevronDown, ChevronUp, UserX } from 'lucide-react';
 
 export default function BrandIntelligence() {
   const { tradeData = [] } = useTradeData() || {};
+  // Track which brand rows are expanded to view corporate entities
+  const [expandedBrands, setExpandedBrands] = useState({});
+
+  const toggleBrandExpand = (brand) => {
+    setExpandedBrands(prev => ({ ...prev, [brand]: !prev[brand] }));
+  };
 
   const brandAnalytics = useMemo(() => {
     const stats = {};
@@ -15,10 +21,10 @@ export default function BrandIntelligence() {
         stats[b] = { 
           volume: 0, 
           value: 0, 
-          unauthorizedImporters: new Set(), 
           totalIncidents: 0,
           origins: new Set(),
-          destinations: new Set()
+          destinations: new Set(),
+          intermediariesMap: {} // Map entity names to their specific transaction data
         };
       }
       
@@ -26,20 +32,25 @@ export default function BrandIntelligence() {
       stats[b].value += Number(row.Amount) || 0;
       stats[b].totalIncidents += 1;
       
-      // Dynamic determination criteria for unauthorized distribution tracking
-      const imp = (row.Importer || '').toUpperCase();
-      const exp = (row.Exporter || '').toUpperCase();
-      
-      if (imp.includes('TRADING') || imp.includes('LOGISTICS') || imp.includes('LIMITED') || imp.includes('ANY')) {
-        stats[b].unauthorizedImporters.add(row.Importer);
+      const imp = row.Importer || 'UNKNOWN IMPORTER NODE';
+      const impUpper = imp.toUpperCase();
+      const exp = row.Exporter || 'UNKNOWN EXPORTER NODE';
+      const origin = row.OriginCountry || 'UNKNOWN ORIGIN';
+      const amount = Number(row.Amount) || 0;
+
+      // Forensic logic to isolate unauthorized intermediaries or logistical shell entities
+      if (impUpper.includes('TRADING') || impUpper.includes('LOGISTICS') || impUpper.includes('LIMITED') || impUpper.includes('ANY') || impUpper.includes('*')) {
+        if (!stats[b].intermediariesMap[imp]) {
+          stats[b].intermediariesMap[imp] = { name: imp, suspectedExporters: new Set(), totalValue: 0, routeTouched: origin };
+        }
+        stats[b].intermediariesMap[imp].suspectedExporters.add(exp);
+        stats[b].intermediariesMap[imp].totalValue += amount;
       }
       
       if (row.OriginCountry) {
-        const cleanOrigin = row.OriginCountry.split('→')[0].trim();
+        const cleanOrigin = row.OriginCountry.split('→')[0].trim().toUpperCase();
         stats[b].origins.add(cleanOrigin);
       }
-      
-      // Map destination country context based on target importer markers
       stats[b].destinations.add("UNITED STATES (U.S. CUSTOMS ENTRY)");
     });
 
@@ -73,30 +84,8 @@ export default function BrandIntelligence() {
           <strong>Methodology of Determination:</strong> Channels are classified as <em>Unauthorized / High Risk</em> when proprietary molecules are held by unverified non-manufacturer entities (e.g., intermediate trading houses, freight forwarders) instead of authorized chemical/pharmaceutical license holders. 
         </p>
         <p className="text-xs text-slate-300 font-mono leading-relaxed">
-          <strong>Industry Risk Profile (GLP-1 Portfolio):</strong> Inflows of brand designations such as <strong>Rybelsus, Ozempic, and Wegovy</strong> routed from production points via regional trade networks represent significant parallel importation vectors. This diversion undermines domestic pricing corridors and marks points of potential patent infringement under 19 U.S.C. § 1337.
+          <strong>Interactive Drill-Down:</strong> Click on any brand's <em>Diversion Risk Channels</em> badge in the table below to reveal the unmasked corporate entity names, transaction balances, and suspected origin vectors pulled directly from shipping manifests.
         </p>
-      </div>
-
-      {/* Top Value Cards (Fixed font size and contrast text) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {brandList.slice(0, 3).map(brand => (
-          <div key={brand} className="bg-[#111827] border border-slate-800 p-5 rounded-xl print-break-avoid">
-            <span className="text-xs font-mono font-black text-blue-400 uppercase tracking-widest block">{brand}</span>
-            <div className="text-2xl font-mono font-black text-white mt-1">
-              ${brandAnalytics[brand].value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <div className="mt-3 pt-3 border-t border-slate-800 font-mono text-xs flex flex-col gap-1">
-              <div className="flex justify-between text-white font-bold">
-                <span>Leakage Footprint:</span>
-                <span className="text-amber-400 font-black">{brandAnalytics[brand].unauthorizedImporters.size} Intermediaries</span>
-              </div>
-              <div className="flex justify-between text-slate-300">
-                <span>Total Volume Accounted:</span>
-                <span className="text-white font-bold">{brandAnalytics[brand].volume.toLocaleString()} units</span>
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
 
       {/* Core Matrix Grid View */}
@@ -117,29 +106,76 @@ export default function BrandIntelligence() {
           </thead>
           <tbody>
             {brandList.map(brand => {
-              const channelsCount = brandAnalytics[brand].unauthorizedImporters.size;
+              const intermediaries = Object.values(brandAnalytics[brand].intermediariesMap);
+              const channelsCount = intermediaries.length;
+              const isExpanded = !!expandedBrands[brand];
+
               return (
-                <tr key={brand} className="border-b border-slate-900/80 hover:bg-slate-900/30 transition-all">
-                  <td className="p-3 font-black text-white text-sm tracking-tight">{brand}</td>
-                  <td className="p-3 text-emerald-400 font-bold text-sm">${brandAnalytics[brand].value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                  <td className="p-3 text-white font-bold">{brandAnalytics[brand].volume.toLocaleString()}</td>
-                  <td className="p-3 text-slate-200 leading-tight">
-                    <div className="font-bold text-white uppercase text-[11px]">
-                      {Array.from(brandAnalytics[brand].origins).join(', ') || 'UNVERIFIED CORRIDOR'}
-                    </div>
-                    <div className="text-slate-400 text-[10px] mt-0.5">
-                      → {Array.from(brandAnalytics[brand].destinations)[0]}
-                    </div>
-                  </td>
-                  <td className="p-3">
-                    <span className={`px-2.5 py-1 border rounded font-black text-[11px] ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400' : 'bg-red-950/40 border-red-800 text-red-400'}`}>
-                      {channelsCount > 0 ? `${channelsCount} Unauthorized Intermediaries` : 'High-Risk Network Intermediaries'}
-                    </span>
-                  </td>
-                  <td className="p-3 text-right font-black text-blue-400 uppercase text-[11px] tracking-tight">
-                    Parallel Import Relevant
-                  </td>
-                </tr>
+                <React.Fragment key={brand}>
+                  {/* Master Row */}
+                  <tr className="border-b border-slate-900/80 hover:bg-slate-900/30 transition-all">
+                    <td className="p-3 font-black text-white text-sm tracking-tight">{brand}</td>
+                    <td className="p-3 text-emerald-400 font-bold text-sm">${brandAnalytics[brand].value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-white font-bold">{brandAnalytics[brand].volume.toLocaleString()}</td>
+                    <td className="p-3 text-slate-200 leading-tight">
+                      <div className="font-bold text-white uppercase text-[11px]">
+                        {Array.from(brandAnalytics[brand].origins).join(', ') || 'UNVERIFIED CORRIDOR'}
+                      </div>
+                      <div className="text-slate-400 text-[10px] mt-0.5">
+                        → {Array.from(brandAnalytics[brand].destinations)[0]}
+                      </div>
+                    </td>
+                    <td className="p-3">
+                      <button 
+                        onClick={() => toggleBrandExpand(brand)}
+                        className={`px-2.5 py-1 border rounded font-black text-[11px] flex items-center gap-1.5 cursor-pointer transition-all ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400 hover:bg-amber-900/40' : 'bg-red-950/40 border-red-800 text-red-400'}`}
+                      >
+                        {channelsCount > 0 ? `${channelsCount} Unauthorized Intermediaries` : 'High-Risk Intermediaries'}
+                        {isExpanded ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                      </button>
+                    </td>
+                    <td className="p-3 text-right font-black text-blue-400 uppercase text-[11px] tracking-tight">
+                      Parallel Import Relevant
+                    </td>
+                  </tr>
+
+                  {/* Sub-Layer: Entity Intelligence Panel (Revealed upon toggle or during print) */}
+                  {(isExpanded || window.matchMedia('print').matches) && (
+                    <tr>
+                      <td colSpan="6" className="bg-[#0f172a] p-4 border-b border-slate-800">
+                        <div className="space-y-3">
+                          <div className="text-[11px] font-mono font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                            <UserX size={14} className="text-amber-400" /> Unmasked High-Risk Intermediary Network for {brand}
+                          </div>
+                          
+                          {channelsCount > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              {intermediaries.map((inter, i) => (
+                                <div key={i} className="bg-[#111827] border border-slate-800/80 rounded-lg p-3 space-y-2">
+                                  <div className="flex justify-between items-start">
+                                    <div className="text-xs font-black text-white font-mono tracking-tight">{inter.name}</div>
+                                    <div className="text-xs font-mono font-bold text-emerald-400">${inter.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
+                                  </div>
+                                  <div className="text-[11px] font-mono text-slate-300 space-y-1 pt-1 border-t border-slate-800/60">
+                                    <div><span className="text-slate-500 font-bold uppercase text-[10px]">Route Intercepted:</span> {inter.routeTouched}</div>
+                                    <div>
+                                      <span className="text-slate-500 font-bold uppercase text-[10px]">Associated Exporter Linked:</span>{' '}
+                                      <span className="text-slate-200 break-all">{Array.from(inter.suspectedExporters).join(', ') || 'Direct / Concealed Node'}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-xs font-mono text-slate-500 italic py-2">
+                              No secondary broker keywords detected inside the direct importer description strings for this dataset.
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               );
             })}
           </tbody>
@@ -147,11 +183,11 @@ export default function BrandIntelligence() {
       </div>
 
       {/* Dynamic Evidentiary Footnote Block */}
-      <div className="pt-2 flex flex-col gap-2 font-mono text-[11px] bg-[#0f172a] p-4 rounded-xl border border-slate-800">
+      <div className="pt-2 flex flex-col gap-2 font-mono text-[11px] bg-[#0f172a] p-4 rounded-xl border border-slate-800 print-break-avoid">
         <div className="text-white font-bold uppercase tracking-wider flex items-center gap-1.5">
           <Info size={14} className="text-blue-500" /> Possible Enforcement Relevance:
         </div>
-        <div className="text-slate-300 space-y-1 pl-5 list-disc">
+        <div className="text-slate-300 space-y-1 pl-5">
           <div>• Potentially relevant to unauthorized parallel importation claims.</div>
           <div>• Supports corporate market diversion identification and commercial scale modeling metrics.</div>
           <div>• Validates high-risk distribution footprints across primary entry hubs.</div>
