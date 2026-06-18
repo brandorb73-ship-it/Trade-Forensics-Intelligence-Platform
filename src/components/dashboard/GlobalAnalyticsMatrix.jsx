@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { BarChart3, Map, Network, TrendingDown, Clock, Plane, Ship, AlertCircle, FileText, Activity } from 'lucide-react';
+import { BarChart3, Map, Network, TrendingDown, Clock, Plane, Ship, AlertCircle, FileText, Grid, Activity } from 'lucide-react';
 
 export default function GlobalAnalyticsVisualHub() {
   const { tradeData = [] } = useTradeData() || {};
-  const [hoverNode, setHoverNode] = useState(null);
+  const [selectedCell, setSelectedCell] = useState(null);
 
   // Deep Forensic Data Processing Engine
   const advancedMetrics = useMemo(() => {
@@ -14,6 +14,10 @@ export default function GlobalAnalyticsVisualHub() {
     const entityLinks = [];
     const timelineEvents = [];
     const logisticalVectors = { AIR: 0, OCEAN: 0, MULTIMODAL: 0 };
+    
+    // Cross-tabulation frequency matrix mapping [Origin][Destination] -> accumulated value
+    const crossTabMatrix = {};
+    let maxCrossTabValue = 0;
     let totalValue = 0;
 
     tradeData.forEach((row, idx) => {
@@ -54,10 +58,41 @@ export default function GlobalAnalyticsVisualHub() {
 
       // 4. Chronological Timeline Sequencing
       timelineEvents.push({ date, brand: bName, value: val, qty, vector, origin });
+
+      // 5. Cross-Tabulation Matrix Construction
+      if (!crossTabMatrix[origin]) {
+        crossTabMatrix[origin] = {};
+      }
+      if (!crossTabMatrix[origin][dest]) {
+        crossTabMatrix[origin][dest] = { totalValue: 0, records: [] };
+      }
+      crossTabMatrix[origin][dest].totalValue += val;
+      crossTabMatrix[origin][dest].records.push(row);
+
+      if (crossTabMatrix[origin][dest].totalValue > maxCrossTabValue) {
+        maxCrossTabValue = crossTabMatrix[origin][dest].totalValue;
+      }
     });
 
-    return { brands, origins: Array.from(origins), destinations: Array.from(destinations), entityLinks, logisticalVectors, timelineEvents, totalValue };
+    return { 
+      brands, 
+      origins: Array.from(origins), 
+      destinations: Array.from(destinations), 
+      entityLinks, 
+      logisticalVectors, 
+      timelineEvents, 
+      totalValue,
+      crossTabMatrix,
+      maxCrossTabValue
+    };
   }, [tradeData]);
+
+  // Isolate records dynamically when an auditor clicks on a cross-tab cell
+  const filteredCellRecords = useMemo(() => {
+    if (!selectedCell) return [];
+    const { origin, dest } = selectedCell;
+    return advancedMetrics.crossTabMatrix[origin]?.[dest]?.records || [];
+  }, [selectedCell, advancedMetrics]);
 
   return (
     <div className="space-y-8 text-slate-100 id-print-section">
@@ -75,7 +110,7 @@ export default function GlobalAnalyticsVisualHub() {
         </button>
       </div>
 
-      {/* 1. RESTORED & FIXED: Brand Value Compression & Variance Analytics */}
+      {/* 1. Brand Value Compression & Variance Analytics */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print-break-avoid">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
           <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
@@ -265,20 +300,103 @@ export default function GlobalAnalyticsVisualHub() {
 
       </div>
 
-      {/* Suggested Visual Idea 5: Cross-Tabulation Corridor Risk Matrix */}
+      {/* 5. NEW VISUAL: Geographic Cross-Tabulation Risk Grid (Heat Density Layout) */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print-break-avoid">
         <div className="flex items-center justify-between border-b border-slate-800 pb-3 mb-4">
           <h3 className="text-sm font-mono font-black text-white flex items-center gap-2 uppercase tracking-wider">
-            <Activity size={16} className="text-teal-400" /> 5. Suggested Expansion Visual: Geographic Cross-Tabulation Risk Grid
+            <Grid size={16} className="text-red-400" /> 5. Geographic Cross-Tabulation Risk Grid
           </h3>
+          <span className="text-[10px] bg-red-950/60 border border-red-800 text-red-400 font-mono font-bold px-2 py-0.5 rounded">
+            Density Heat Mapping Engine
+          </span>
         </div>
-        <div className="bg-[#0b0f19] p-4 rounded-xl border border-slate-900 text-xs font-mono text-slate-400 leading-relaxed">
-          <p className="text-slate-200 mb-2">
-            <strong>Next Deployment Stage Recommendation:</strong> To completely replace static risk maps, we suggest a two-dimensional matrix pairing <strong>Origins (Y-Axis)</strong> against <strong>Destinations (X-Axis)</strong>. Cells will dynamically dynamically shade to red based on financial exposure concentration.
-          </p>
-          <div className="p-3 bg-[#111827] border border-slate-800 rounded text-[11px] text-slate-400 italic">
-            Visual concept note: Clicking an active cross-tab cell will instantly filter the ledger down to show only the specific unmasked entities operating along that unique trade lane.
+
+        <div className="overflow-x-auto bg-[#0b0f19] p-5 rounded-xl border border-slate-900">
+          <table className="w-full text-left font-mono text-[11px] border-collapse min-w-[500px]">
+            <thead>
+              <tr>
+                <th className="p-2 border border-slate-800 text-slate-500 font-black uppercase text-[10px]">ORIGIN \ DEST</th>
+                {advancedMetrics.destinations.map(dst => (
+                  <th key={dst} className="p-2 border border-slate-800 text-white font-black uppercase tracking-tight text-center">
+                    {dst}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {advancedMetrics.origins.map(origin => (
+                <tr key={origin}>
+                  <td className="p-2 border border-slate-800 text-slate-200 font-black bg-slate-900/40 uppercase">
+                    {origin}
+                  </td>
+                  {advancedMetrics.destinations.map(dst => {
+                    const cellData = advancedMetrics.crossTabMatrix[origin]?.[dst];
+                    const cellValue = cellData ? cellData.totalValue : 0;
+                    const isSelected = selectedCell?.origin === origin && selectedCell?.dest === dst;
+                    
+                    // Dynamic background calculation based on density concentration values
+                    let bgStyle = 'bg-slate-950 text-slate-600';
+                    if (cellValue > 0) {
+                      const ratio = cellValue / (advancedMetrics.maxCrossTabValue || 1);
+                      if (ratio > 0.7) bgStyle = 'bg-red-900/70 text-white font-black hover:bg-red-800/80';
+                      else if (ratio > 0.3) bgStyle = 'bg-amber-900/60 text-amber-200 font-bold hover:bg-amber-800/70';
+                      else bgStyle = 'bg-blue-950/50 text-blue-300 hover:bg-blue-900/40';
+                    }
+
+                    return (
+                      <td 
+                        key={dst} 
+                        onClick={() => cellValue > 0 && setSelectedCell(isSelected ? null : { origin, dst })}
+                        className={`p-3 border border-slate-800 text-center cursor-pointer transition-all ${bgStyle} ${isSelected ? 'ring-2 ring-white border-transparent' : ''}`}
+                      >
+                        {cellValue > 0 ? `$${cellValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}` : '$0'}
+                        {cellValue > 0 && (
+                          <span className="block text-[9px] opacity-75 mt-0.5">({cellData.records.length} Batches)</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Drill-down Unmasked Entity Drawer Panel */}
+        {selectedCell && (
+          <div className="mt-4 p-4 bg-[#0f172a] border border-red-900/50 rounded-xl space-y-3 animate-fadeIn">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-2">
+              <span className="text-xs text-red-400 font-black font-mono uppercase tracking-wider flex items-center gap-1.5">
+                <Activity size={13} /> Corridor Ledger Breakdown: {selectedCell.origin} ➔ {selectedCell.dest}
+              </span>
+              <button 
+                onClick={() => setSelectedCell(null)} 
+                className="text-[10px] font-mono text-slate-400 hover:text-white bg-slate-800 px-2 py-0.5 rounded border border-slate-700 cursor-pointer"
+              >
+                Clear Sub-Ledger
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-1">
+              {filteredCellRecords.map((row, i) => (
+                <div key={i} className="bg-[#111827] border border-slate-800 p-3 rounded-lg font-mono text-xs space-y-1.5">
+                  <div className="flex justify-between font-bold text-white">
+                    <span className="text-blue-400 text-[11px] uppercase">{row.Brand || 'UNBRANDED'}</span>
+                    <span className="text-emerald-400">${Number(row.Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="text-[11px] space-y-0.5 text-slate-300 pt-1 border-t border-slate-800/60">
+                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Unmasked Consignee:</span> {row.Importer}</div>
+                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Unmasked Shippers:</span> {row.Exporter}</div>
+                    <div><span className="text-slate-500 font-bold uppercase text-[9px]">Manifest ID / Date:</span> {row.Date || 'Active Leg'} | {row.Quantity || 0} Units</div>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
+        )}
+
+        <div className="mt-4 p-4 bg-[#0f172a] rounded-lg border border-slate-800 font-mono text-xs text-slate-300">
+          <strong className="text-white uppercase tracking-wider block text-[11px] mb-1">Cross-Tabulation Density Analysis:</strong>
+          This operational heat grid isolates concentrations of high-value supply leakage at a glance. By selecting an active cell, analysts can instantly unpack the unmasked corporate entity footprints driving parallel trades along specific geopolitical geographic paths.
         </div>
       </div>
 
