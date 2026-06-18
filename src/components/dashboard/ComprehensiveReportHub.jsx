@@ -5,39 +5,41 @@ import { FileText, Sliders, Link2, Cpu, Eye } from 'lucide-react';
 export default function ComprehensiveReportHub() {
   const context = useTradeData();
 
-  // Defensive Guard: If context is missing entirely or still spinning up
-  if (!context || !context.advancedMetrics) {
+  // 1. Fallback Guard Check: If context itself isn't loaded yet
+  if (!context) {
     return (
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-400">
         <div className="flex items-center gap-2 animate-pulse">
           <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-          <span>Initializing Compliance Intelligence Matrix...</span>
+          <span>Connecting to Trade Data Provider Layer...</span>
         </div>
       </div>
     );
   }
 
+  // 2. Destructure with safe, empty defaults so the tab NEVER gets stuck loading
   const {
-    advancedMetrics,
-    selectedCell,
-    filteredCellRecords,
-    selectedReports,
+    advancedMetrics = {},
+    selectedCell = null,
+    filteredCellRecords = [],
+    selectedReports = ['anti_dumping'], // Default to one active so the AI block displays right away
     setSelectedReports,
-    customComplianceInput,
-    setCustomComplianceInput
+    customComplianceInput = '',
+    setCustomComplianceInput,
+    shipments = [] // Bringing in raw shipments array as a secondary fallback pipeline
   } = context;
 
-  // Defensive Mapping: Safe fallbacks if origins or destinations are missing from metrics
+  // 3. Safe, crash-proof mapping setups
   const origins = advancedMetrics?.origins || [];
   const destinations = advancedMetrics?.destinations || [];
   const crossTabMatrix = advancedMetrics?.crossTabMatrix || {};
 
-  // Compiles active shipment records safely without breaking if fields are empty
+  // 4. Smart Ledger Compilation: Uses selected cell, matrix records, or falls back to raw shipments
   const completePrintRecords = selectedCell 
     ? filteredCellRecords || []
-    : origins.flatMap(o => 
-        destinations.flatMap(d => crossTabMatrix[o]?.[d]?.records || [])
-      );
+    : origins.length > 0 
+      ? origins.flatMap(o => destinations.flatMap(d => crossTabMatrix[o]?.[d]?.records || []))
+      : shipments || []; // If advancedMetrics is missing/empty, unroll the main database records directly
 
   return (
     <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print:bg-white print:border-slate-300 print:p-0 print:m-0">
