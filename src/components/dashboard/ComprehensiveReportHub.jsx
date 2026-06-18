@@ -3,31 +3,65 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { FileText, Sliders, Link2, Cpu, Eye } from 'lucide-react';
 
 export default function ComprehensiveReportHub() {
+  const context = useTradeData();
+
+  // Defensive Guard: If context is missing entirely or still spinning up
+  if (!context || !context.advancedMetrics) {
+    return (
+      <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 font-mono text-xs text-slate-400">
+        <div className="flex items-center gap-2 animate-pulse">
+          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+          <span>Initializing Compliance Intelligence Matrix...</span>
+        </div>
+      </div>
+    );
+  }
+
   const {
     advancedMetrics,
     selectedCell,
     filteredCellRecords,
     selectedReports,
     setSelectedReports,
-    customLitigationInput,
-    setCustomLitigationInput
-  } = useTradeData();
+    customComplianceInput,
+    setCustomComplianceInput
+  } = context;
 
-  // Dynamically compile ledger data to unroll completely for paper prints
+  // Defensive Mapping: Safe fallbacks if origins or destinations are missing from metrics
+  const origins = advancedMetrics?.origins || [];
+  const destinations = advancedMetrics?.destinations || [];
+  const crossTabMatrix = advancedMetrics?.crossTabMatrix || {};
+
+  // Compiles active shipment records safely without breaking if fields are empty
   const completePrintRecords = selectedCell 
-    ? filteredCellRecords 
-    : advancedMetrics.origins.flatMap(o => 
-        advancedMetrics.destinations.flatMap(d => advancedMetrics.crossTabMatrix[o]?.[d]?.records || [])
+    ? filteredCellRecords || []
+    : origins.flatMap(o => 
+        destinations.flatMap(d => crossTabMatrix[o]?.[d]?.records || [])
       );
 
   return (
     <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print:bg-white print:border-slate-300 print:p-0 print:m-0">
       
+      {/* LOCAL PRINT LAYOUT ENGINE */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          .print-expand-ledger { max-height: none !important; overflow: visible !important; display: grid !important; grid-template-cols: 1fr 1fr !important; gap: 10px !important; width: 100% !important; }
-          .print-ledger-card { page-break-inside: avoid !important; break-inside: avoid !important; border: 1px solid #cbd5e1 !important; background-color: #f8fafc !important; }
-          .non-printable-element { display: none !important; }
+          .print-expand-ledger { 
+            max-height: none !important; 
+            overflow: visible !important; 
+            display: grid !important; 
+            grid-template-cols: 1fr 1fr !important; 
+            gap: 12px !important; 
+            width: 100% !important; 
+          }
+          .print-ledger-card { 
+            page-break-inside: avoid !important; 
+            break-inside: avoid !important; 
+            border: 1px solid #cbd5e1 !important; 
+            background-color: #f8fafc !important; 
+          }
+          .non-printable-element { 
+            display: none !important; 
+          }
         }
       `}} />
 
@@ -41,7 +75,7 @@ export default function ComprehensiveReportHub() {
         </div>
       </div>
 
-      {/* Investigation Checkboxes */}
+      {/* Investigation Vector Profile Selectors */}
       <div className="mb-6 p-5 bg-[#0b0f19] border border-slate-800 rounded-xl space-y-4 print:bg-white print:border-slate-200 non-printable-element">
         <div className="flex items-center gap-2 text-xs font-mono font-black text-slate-200 uppercase print:text-slate-900">
           <Sliders size={14} className="text-blue-400" />
@@ -60,8 +94,23 @@ export default function ComprehensiveReportHub() {
           ].map((opt) => {
             const isChecked = selectedReports?.includes(opt.id);
             return (
-              <label key={opt.id} className={`flex items-start gap-3 p-3 rounded-lg border font-mono text-[11px] cursor-pointer transition-all ${isChecked ? 'bg-blue-950/40 border-blue-700 text-blue-200 font-bold' : 'bg-[#111827] border-slate-800 text-slate-400 hover:border-slate-700'}`}>
-                <input type="checkbox" checked={isChecked || false} onChange={() => isChecked ? setSelectedReports(selectedReports.filter(id => id !== opt.id)) : setSelectedReports([...(selectedReports || []), opt.id])} className="mt-0.5 rounded border-slate-700 text-blue-600 focus:ring-blue-900 bg-slate-950" />
+              <label 
+                key={opt.id} 
+                className={`flex items-start gap-3 p-3 rounded-lg border font-mono text-[11px] cursor-pointer transition-all ${
+                  isChecked 
+                    ? 'bg-blue-950/40 border-blue-700 text-blue-200 font-bold' 
+                    : 'bg-[#111827] border-slate-800 text-slate-400 hover:border-slate-700'
+                }`}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={isChecked || false} 
+                  onChange={() => isChecked 
+                    ? setSelectedReports(selectedReports.filter(id => id !== opt.id)) 
+                    : setSelectedReports([...(selectedReports || []), opt.id])
+                  } 
+                  className="mt-0.5 rounded border-slate-700 text-blue-600 focus:ring-blue-900 bg-slate-950" 
+                />
                 <span>{opt.label}</span>
               </label>
             );
@@ -73,9 +122,14 @@ export default function ComprehensiveReportHub() {
       <div className="mb-6 p-5 bg-[#0b0f19] border border-slate-800 rounded-xl space-y-4 print:bg-white print:border-slate-200 non-printable-element">
         <div className="flex items-center gap-2 text-xs font-mono font-black text-slate-200 uppercase print:text-slate-900">
           <Link2 size={14} className="text-amber-400" />
-          <span>Known Infringements, Ongoing Litigations, Discovered Violations, Sanctions & Reference Links:</span>
+          <span>Known Infringements, Ongoing Proceedings, Discovered Violations, Sanctions & Reference Links:</span>
         </div>
-        <textarea placeholder="Enter verified litigation records, enforcement files, reference URLs, or external customs tracking keys here..." value={customLitigationInput || ''} onChange={(e) => setCustomLitigationInput(e.target.value)} className="w-full h-20 bg-[#111827] border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-blue-700" />
+        <textarea 
+          placeholder="Enter verified compliance records, enforcement actions, external case URLs, or custom tracking references here..." 
+          value={customComplianceInput || ''} 
+          onChange={(e) => setCustomComplianceInput(e.target.value)} 
+          className="w-full h-24 bg-[#111827] border border-slate-800 rounded-lg p-3 font-mono text-xs text-slate-300 focus:outline-none focus:border-blue-700 placeholder-slate-600" 
+        />
       </div>
 
       {/* Compiled AI Analytical Summary Block */}
@@ -83,13 +137,19 @@ export default function ComprehensiveReportHub() {
         <div className="p-5 bg-[#0b1324] border border-blue-900/50 rounded-xl space-y-4 print:bg-white print:border-slate-300 page-break-inside-avoid">
           <div className="flex items-center gap-2 border-b border-slate-800 pb-2 print:border-slate-200">
             <Cpu size={16} className="text-blue-400 print:text-slate-900" />
-            <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider print:text-slate-900">AI Target Summary & Multi-Profile Investigation Analysis</h4>
+            <h4 className="text-xs font-mono font-black text-white uppercase tracking-wider print:text-slate-900">
+              AI Target Summary & Multi-Profile Investigation Analysis
+            </h4>
           </div>
 
-          {customLitigationInput && (
+          {customComplianceInput && (
             <div className="p-4 bg-slate-950 rounded-lg border border-slate-900 font-mono text-xs print:bg-slate-50 print:border-slate-200">
-              <span className="text-amber-400 font-black uppercase text-[10px] block mb-1 print:text-amber-800">Linked Litigation/External Disclosures:</span>
-              <p className="text-slate-300 whitespace-pre-wrap leading-relaxed print:text-slate-800">{customLitigationInput}</p>
+              <span className="text-amber-400 font-black uppercase text-[10px] block mb-1 print:text-amber-800">
+                Linked Proceedings / External Disclosures:
+              </span>
+              <p className="text-slate-300 whitespace-pre-wrap leading-relaxed print:text-slate-800">
+                {customComplianceInput}
+              </p>
             </div>
           )}
 
@@ -152,17 +212,25 @@ export default function ComprehensiveReportHub() {
           <div className="flex justify-between items-center border-b border-slate-800 pb-2 print:border-slate-200">
             <span className="text-xs text-blue-400 font-black font-mono uppercase tracking-wider flex items-center gap-1.5 print:text-slate-900 print:text-[11px]">
               <Eye size={14} className="text-blue-400 print:text-slate-900" /> 
-              Comprehensive Investigative Manifest Ledger (All Active Target Shipments)
+              {selectedCell 
+                ? `Filtered Corridor Footprint Ledger: ${selectedCell.origin} ➔ ${selectedCell.dest}`
+                : "Comprehensive Investigative Manifest Ledger (All Active Target Shipments)"
+              }
             </span>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[400px] overflow-y-auto pr-1 print-expand-ledger">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[480px] overflow-y-auto pr-1 print-expand-ledger">
             {completePrintRecords.map((row, i) => (
               <div key={i} className="bg-[#111827] border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-3 print-ledger-card print:bg-slate-50 print:p-3">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs bg-blue-950 border border-blue-900 text-blue-400 font-black px-2 py-0.5 rounded uppercase tracking-wide print:bg-blue-100 print:text-blue-800 print:border-blue-200">{row.Brand || 'UNCLASSIFIED'}</span>
-                  <span className="text-xs text-emerald-400 font-black font-mono print:text-slate-900">${Number(row.Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+                  <span className="text-xs bg-blue-950 border border-blue-900 text-blue-400 font-black px-2 py-0.5 rounded uppercase tracking-wide print:bg-blue-100 print:text-blue-800 print:border-blue-200">
+                    {row.Brand || 'UNCLASSIFIED'}
+                  </span>
+                  <span className="text-xs text-emerald-400 font-black font-mono print:text-slate-900">
+                    ${Number(row.Amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  </span>
                 </div>
+                
                 <div className="grid grid-cols-1 gap-1.5 font-mono text-[11px] bg-slate-950/80 p-3 rounded-lg border border-slate-900 print:bg-white print:border-slate-200">
                   <div>
                     <span className="text-slate-500 text-[9px] block tracking-wider print:text-slate-400">Unmasked Target Consignee:</span> 
@@ -174,6 +242,7 @@ export default function ComprehensiveReportHub() {
                     <span className="text-slate-200 font-bold break-all print:text-slate-800">{row.Exporter || 'UNKNOWN BROKER ENTRY'}</span>
                   </div>
                 </div>
+                
                 <div className="text-[10px] font-mono text-slate-400 flex justify-between items-center pt-1 print:text-slate-500">
                   <span>Lane: <strong className="text-slate-200 print:text-slate-900">{row.Origin || 'Origin'} ➔ {row.Destination || 'Dest'}</strong></span>
                   <span>Manifest: <strong className="text-slate-200 print:text-slate-900">{row.Date || 'Active Leg'}</strong></span>
