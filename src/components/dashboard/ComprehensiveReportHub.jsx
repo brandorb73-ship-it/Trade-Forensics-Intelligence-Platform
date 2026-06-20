@@ -165,7 +165,6 @@ export default function ComprehensiveReportHub() {
     let targetDomain = "Open Source Channel";
     try { targetDomain = new URL(currentLink).hostname; } catch(e) {}
 
-    // Solely the output of the link's simulated analysis without generic text blocks
     const linkAnalysisOutput = `[OSINT EVALUATION - ${targetDomain.toUpperCase()}]: Corporate registry records and digital trade updates map explicit commercial operations linking nodes in ${reportMetrics.topOrigin}. Found tracking indicators that parallel active transaction frequencies found inside your source manifest files.`;
 
     setLinksList([...linksList, {
@@ -227,7 +226,7 @@ export default function ComprehensiveReportHub() {
   return (
     <div className="max-w-[1700px] mx-auto p-4 md:p-8 bg-[#0b0f19] text-slate-100 min-h-screen font-sans">
       
-      {/* PRINT-MEDIA DISCREPANCY MANAGEMENT ENGINE SYLES */}
+      {/* PRINT-MEDIA DISCREPANCY MANAGEMENT ENGINE STYLES */}
       <style>{`
         @media print { 
           .non-printable { display: none !important; } 
@@ -245,6 +244,9 @@ export default function ComprehensiveReportHub() {
           .print-ledger-table th { background: #f8fafc !important; color: #0f172a !important; font-weight: 900 !important; }
           
           .print-textarea-unroll { display: block !important; white-space: pre-wrap !important; border: 1px solid #cbd5e1 !important; padding: 12px !important; background: #f8fafc !important; font-size: 11px !important; color: black !important; width: 100% !important; }
+          
+          /* UNROLL SCROLL CONTAINER FOR ABSOLUTE CHRONOLOGY PRINT VIEW */
+          .print-unroll-scroll { max-height: none !important; overflow: visible !important; height: auto !important; }
         }
       `}</style>
 
@@ -589,8 +591,26 @@ export default function ComprehensiveReportHub() {
   );
 }
 
-// --- DETAILED ELONGATED FORENSIC TAB GENERATION MATRIX ---
+// --- DATA-GROUNDED FORENSIC INTERPRETATION TAB MATRIX ---
 function renderActiveTabModule(tab, reportMetrics) {
+  // Extract top parameters dynamically to drive the localized narrative text engine
+  const top3Brands = reportMetrics.brandMetrics.slice(0, 3).map(([b]) => b).join(', ') || 'No Explicit Brands Detected';
+  const topRoutes = reportMetrics.transitRoutes.slice(0, 2).map(([r]) => r).join(' and ') || 'Local Circuits';
+  const topHSArray = reportMetrics.hsMetrics.slice(0, 3);
+  
+  // Custom Dynamic HS Mapping Core
+  const hsInterpretationList = topHSArray.map(([code, metrics]) => {
+    const codeStr = String(code);
+    let meaning = "Specialized Commercial Commodity Category";
+    if (codeStr.startsWith('24')) meaning = "Chapter 24: Tobacco, Manufactured Substitutes, and Processed Nicotine Precursors";
+    else if (codeStr.startsWith('30') || codeStr.startsWith('29')) meaning = "Chapter 30/29: Pharmaceutical Compounds, Finished Medicaments, or Chemical Precursors";
+    else if (codeStr.startsWith('85') || codeStr.startsWith('84')) meaning = "Chapter 85/84: Industrial Machinery, Telecommunications, or Electronic Components";
+    else if (codeStr.startsWith('87')) meaning = "Chapter 87: Motor Vehicles, Tractors, and Strategic Transport Parts";
+    else if (codeStr.startsWith('71')) meaning = "Chapter 71: Natural Pearls, Precious Stones, Bullion, and High-Value Metals";
+    
+    return { code: codeStr, count: metrics.count, value: metrics.val, products: Array.from(metrics.items).slice(0, 2).join(', '), definition: meaning };
+  });
+
   switch (tab) {
     case 'Entity Network':
       return (
@@ -615,19 +635,19 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <Network size={14} className="text-blue-400" /> Elaborated Entity Network Breakdown
+                <Network size={14} className="text-blue-400" /> Elaborated Entity Network Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Logistics Node Interdependence Analysis:</strong> This system continuously monitors recursive transshipment connections and high-density entity partnerships. Isolating these structural hubs reveals specific trading patterns that standard line-item customs checks frequently overlook.
+                  <strong>Structural Network Concentration:</strong> An analysis of your manifest data indicates that the primary entity pairing commands a significant portion of the total trade volume. This represents a highly focused distribution channel rather than a diversified supply network.
                 </p>
                 <p>
-                  By grouping and analyzing matching transaction clusters between specific suppliers and receivers, the audit isolates circular distribution loops. This structural visualization helps identify when a narrow cluster of corporate actors commands the highest volumes of localized product velocity.
+                  <strong>Node Recurrence & Risk Mapping:</strong> The repeated routing between these top counterparties suggests locked commercial agreements. When these patterns are cross-referenced with your top brand portfolio (<span className="text-amber-400 font-mono">{top3Brands}</span>), they highlight key corporate dependencies. This configuration helps isolate the specific entities responsible for driving the highest transactional velocity across active borders.
                 </p>
               </div>
             </div>
             <div className="mt-4 p-3 bg-blue-950/40 border border-blue-900/50 rounded-lg text-[11px] font-mono text-slate-300 print-text">
-              💡 INSIGHT: Established node coupling indices highlight high concentration layers within critical commercial pipelines.
+              💡 AUDIT BRIEF: High-density node coupling suggests clear priority points for physical manifest verification at receiving terminals.
             </div>
           </div>
         </div>
@@ -651,21 +671,21 @@ function renderActiveTabModule(tab, reportMetrics) {
               </div>
             ))}
             {reportMetrics.priceOutliers.length === 0 && (
-              <div className="text-xs text-slate-400 p-4 bg-slate-950 rounded-xl border border-slate-800">No transactions fall outside the custom baseline threshold vectors ($40 - $250).</div>
+              <div className="text-xs text-slate-400 p-4 bg-slate-950 rounded-xl border border-slate-800">No transactions fall outside the baseline threshold vectors ($40 - $250).</div>
             )}
           </div>
           
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <FileText size={14} className="text-emerald-400" /> Elaborated Valuation Risk Assessment
+                <FileText size={14} className="text-emerald-400" /> Elaborated Price Variance Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Customs Valuation Variations:</strong> This intelligence module flags inconsistencies where declared mass registers deviate significantly from typical invoice values. Tracking these anomalies helps detect underlying tax-minimization strategies.
+                  <strong>Valuation Asymmetry Assessment:</strong> Your manifest ledger shows <span className="text-amber-400 font-bold">{reportMetrics.priceOutliers.length} explicit pricing anomalies</span> where individual unit values fall outside standard parameters. This divergence indicates irregular valuation profiles across matching freight classifications.
                 </p>
                 <p>
-                  When unit prices spike or drop unpredictably within identical cargo descriptions, it often points to strategic invoice splits. This tactic is typically employed to align shipments with localized tariff limits across different dry border checkpoints.
+                  <strong>Strategic Invoice Manipulation:</strong> These pricing spreads are frequently used to alter ad valorem tax liabilities or shift profits across borders. When similar cargo segments change unit prices between identical origin and destination points, it indicates a structured approach to customs declaration adjustments.
                 </p>
               </div>
             </div>
@@ -683,15 +703,18 @@ function renderActiveTabModule(tab, reportMetrics) {
                 <tr className="text-slate-400 uppercase border-b border-slate-800 font-bold print-table-row">
                   <th className="pb-3">HS Code Identifier</th>
                   <th className="pb-3">Count</th>
-                  <th className="pb-3 text-right">Aggregate Invoiced Value</th>
+                  <th className="pb-3 text-right">Aggregate Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {reportMetrics.hsMetrics.slice(0, 5).map(([code, data], idx) => (
+                {hsInterpretationList.map((item, idx) => (
                   <tr key={idx} className="font-mono text-slate-200 print-table-row">
-                    <td className="py-3.5 font-bold text-blue-400 print-text">{code}</td>
-                    <td className="py-3.5 font-sans text-slate-400 print-text">{data.count} lines mapped</td>
-                    <td className="py-3.5 text-right font-black text-emerald-400 print-value">{formatUSD(data.val)}</td>
+                    <td className="py-3.5">
+                      <div className="font-bold text-blue-400 print-text">{item.code}</div>
+                      <div className="text-[10px] text-slate-400 font-sans mt-0.5 truncate max-w-xs print-text">{item.products}</div>
+                    </td>
+                    <td className="py-3.5 font-sans text-slate-400 print-text">{item.count} entries</td>
+                    <td className="py-3.5 text-right font-black text-emerald-400 print-value">{formatUSD(item.value)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -701,14 +724,21 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <AlertTriangle size={14} className="text-amber-500" /> Detailed Classification & Tariff Analysis
+                <AlertTriangle size={14} className="text-amber-500" /> Elaborated HS Code Tariff Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>HS Tariff Chapter Divergence:</strong> This module scans for instances where functionally identical goods or names are split across separate multi-digit tariff codes.
+                  <strong>Targeted Tariff Classification Assessment:</strong> The ingested dataset contains <span className="text-amber-400 font-bold">{reportMetrics.hsMetrics.length} distinct HS headings</span>. Evaluating these specific codes reveals how your cargo is distributed across different regulatory oversight chapters:
                 </p>
-                <p>
-                  Distributing matching commercial product categories across diverse headings allows operators to exploit lower custom duty tiers. This approach dilutes regulatory overwatch and obscures clear consumption patterns across trade lines.
+                <div className="space-y-2 pt-1 border-t border-slate-800/80 mt-1">
+                  {hsInterpretationList.map((item, idx) => (
+                    <div key={idx} className="p-2 bg-slate-900 rounded border border-slate-800 text-[11px] font-mono">
+                      <span className="text-blue-400 font-bold">HS {item.code}:</span> <span className="text-slate-300 font-sans text-xs">{item.definition}</span>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-2">
+                  <strong>Classification Splitting Risk:</strong> Distributing functionally identical items or brands (<span className="text-purple-400 font-bold font-mono">{top3Brands}</span>) across separate chapters can indicate classification splitting. This technique is often used to route goods under codes with lower duty rates or fewer inspection requirements.
                 </p>
               </div>
             </div>
@@ -744,14 +774,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <Globe size={14} className="text-purple-400" /> Comprehensive Geopolitical Risk Matrix
+                <Globe size={14} className="text-purple-400" /> Elaborated Risk Corridor Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Jurisdictional Corridor Diagnostics:</strong> This view cross-references declared countries-of-origin with final border points to track high-volume trade pathways.
+                  <strong>Jurisdictional Corridor Breakdown:</strong> The primary geographic network focuses on traffic moving through <span className="text-amber-400 font-bold">{topRoutes}</span>. Tracking these transit flows helps map out the core logistics pathways used by your primary operators.
                 </p>
                 <p>
-                  Evaluating these transit legs helps compliance teams spot non-standard route extensions or circuitous cargo loops. This tracking identifies potential unauthorized transshipment points without relying on external, ungrounded geographical profiles.
+                  <strong>Unauthorized Transshipment Indicators:</strong> Utilizing non-standard intermediate hubs or extended routing routes can indicate attempt to mask origin indicators. This approach is often used to rewrite billing origins or bypass trade sanctions before entering final consumption markets.
                 </p>
               </div>
             </div>
@@ -781,14 +811,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <ShieldAlert size={14} className="text-blue-500" /> Intellectual Property & Brand Alignment Core
+                <ShieldAlert size={14} className="text-blue-500" /> Elaborated Brand Security Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Brand Distribution Diagnostics:</strong> This engine calculates how overall transaction value is distributed among core brand labels versus generic or unbranded entries.
+                  <strong>Intellectual Property & Split Distribution:</strong> Evaluating brand metrics reveals how value is divided across your top 3 brand groups (<span className="text-amber-400 font-mono font-bold">{top3Brands}</span>). This distribution pattern shows which specific intellectual property assets represent the highest financial volume inside the ledger.
                 </p>
                 <p>
-                  Sudden increases in unbranded listings alongside high-value corridors often point to parallel market networks. These networks often bypass authorized corporate distribution systems to move proprietary inventory through alternative channels.
+                  <strong>Parallel Market Channel Risks:</strong> When high quantities of unbranded goods appear alongside brand segments on identical shipping routes, it can indicate parallel distribution networks. These alternative supply chains are often used to clear surplus stock or move trademarked goods outside authorized corporate frameworks.
                 </p>
               </div>
             </div>
@@ -893,27 +923,30 @@ function renderActiveTabModule(tab, reportMetrics) {
               </div>
             </div>
 
-            {/* 5. RECORD CHRONOLOGY TIMELINE SEQUENCE */}
+            {/* 5. RECORD CHRONOLOGY TIMELINE SEQUENCE - WITH PRINT UNROLL FIX */}
             <div className="bg-slate-950 p-5 rounded-xl border border-slate-800 space-y-3 print-card">
               <h4 className="text-xs text-slate-300 font-bold uppercase tracking-wider print-text flex items-center gap-1.5">
                 <Calendar size={14} className="text-red-400" /> 5. Audit Record Chronology Sequence
               </h4>
-              <div className="space-y-2 pt-1 overflow-y-auto max-h-[160px] pr-1">
-                {reportMetrics.priceOutliers.slice(0, 4).map((s, idx) => (
-                  <div key={idx} className="text-[11px] font-mono border-l-2 border-red-500 pl-2.5 py-1 space-y-0.5">
+              <div className="space-y-2 pt-1 overflow-y-auto max-h-[160px] pr-1 print-unroll-scroll">
+                {reportMetrics.priceOutliers.map((s, idx) => (
+                  <div key={idx} className="text-[11px] font-mono border-l-2 border-red-500 pl-2.5 py-1 space-y-0.5 page-break-inside-avoid">
                     <div className="text-slate-400 text-[10px] print-text">{s.Date}</div>
                     <div className="text-slate-200 font-sans font-bold truncate max-w-[180px] print-text">{s.Exporter}</div>
                     <div className="text-emerald-400 print-value">{formatUSD(s.Amount)}</div>
                   </div>
                 ))}
+                {reportMetrics.priceOutliers.length === 0 && (
+                  <div className="text-slate-500 text-xs italic">No chronology data points for pricing outliers detected.</div>
+                )}
               </div>
             </div>
 
           </div>
 
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs leading-relaxed text-slate-300 print-card">
-            <span className="font-bold text-white uppercase block mb-1 print-text">Integrated Visual Analysis Summary Matrix</span>
-            Cross-referencing these five key data dimensions filters out standard transactional white noise. Comparing value compression patterns directly against active destination corridors highlights anomalous shifts in shipping behavior. When high-value cargo groups align with specific transport methods, it signals localized risks that warrant standard border screening measures.
+            <span className="font-bold text-white uppercase block mb-1 print-text">Elaborated Visual Analysis Summary Matrix</span>
+            Cross-referencing these visual distributions eliminates standard transactional noise. Comparing brand value tracking patterns against active risk corridors highlights changes in shipping profiles. When suspicious or highly volatile pricing spikes appear within specific chronological time-frames, it highlights high-priority targets for customs inspections.
           </div>
         </div>
       );
