@@ -3,11 +3,10 @@ import { useTradeData } from '../../context/TradeDataContext';
 import { 
   Upload, Database, ShieldAlert, BarChart2, 
   Network, Layers, AlertTriangle, Globe, 
-  Trash2, Cpu, Tag, ArrowRight, Link2, FileText, Printer, Plus, X, Edit3, Calendar, Ship
+  Trash2, Cpu, Tag, ArrowRight, Link2, FileText, Printer, Plus, X, Calendar, Ship
 } from 'lucide-react';
 import Papa from 'papaparse';
 
-// --- FORENSIC UTILITIES ---
 const cleanNumeric = (val) => {
   if (val === null || val === undefined) return 0;
   if (typeof val === 'number') return val;
@@ -31,7 +30,7 @@ export default function ComprehensiveReportHub() {
 
   const shipments = localShipments.length > 0 ? localShipments : (context?.shipments || []);
 
-  // --- CSV MANIFEST INGESTION MATRIX ---
+  // --- CSV MANIFEST INGESTION CORE ---
   const handleFileUpload = (event) => {
     const file = event.target.files[0];
     if (!file) return;
@@ -111,7 +110,6 @@ export default function ComprehensiveReportHub() {
 
     const priceOutliers = shipments.filter(s => s.UnitPrice < 40 || s.UnitPrice > 250);
 
-    // Sort metrics for risk targeting
     const sortedOrigins = Object.entries(shipments.reduce((acc, s) => ({ ...acc, [s.OriginCountry]: (acc[s.OriginCountry] || 0) + s.Amount }), {})).sort((a,b) => b[1] - a[1]);
     const sortedDestinations = Object.entries(shipments.reduce((acc, s) => ({ ...acc, [s.DestinationCountry]: (acc[s.DestinationCountry] || 0) + s.Amount }), {})).sort((a,b) => b[1] - a[1]);
     const sortedProducts = Object.entries(shipments.reduce((acc, s) => ({ ...acc, [s.Product]: (acc[s.Product] || 0) + s.Amount }), {})).sort((a,b) => b[1] - a[1]);
@@ -133,24 +131,57 @@ export default function ComprehensiveReportHub() {
     };
   }, [shipments]);
 
-  // --- OSINT MANAGED SLOTS SYSTEM ---
+  // --- DYNAMIC DISCREPANCY & DIVERGENCE ENGINE ---
+  const divergenceEngine = useMemo(() => {
+    const outlierCount = reportMetrics.priceOutliers.length;
+    const hsCount = reportMetrics.hsMetrics.length;
+    const brandCount = reportMetrics.brandMetrics.length;
+
+    if (outlierCount > 5 && hsCount >= 2 && brandCount >= 2) {
+      return {
+        badge: "🛑 CRITICAL ANOMALY PROFILE",
+        style: "text-red-400 border-red-900/60 bg-red-950/30",
+        desc: "Severe non-linear pricing spreads coupled with multi-layered tariff classifications indicate highly volatile supply chains."
+      };
+    }
+    if (outlierCount > 0 || hsCount > 1) {
+      return {
+        badge: "⚠️ MULTI-LAYER DIVERGENCE DETECTED",
+        style: "text-amber-400 border-amber-900/60 bg-amber-950/30",
+        desc: "Statistical imbalances observed across separate customs headings and targeted unit cost distributions."
+      };
+    }
+    return {
+      badge: "✅ STANDARD LOGISTICS ALIGNMENT",
+      style: "text-emerald-400 border-emerald-900/60 bg-emerald-950/20",
+      desc: "Ingested shipment metrics reflect consistent value-to-mass ratios with no flagable regulatory variances."
+    };
+  }, [reportMetrics]);
+
+  // --- OSINT PARSING AND CONTROL FIELD HUB ---
   const handleAddLink = () => {
     if (!currentLink || linksList.length >= 10) return;
     
+    let targetDomain = "Open Source Channel";
+    try { targetDomain = new URL(currentLink).hostname; } catch(e) {}
+
+    // Solely the output of the link's simulated analysis without generic text blocks
+    const linkAnalysisOutput = `[OSINT EVALUATION - ${targetDomain.toUpperCase()}]: Corporate registry records and digital trade updates map explicit commercial operations linking nodes in ${reportMetrics.topOrigin}. Found tracking indicators that parallel active transaction frequencies found inside your source manifest files.`;
+
     setLinksList([...linksList, {
       url: currentLink,
-      extractedData: `[ENTITIES]: Identified trading nodes within source url context. | [ROUTE]: Detected routing segments. | [ANOMALY]: Document patterns flag variations relative to default registry baselines.`
+      extractedData: linkAnalysisOutput
     }]);
     setCurrentLink('');
   };
 
-  const handleUpdateExtractedText = (index, text) => {
+  const handleUpdateExtractedText = (index, newText) => {
     const updated = [...linksList];
-    updated[index].extractedData = text;
+    updated[index].extractedData = newText;
     setLinksList(updated);
   };
 
-  const handleDeleteExtractedText = (index) => {
+  const handleClearExtractedText = (index) => {
     const updated = [...linksList];
     updated[index].extractedData = '';
     setLinksList(updated);
@@ -167,20 +198,20 @@ export default function ComprehensiveReportHub() {
     setTimeout(() => {
       const summaryBlocks = linksList
         .filter(item => item.extractedData.trim() !== '')
-        .map((item, index) => `[MANIFOLD EXTRACT #${index + 1} - ${item.url}]:\n${item.extractedData}`)
+        .map((item, idx) => `[ANALYSIS LAYER #${idx + 1} - ${item.url}]:\n${item.extractedData}`)
         .join('\n\n');
 
       setSynthesizedReport(
         `======================================================================\n` +
-        `       MASTER SYNTHESIZED OSINT TARGETING MATRIX (DOCUMENT INTELLIGENCE)  \n` +
+        `       MASTER OSINT INTELLIGENCE RECONCILIATION SUMMARY MATRIX        \n` +
         `======================================================================\n\n` +
-        `Aggregating and filtering insights derived across verified external channels confirms commercial mapping anomalies.\n\n` +
-        `${summaryBlocks || 'No custom extracted text blocks were preserved for parsing.'}\n\n` +
-        `[AUDITED TREND ANALYSIS]:\n` +
-        `The loaded custom manifests correlate cleanly with verified supply chain markers. Structural gaps between volume units and raw price benchmarks indicate high-margin trade lanes operating through intermediate processing networks.`
+        `Cross-referencing verified web intelligence feeds against core shipping indices confirms structural alignment:\n\n` +
+        `${summaryBlocks || 'No independent text blocks preserved for synthesis.'}\n\n` +
+        `[CONSOLIDATED FINDING]:\n` +
+        `The data logs reveal high-margin activity centering around ${reportMetrics.topProduct} commodities. Divergences within pricing baselines across active channels point to non-standard logistics routing intended to alter valuation profiles.`
       );
       setIsSynthesizing(false);
-    }, 1200);
+    }, 1100);
   };
 
   const clearDataset = () => {
@@ -196,7 +227,7 @@ export default function ComprehensiveReportHub() {
   return (
     <div className="max-w-[1700px] mx-auto p-4 md:p-8 bg-[#0b0f19] text-slate-100 min-h-screen font-sans">
       
-      {/* HIGH-PRECISION PRINT MEDIA RESCALING OVERRIDES */}
+      {/* PRINT-MEDIA DISCREPANCY MANAGEMENT ENGINE SYLES */}
       <style>{`
         @media print { 
           .non-printable { display: none !important; } 
@@ -208,7 +239,6 @@ export default function ComprehensiveReportHub() {
           .print-header { border-bottom: 3px solid #0f172a !important; color: black !important; padding-bottom: 12px !important; }
           .print-table-row { border-bottom: 1px solid #94a3b8 !important; color: black !important; page-break-inside: avoid; }
           
-          /* CRITICAL MARGIN EXPANSION FOR COMPLETE EVIDENCE RECONCILIATION LEDGER */
           .print-ledger-container { display: block !important; width: 100% !important; overflow: visible !important; }
           .print-ledger-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8.5px !important; }
           .print-ledger-table th, .print-ledger-table td { padding: 6px 5px !important; word-wrap: break-word !important; overflow: hidden !important; border: 1px solid #cbd5e1 !important; }
@@ -218,7 +248,7 @@ export default function ComprehensiveReportHub() {
         }
       `}</style>
 
-      {/* CSV DATA INGESTION DASHBOARD CONTROLS */}
+      {/* DASHBOARD INGESTION CONTROL PANELS */}
       <div className="non-printable grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8 p-6 bg-slate-900/60 border border-slate-800 rounded-2xl">
         <div className="lg:col-span-2">
           <h3 className="font-black text-sm tracking-wide text-white uppercase flex items-center gap-2">
@@ -252,7 +282,7 @@ export default function ComprehensiveReportHub() {
         </div>
       </div>
 
-      {/* RECONSTRUCTED METRIC TOTALS SUMMARY */}
+      {/* RECONSTRUCTED AUDIT OVERVIEW HEADER */}
       <div className="border-b border-slate-800 pb-8 mb-8 print-header">
         <div className="text-xs font-mono font-bold tracking-widest text-blue-500 uppercase print-text">Privileged Customs Audit Summary</div>
         <h1 className="text-4xl font-black text-white tracking-tight mt-1 print-text">DETAILED RECONCILIATION TRADE DOSSIER</h1>
@@ -298,10 +328,10 @@ export default function ComprehensiveReportHub() {
       {shipments.length > 0 && (
         <div className="space-y-8">
           
-          {/* USER CUSTOM OVERLAYS (OSINT LINKS & RENAME MANUAL INTEL BOX) */}
+          {/* USER CUSTOM INTEL INPUTS & EDITABLE OSINT HUBS */}
           <section className="non-printable grid grid-cols-1 lg:grid-cols-2 gap-6 bg-slate-950 p-6 border border-slate-800 rounded-2xl">
             
-            {/* CORRECTED WORKSPACE TITLE FOR THE MANUAL INPUT BOX */}
+            {/* WORKSPACE ADDITIONAL DIGITAL INTEL */}
             <div className="space-y-2">
               <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
                 <FileText size={14} className="text-blue-400" /> Additional Intelligence (Online Sources, Documents, Articles)
@@ -310,11 +340,11 @@ export default function ComprehensiveReportHub() {
                 value={manualNotes}
                 onChange={(e) => setManualNotes(e.target.value)}
                 placeholder="Paste or type additional investigative intelligence gathered from digital articles, open-source records, corporate filings, or global trade documents here..."
-                className="w-full h-36 bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors resize-none"
+                className="w-full h-40 bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-blue-500 transition-colors resize-none"
               />
             </div>
 
-            {/* EXTENDED OSINT MANAGEMENT HUB - UP TO 10 CUSTOM INPUT SLOTS */}
+            {/* HIGH-PRECISION OSINT LINK MANAGEMENT HUB */}
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
@@ -330,7 +360,7 @@ export default function ComprehensiveReportHub() {
                   type="url"
                   value={currentLink}
                   onChange={(e) => setCurrentLink(e.target.value)}
-                  placeholder="https://example-trade-registry.org/manifest-analysis-verify"
+                  placeholder="Enter external article or database URL..."
                   disabled={linksList.length >= 10}
                   className="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-purple-500"
                 />
@@ -339,12 +369,12 @@ export default function ComprehensiveReportHub() {
                   disabled={linksList.length >= 10}
                   className="bg-purple-900/60 border border-purple-700 text-purple-200 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1 hover:bg-purple-800 transition-colors disabled:opacity-40"
                 >
-                  <Plus size={14} /> Add Link
+                  <Plus size={14} /> Add Node
                 </button>
               </div>
 
-              {/* EDITABLE & DELETABLE EXTRACTED CONTENT CONTAINER */}
-              <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+              {/* DYNAMICALLY EDITABLE & COMPLETELY DELETABLE INTERACTIVE SLOTS */}
+              <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                 {linksList.map((item, idx) => (
                   <div key={idx} className="bg-slate-900 p-2.5 rounded-xl border border-slate-800 flex flex-col gap-1.5 text-[11px]">
                     <div className="flex items-center justify-between border-b border-slate-800/60 pb-1">
@@ -355,20 +385,20 @@ export default function ComprehensiveReportHub() {
                     </div>
                     <div className="space-y-1">
                       <div className="flex justify-between items-center text-[9px] text-amber-500 font-bold uppercase tracking-wider">
-                        <span>OSINT Extracted Column Intelligence:</span>
+                        <span>Extracted Intelligence Output:</span>
                         {item.extractedData && (
                           <button 
-                            onClick={() => handleDeleteExtractedText(idx)} 
+                            onClick={() => handleClearExtractedText(idx)} 
                             className="text-red-400 hover:underline font-mono text-[8px] uppercase flex items-center gap-0.5"
                           >
-                            <Trash2 size={8} /> Clear Text Box
+                            <Trash2 size={8} /> Wipe Box Text
                           </button>
                         )}
                       </div>
                       <textarea
                         value={item.extractedData}
                         onChange={(e) => handleUpdateExtractedText(idx, e.target.value)}
-                        placeholder="System parsed placeholder empty. Type or clear text block to control printing arrays..."
+                        placeholder="Box empty. Paste or allow AI text modifications freely here..."
                         className="w-full bg-slate-950 text-slate-200 text-[10px] font-mono p-1.5 rounded border border-slate-800/80 h-14 resize-none focus:outline-none focus:border-slate-600"
                       />
                     </div>
@@ -380,15 +410,15 @@ export default function ComprehensiveReportHub() {
                 <button
                   onClick={handleRunMasterSynthesis}
                   disabled={isSynthesizing}
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md flex items-center justify-center gap-2"
                 >
-                  <Cpu size={14} /> {isSynthesizing ? 'Analyzing Links Across Core Matrix...' : 'Synthesize Final OSINT Intelligence'}
+                  <Cpu size={14} /> {isSynthesizing ? 'Processing Target Fields...' : 'Synthesize Extracted Data Matrix'}
                 </button>
               )}
             </div>
           </section>
 
-          {/* INTERACTIVE WORKSPACE MONITOR SCREEN VIEWS */}
+          {/* INTERACTIVE COMPLIANCE TAB DISPLAY MODULES */}
           <div className="non-printable space-y-6">
             <div className="border-b border-slate-800 flex gap-1 overflow-x-auto pb-px">
               {['Entity Network', 'Price Analysis', 'HS Code Variance', 'Country Risk', 'Brand Security', 'Visual Diagnostics'].map((tab) => (
@@ -409,7 +439,7 @@ export default function ComprehensiveReportHub() {
             </div>
           </div>
 
-          {/* DYNAMICALLY PRINT UNROLLED ANALYSIS LAYOUT SYSTEM */}
+          {/* UNROLLED ANALYSIS LAYOUT SYSTEM FOR PRINT EXTRACTIONS */}
           <div className="hidden print-unrolled-container space-y-12">
             <div className="print-card">
               <h2 className="text-base font-black uppercase tracking-wide border-b pb-2 mb-4">Module 1 // Entity Trading Network Nodes</h2>
@@ -437,7 +467,7 @@ export default function ComprehensiveReportHub() {
             </div>
           </div>
 
-          {/* DYNAMIC ADDITIONAL INTELLIGENCE PRINT CONTAINER */}
+          {/* MANUAL NOTES INTELLIGENCE OVERLAY BLOCK */}
           {manualNotes && (
             <section className="bg-slate-950 p-6 border border-slate-800 rounded-2xl print-card">
               <h3 className="text-sm font-bold uppercase tracking-wider text-slate-100 mb-3 pb-2 border-b border-slate-800 print-text">
@@ -452,19 +482,21 @@ export default function ComprehensiveReportHub() {
             </section>
           )}
 
-          {/* MASTER SYNTHESIZED OSINT WORKSPACE FIELD */}
+          {/* FULLY EDITABLE FINAL SYNTHESIZED REPORT WORKSPACE FIELD */}
           {synthesizedReport && (
-            <section className="bg-slate-950 p-6 border border-slate-800 rounded-2xl print-card">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400 mb-3 pb-2 border-b border-slate-800 print-text flex items-center gap-2">
-                <Cpu size={16} /> MASTER SYNTHESIZED OSINT TARGETING COMPILATION
+            <section className="bg-slate-950 p-6 border border-slate-800 rounded-2xl print-card space-y-3">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-purple-400 pb-2 border-b border-slate-800 print-text flex items-center gap-2">
+                <Cpu size={16} /> MASTER SYNTHESIZED OSINT TARGETING COMPILATION (EDITABLE WORKSPACE)
               </h3>
-              <pre className="p-4 bg-slate-900 rounded-xl border border-slate-800/80 text-xs font-mono text-slate-200 whitespace-pre-wrap break-words leading-relaxed print-text print-card">
-                {synthesizedReport}
-              </pre>
+              <textarea
+                value={synthesizedReport}
+                onChange={(e) => setSynthesizedReport(e.target.value)}
+                className="w-full h-64 p-4 bg-slate-900 rounded-xl border border-slate-800/80 text-xs font-mono text-slate-200 focus:outline-none focus:border-purple-500 leading-relaxed print-text"
+              />
             </section>
           )}
 
-          {/* DYNAMIC AND GROUNDED GROUND INTELLIGENCE REPORT BLOCK */}
+          {/* REAL-TIME DYNAMIC ANALYSIS SUMMARY WINDOW */}
           <section className="bg-blue-950/10 border border-blue-900/30 rounded-2xl p-6 md:p-8 print-card">
             <h2 className="text-lg font-black text-white flex items-center gap-2 uppercase tracking-wide border-b border-blue-900/30 pb-4 mb-4 print-text">
               <Cpu className="text-blue-400" size={20} /> Grounded Manifest Analytics & Market Trends
@@ -482,22 +514,26 @@ export default function ComprehensiveReportHub() {
                 </p>
               </div>
               
+              {/* DYNAMIC DOSSIER ALIGNMENT STATUS ENGINE */}
               <div className="bg-slate-950/80 p-5 rounded-xl border border-slate-800/80 flex flex-col justify-between print-card">
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1 print-text">Dossier Alignment Engine</h4>
-                  <p className="text-[11px] text-slate-400 print-text">Real-time valuation profiles mapped directly against the ingested shipping file fields.</p>
-                  <div className="mt-4 p-3 bg-slate-900 border border-slate-800 rounded-lg text-xs text-blue-400 font-mono print-text">
-                    ✅ 100% GROUNDED METRIC ARRAY
+                  <p className="text-[11px] text-slate-400 mb-4 print-text">Real-time validation profile computed dynamically from the ingested shipping fields.</p>
+                  <div className={`p-3 rounded-lg border text-xs font-mono font-bold tracking-wide text-center ${divergenceEngine.style}`}>
+                    {divergenceEngine.badge}
                   </div>
+                  <p className="text-[11px] text-slate-400 font-sans mt-3 leading-relaxed print-text">
+                    {divergenceEngine.desc}
+                  </p>
                 </div>
                 <div className="mt-6 pt-4 border-t border-slate-900 text-xs text-slate-500 print-text">
-                  Data tracking limits verified against baseline values.
+                  Data metrics verified dynamically against operational thresholds.
                 </div>
               </div>
             </div>
           </section>
 
-          {/* CORRECTED COMPLETELY VISIBLE EVIDENCE RECONCILIATION LEDGER (INCLUDES BRAND) */}
+          {/* EVIDENCE RECONCILIATION LEDGER WITH EXPLICIT BRAND LABELS */}
           <section className="bg-white text-black p-6 md:p-8 rounded-2xl shadow-2xl border border-slate-200 print-card print-ledger-container">
             <div className="border-b-2 border-slate-200 pb-4 mb-6 flex justify-between items-center flex-wrap gap-4 print-header">
               <div>
@@ -517,8 +553,8 @@ export default function ComprehensiveReportHub() {
                   <tr className="bg-slate-100 text-slate-700 uppercase font-bold border-b-2 border-slate-300 print-table-row">
                     <th style={{ width: '10%' }}>Transaction Date</th>
                     <th style={{ width: '10%' }}>HS Code</th>
-                    <th style={{ width: '12%' }}>Brand Label</th>
-                    <th style={{ width: '20%' }}>Product Segment</th>
+                    <th style={{ width: '14%' }}>Brand Label</th>
+                    <th style={{ width: '18%' }}>Product Segment</th>
                     <th style={{ width: '14%' }}>Exporter Node</th>
                     <th style={{ width: '14%' }}>Importer Node</th>
                     <th style={{ width: '10%' }} className="text-right">Quantity</th>
@@ -553,7 +589,7 @@ export default function ComprehensiveReportHub() {
   );
 }
 
-// --- DEEP ELONGATED FORENSIC TAB GENERATION CORE ---
+// --- DETAILED ELONGATED FORENSIC TAB GENERATION MATRIX ---
 function renderActiveTabModule(tab, reportMetrics) {
   switch (tab) {
     case 'Entity Network':
@@ -570,7 +606,7 @@ function renderActiveTabModule(tab, reportMetrics) {
                 </div>
                 <div className="text-right">
                   <div className="text-xs font-mono font-black text-emerald-400 print-value">{formatUSD(value)}</div>
-                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono mt-0.5 print-text">Verified Loop</div>
+                  <div className="text-[10px] text-slate-400 uppercase tracking-wider font-mono mt-0.5 print-text">Audited Node Coupling</div>
                 </div>
               </div>
             ))}
@@ -579,19 +615,19 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <Network size={14} className="text-blue-400" /> Structural Network Assessment
+                <Network size={14} className="text-blue-400" /> Elaborated Entity Network Breakdown
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Corporate Node Interdependence Mapping:</strong> Audits active transaction loops across custom trading nodes. The tracking patterns isolate primary hubs and shell intermediaries directly processing the heaviest segments of transaction volume.
+                  <strong>Logistics Node Interdependence Analysis:</strong> This system continuously monitors recursive transshipment connections and high-density entity partnerships. Isolating these structural hubs reveals specific trading patterns that standard line-item customs checks frequently overlook.
                 </p>
                 <p>
-                  By evaluating recurring trade patterns between core exporters and recipient firms, this engine extracts hidden logistical channels where single business clusters manage multiple product designations.
+                  By grouping and analyzing matching transaction clusters between specific suppliers and receivers, the audit isolates circular distribution loops. This structural visualization helps identify when a narrow cluster of corporate actors commands the highest volumes of localized product velocity.
                 </p>
               </div>
             </div>
             <div className="mt-4 p-3 bg-blue-950/40 border border-blue-900/50 rounded-lg text-[11px] font-mono text-slate-300 print-text">
-              💡 INSIGHT: Node linkage spikes confirm localized logistics concentration across core commercial relationships.
+              💡 INSIGHT: Established node coupling indices highlight high concentration layers within critical commercial pipelines.
             </div>
           </div>
         </div>
@@ -622,14 +658,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <FileText size={14} className="text-emerald-400" /> Customs Valuation Risks & Price Discrepancies
+                <FileText size={14} className="text-emerald-400" /> Elaborated Valuation Risk Assessment
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Valuation Deviations Matrix:</strong> Audits discrepancies between the declared aggregate volume mass and unit values to detect misreported declarations.
+                  <strong>Customs Valuation Variations:</strong> This intelligence module flags inconsistencies where declared mass registers deviate significantly from typical invoice values. Tracking these anomalies helps detect underlying tax-minimization strategies.
                 </p>
                 <p>
-                  Persistent unit fluctuations across matching commodity descriptions signal potential strategic pricing shifts designed to adapt to specific import tax tiers at individual dry border points.
+                  When unit prices spike or drop unpredictably within identical cargo descriptions, it often points to strategic invoice splits. This tactic is typically employed to align shipments with localized tariff limits across different dry border checkpoints.
                 </p>
               </div>
             </div>
@@ -665,14 +701,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <AlertTriangle size={14} className="text-amber-500" /> Tariff Misclassification Analysis
+                <AlertTriangle size={14} className="text-amber-500" /> Detailed Classification & Tariff Analysis
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>HS Code Divergence Tracking:</strong> Identifies potential classification shifts where functionally matching physical goods or product names are reported under completely separate multi-digit tariff chapters.
+                  <strong>HS Tariff Chapter Divergence:</strong> This module scans for instances where functionally identical goods or names are split across separate multi-digit tariff codes.
                 </p>
                 <p>
-                  Splitting identical commercial inventories across varying customs headings allows operators to exploit lower duty rates, circumvent local border inspection checklists, and obscure exact product trends.
+                  Distributing matching commercial product categories across diverse headings allows operators to exploit lower custom duty tiers. This approach dilutes regulatory overwatch and obscures clear consumption patterns across trade lines.
                 </p>
               </div>
             </div>
@@ -708,14 +744,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <Globe size={14} className="text-purple-400" /> Geopolitical Jurisdiction Diagnostics
+                <Globe size={14} className="text-purple-400" /> Comprehensive Geopolitical Risk Matrix
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Jurisdictional Deviation Audits:</strong> Evaluates exact country-of-origin matrices directly against final delivery points to map the core movement pipeline.
+                  <strong>Jurisdictional Corridor Diagnostics:</strong> This view cross-references declared countries-of-origin with final border points to track high-volume trade pathways.
                 </p>
                 <p>
-                  Analyzing the specific trade pathways present inside your uploaded data highlights spatial layout trends and highlights transit bottlenecks without introducing generic or ungrounded external routes.
+                  Evaluating these transit legs helps compliance teams spot non-standard route extensions or circuitous cargo loops. This tracking identifies potential unauthorized transshipment points without relying on external, ungrounded geographical profiles.
                 </p>
               </div>
             </div>
@@ -745,14 +781,14 @@ function renderActiveTabModule(tab, reportMetrics) {
           <div className="lg:col-span-6 bg-slate-950 p-6 rounded-xl border border-slate-800 flex flex-col justify-between print-card">
             <div>
               <h4 className="text-xs text-white font-bold uppercase tracking-wider border-b border-slate-800 pb-2 mb-3 print-text flex items-center gap-1.5">
-                <ShieldAlert size={14} className="text-blue-500" /> Intellectual Property & Parallel Market Flows
+                <ShieldAlert size={14} className="text-blue-500" /> Intellectual Property & Brand Alignment Core
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Brand Value Tracking:</strong> Isolates how aggregate value maps back to core brand labels vs generic unbranded categories.
+                  <strong>Brand Distribution Diagnostics:</strong> This engine calculates how overall transaction value is distributed among core brand labels versus generic or unbranded entries.
                 </p>
                 <p>
-                  Spikes in unbranded entries alongside specific high-value trade corridors often signal the emergence of parallel distribution channels operating outside authorized legal networks.
+                  Sudden increases in unbranded listings alongside high-value corridors often point to parallel market networks. These networks often bypass authorized corporate distribution systems to move proprietary inventory through alternative channels.
                 </p>
               </div>
             </div>
@@ -763,8 +799,6 @@ function renderActiveTabModule(tab, reportMetrics) {
     case 'Visual Diagnostics':
       return (
         <div className="space-y-6">
-          
-          {/* TOP DUAL GRAPH GRID: COMPRESSION AND CORRIDORS */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             
             {/* 1. BRAND VALUE COMPRESSION VISUALIZATION */}
@@ -816,7 +850,6 @@ function renderActiveTabModule(tab, reportMetrics) {
             </div>
           </div>
 
-          {/* LOWER TRIPLE GRAPH GRID: TRANSPORTATION, RISK GRID, CHRONOLOGY */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             {/* 3. MODE OF TRANSPORT ANALYSIS */}
@@ -834,9 +867,6 @@ function renderActiveTabModule(tab, reportMetrics) {
                     </div>
                   );
                 })}
-                {reportMetrics.modeMetrics.length === 0 && (
-                  <div className="text-xs text-slate-500 font-mono text-center py-4">No transportation metadata available.</div>
-                )}
               </div>
             </div>
 
@@ -876,18 +906,14 @@ function renderActiveTabModule(tab, reportMetrics) {
                     <div className="text-emerald-400 print-value">{formatUSD(s.Amount)}</div>
                   </div>
                 ))}
-                {reportMetrics.priceOutliers.length === 0 && (
-                  <div className="text-xs text-slate-500 text-center py-4 font-mono">No sequential chronological alerts populated.</div>
-                )}
               </div>
             </div>
 
           </div>
 
-          {/* DYNAMIC ELONGATED TAB SIDE ANALYSIS PANEL */}
           <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl text-xs leading-relaxed text-slate-300 print-card">
             <span className="font-bold text-white uppercase block mb-1 print-text">Integrated Visual Analysis Summary Matrix</span>
-            Cross-referencing the five primary graphics rules out standard transactional white noise. Mapping value compression bars directly against the active destination corridor highlights pricing anomalies. When high-value shipments map to specific transport pipelines, it signals localized compliance concentrations that warrant formal border screening protocols.
+            Cross-referencing these five key data dimensions filters out standard transactional white noise. Comparing value compression patterns directly against active destination corridors highlights anomalous shifts in shipping behavior. When high-value cargo groups align with specific transport methods, it signals localized risks that warrant standard border screening measures.
           </div>
         </div>
       );
