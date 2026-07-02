@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight, Info, ShieldCheck } from 'lucide-react';
+import { Clock, TrendingUp, Calendar, AlertTriangle, ShieldAlert, FileText, ArrowRight, Info } from 'lucide-react';
 
 export default function TimelineIntelligence() {
   const contextData = useTradeData();
@@ -13,8 +13,56 @@ export default function TimelineIntelligence() {
     const monthlyVolumeMap = {};
     const importerMonthlyMap = {};
     const entityReroutingMap = {};
-    const timelineEvents = [];
+    
+    // Global profile scanning structures to adapt to any industry upload dynamically
+    const productBaselines = {};
+    const productCounts = {};
+    const corridorCounts = {};
+    const brandCounts = {};
+    let totalDatasetAmount = 0;
 
+    // 1. Initial Intelligence Pre-Scan Engine
+    tradeData.forEach(row => {
+      const prod = (row.Product || '').toUpperCase().trim();
+      const hs = String(row.HSCode || '').trim();
+      const corridor = `${row.OriginCountry || 'UNKNOWN'} → ${row.DestinationCountry || 'UNKNOWN'}`;
+      const brand = (row.Brand || '').toUpperCase().trim();
+      const amt = Number(row.Amount) || 0;
+
+      totalDatasetAmount += amt;
+
+      if (prod) {
+        productCounts[prod] = (productCounts[prod] || 0) + 1;
+        if (hs && hs !== '?') {
+          const prefix = hs.substring(0, 2);
+          if (!productBaselines[prod]) productBaselines[prod] = {};
+          productBaselines[prod][prefix] = (productBaselines[prod][prefix] || 0) + 1;
+        }
+      }
+      if (corridor) {
+        corridorCounts[corridor] = (corridorCounts[corridor] || 0) + 1;
+      }
+      if (brand && brand !== 'NOT DECLARED') {
+        brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+      }
+    });
+
+    // Extract dynamic baseline modes
+    const expectedHSMap = {};
+    Object.entries(productBaselines).forEach(([prod, hsMap]) => {
+      const sorted = Object.entries(hsMap).sort((a, b) => b[1] - a[1]);
+      if (sorted.length > 0) expectedHSMap[prod] = sorted[0][0];
+    });
+
+    // Derive global identifiers for dynamic UI text injection
+    const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'CARGO STOCKS';
+    const topCorridor = Object.entries(corridorCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'GLOBAL ARTERIES';
+    const topBrand = Object.entries(brandCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'UNBRANDED / GENERIC';
+    
+    // Set dynamic baseline threshold multipliers based on file scale
+    const avgAmountPerTransaction = tradeData.length > 0 ? (totalDatasetAmount / tradeData.length) : 10000;
+
+    // 2. Chronological Ordering Sequence
     const sortedData = [...tradeData]
       .filter(row => row && row.Date && row.Date !== 'N/A')
       .sort((a, b) => {
@@ -23,6 +71,9 @@ export default function TimelineIntelligence() {
         return isNaN(timeA) || isNaN(timeB) ? 0 : timeA - timeB;
       });
 
+    const timelineEvents = [];
+
+    // 3. Primary Chronological Evaluation Loop
     sortedData.forEach(row => {
       const dateStr = row.Date || '';
       if (dateStr.length < 7) return; 
@@ -36,8 +87,8 @@ export default function TimelineIntelligence() {
       const importer = (row.Importer || 'UNKNOWN').toUpperCase();
       const exporter = (row.Exporter || 'UNKNOWN').toUpperCase();
       const corridor = `${row.OriginCountry || 'UNKNOWN'} → ${row.DestinationCountry || 'UNKNOWN'}`;
-      const productDesc = (row.Product || '').toUpperCase();
-      const hsString = String(row.HSCode || '');
+      const productDesc = (row.Product || '').toUpperCase().trim();
+      const hsString = String(row.HSCode || '').trim();
 
       monthlyVolumeMap[monthBucket] = (monthlyVolumeMap[monthBucket] || 0) + amount;
 
@@ -49,7 +100,16 @@ export default function TimelineIntelligence() {
         entityReroutingMap[exporter].push(corridor);
       }
 
-      const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
+      // Universal Classification Delta Rule
+      const currentChapter2D = hsString && hsString !== '?' ? hsString.substring(0, 2) : 'UNKNOWN';
+      const expectedChapter2D = expectedHSMap[productDesc];
+      
+      let isMismatched = false;
+      if (expectedChapter2D && currentChapter2D !== expectedChapter2D) {
+        isMismatched = true;
+      } else if (hsString === '?' || currentChapter2D === 'UNKNOWN') {
+        isMismatched = true;
+      }
 
       const history = importerMonthlyMap[importer] || {};
       const currentMonthVolume = history[monthBucket] || 0;
@@ -58,7 +118,8 @@ export default function TimelineIntelligence() {
         ? monthsWithData.reduce((a, b) => a + b, 0) / monthsWithData.length 
         : 0;
       
-      const isVolumeSpike = currentMonthVolume > 50000 && currentMonthVolume > (averageHistoricalVolume * 2.5);
+      // Dynamic volume trigger logic matching global data density
+      const isVolumeSpike = currentMonthVolume > (avgAmountPerTransaction * 2.5) && currentMonthVolume > (averageHistoricalVolume * 2);
       const totalRoutesUsedByExporter = entityReroutingMap[exporter].length;
       const isSuddenReroute = totalRoutesUsedByExporter > 1 && isMismatched;
 
@@ -69,15 +130,15 @@ export default function TimelineIntelligence() {
       if (isVolumeSpike) {
         anomalyType = 'VOLUME_SPIKE';
         severity = 'HIGH';
-        summary = `Sudden operational growth. Monthly imports scaled abruptly past historical baseline limits.`;
+        summary = `Sudden operational intensity jump. Volume for this node scaled abruptly past historical parameters.`;
       } else if (isSuddenReroute) {
         anomalyType = 'POST_LAWSUIT_REROUTE';
         severity = 'CRITICAL';
-        summary = `Structural route switch identified for exporter counterparty shifting into alternative trade zones.`;
+        summary = `Structural routing shift detected for exporter node shifting transaction streams into alternative zones.`;
       } else if (isMismatched) {
         anomalyType = 'SUSPICIOUS_TIMING';
         severity = 'MEDIUM';
-        summary = `Unusual chronological batching of mismatching manifest item declarations.`;
+        summary = `Irregular chronological batching of conflicting product-to-tariff classification identifiers.`;
       }
 
       timelineEvents.push({
@@ -89,26 +150,35 @@ export default function TimelineIntelligence() {
       });
     });
 
-    return timelineEvents.sort((a, b) => {
+    // Group structural metadata indicators for dynamic dossier rendering
+    const globalMetadata = { topProduct, topCorridor, topBrand };
+
+    const sortedEvents = timelineEvents.sort((a, b) => {
       const severityWeight = { 'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0 };
       return (severityWeight[b.severity] || 0) - (severityWeight[a.severity] || 0);
     });
+
+    return { events: sortedEvents, metadata: globalMetadata };
   }, [tradeData]);
 
   const filteredEvents = useMemo(() => {
+    const eventsList = timelineAnalysis.events || [];
     if (activeTimelineFilter === 'ALL_ANOMALIES') {
-      return timelineAnalysis.filter(e => e.anomalyType !== 'NORMAL_FLOW');
+      return eventsList.filter(e => e.anomalyType !== 'NORMAL_FLOW');
     }
-    return timelineAnalysis.filter(e => e.anomalyType === activeTimelineFilter);
+    return eventsList.filter(e => e.anomalyType === activeTimelineFilter);
   }, [timelineAnalysis, activeTimelineFilter]);
 
   const counters = useMemo(() => {
+    const eventsList = timelineAnalysis.events || [];
     return {
-      spikes: timelineAnalysis.filter(e => e.anomalyType === 'VOLUME_SPIKE').length,
-      reroutes: timelineAnalysis.filter(e => e.anomalyType === 'POST_LAWSUIT_REROUTE').length,
-      timing: timelineAnalysis.filter(e => e.anomalyType === 'SUSPICIOUS_TIMING').length
+      spikes: eventsList.filter(e => e.anomalyType === 'VOLUME_SPIKE').length,
+      reroutes: eventsList.filter(e => e.anomalyType === 'POST_LAWSUIT_REROUTE').length,
+      timing: eventsList.filter(e => e.anomalyType === 'SUSPICIOUS_TIMING').length
     };
   }, [timelineAnalysis]);
+
+  const meta = timelineAnalysis.metadata || { topProduct: 'COMMODITY', topCorridor: 'TRANSIT CHANNELS', topBrand: 'DECLARED BRANDS' };
 
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section text-slate-100">
@@ -149,23 +219,23 @@ export default function TimelineIntelligence() {
         )}
       </div>
 
-      {/* Forensic Intelligence Briefing Notice */}
+      {/* Dynamic AI Technical Risk Dossier - AUTOMATICALLY INTERPOLATING CONTENT */}
       <div className="bg-slate-900 border-l-4 border-cyan-500 p-5 rounded-xl shadow-md space-y-3 print-card-break">
         <h2 className="text-sm font-black tracking-wider text-cyan-400 font-mono uppercase flex items-center gap-2 print-text-dark">
-          <Info size={16} /> Technical Risk Dossier: Split-Batching & Misdeclaration Indicators
+          <Info size={16} /> Technical Risk Dossier: Chronological Flow Anomaly Matrices
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed print-container-expand">
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
-            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">1. SPLIT BATCHING TIMING</span>
-            High-frequency concurrent shipments of small token dollar values indicate deliberate "structuring." Moving commercial cargo via duplicate declarations on a single calendar day is a mechanism used to artificially remain under de minimis automated screening profiles.
+            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">1. QUANTITY STRUCTURING TEMPO</span>
+            High-frequency concurrent monthly transaction batches indicate structural planning. Adjusting commercial weight lines via multi-batch delivery schedules allows entities to maintain a profile under standard historical baseline monitoring screens.
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
-            <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">2. PEPTIDE MISCLASSIFICATION</span>
-            Declaring regulated cold-chain biopharmaceuticals (Semaglutide) under Chapter 9101 (Precious Metal Wristwatches) completely bypasses automated drug licensing controls and health import checks, creating immediate illicit market entry points.
+            <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">2. {meta.topProduct} CLASSIFICATION SHIFTS</span>
+            Declaring trade logs for <span className="text-amber-300 font-bold">{meta.topProduct}</span> across variable or unverified tariff chapters completely breaks down dynamic mass-balance audits and standard customs verification checks, creating tracking discrepancies.
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
-            <span className="text-rose-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">3. REGIONAL RISK VECTOR</span>
-            The Malaysia → Singapore transit channel functions as a highly active cross-border logistics channel. Using generic descriptive consumer hardware tags across this pathway exploits bulk freight corridors to conceal high-demand black-market pharmaceutical goods.
+            <span className="text-rose-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">3. HIGH-INTENSITY CORRIDOR RISK</span>
+            The <span className="text-rose-300 font-bold">{meta.topCorridor}</span> channel functions as a major logistics artery for this product type. Applying alternative classifications across this layout obscures the tracking trail for brand assets registered to <span className="text-rose-300 font-bold">{meta.topBrand}</span>.
           </div>
         </div>
       </div>
@@ -221,7 +291,7 @@ export default function TimelineIntelligence() {
             >
               <span>All Highlighted Anomalies</span>
               <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold">
-                {timelineAnalysis.filter(e => e.anomalyType !== 'NORMAL_FLOW').length}
+                {(timelineAnalysis.events || []).filter(e => e.anomalyType !== 'NORMAL_FLOW').length}
               </span>
             </button>
 
@@ -243,6 +313,16 @@ export default function TimelineIntelligence() {
             >
               <span>Post-Incident Rerouting</span>
               <span className="bg-rose-900/40 px-1.5 py-0.5 rounded text-[10px] text-rose-200 font-bold">{counters.reroutes}</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTimelineFilter('SUSPICIOUS_TIMING')}
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                activeTimelineFilter === 'SUSPICIOUS_TIMING' ? 'bg-cyan-950/60 border border-cyan-600 text-cyan-300 font-bold' : 'bg-cyan-950/20 border-transparent text-cyan-400 hover:bg-cyan-950/40'
+              }`}
+            >
+              <span>Nomenclature Shifts</span>
+              <span className="bg-cyan-900/40 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 font-bold">{counters.timing}</span>
             </button>
           </div>
         </div>
