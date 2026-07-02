@@ -4,6 +4,12 @@ import { Globe, ShieldAlert, FileText, Server, Info, ArrowRight, Share2, AlertTr
 
 // Comprehensive Global Geolocation Look-up Matrix
 const GEOLOCATION_REGISTRY = {
+  // Turn Case Studies & Core Hubs
+  'PAKISTAN': [30.3753, 69.3451],
+  'PK': [30.3753, 69.3451],
+  'INDONESIA': [-0.7893, 113.9213],
+  'ID': [-0.7893, 113.9213],
+
   // Southeast Asia & East Asia Hubs
   'MALAYSIA': [4.2105, 101.9758],
   'MY': [4.2105, 101.9758],
@@ -84,7 +90,6 @@ export default function CountryRiskIntelligence() {
       let severity = 'LOW';
       let brief = 'Logistical routing falls within standard bilateral parameters. Direct shipping lanes observed.';
 
-      // Expanded matching parameters for tracking global transshipment hubs
       const isHub = 
         origin.includes('MALAYSIA') || origin.includes('MY') ||
         origin.includes('SINGAPORE') || origin.includes('SG') || 
@@ -92,7 +97,6 @@ export default function CountryRiskIntelligence() {
         origin.includes('DUBAI') || origin.includes('UAE') || origin.includes('AE') ||
         origin.includes('TURKEY') || origin.includes('TR') || origin.includes('NETHERLANDS') || origin.includes('NL');
 
-      // Strategic cargo classifications
       const isStrategic = 
         product.includes('FILTER') || product.includes('ROD') || product.includes('TOW') || 
         product.includes('ACETATE') || product.includes('TOBACCO') || product.includes('CIG') ||
@@ -178,13 +182,12 @@ export default function CountryRiskIntelligence() {
         if (normal.includes(key)) return coords;
       }
       const hash = normal.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      return [20 + (hash % 25), 10 + (hash % 60)]; // Balanced visual fallback vector
+      return [10 + (hash % 30), 60 + (hash % 50)]; 
     };
 
     const [originLat, originLon] = parseCoords(activeRouteForMap.cleanOrigin);
     const [targetLat, targetLon] = parseCoords(activeRouteForMap.Importer || 'FINAL_DESTINATION');
 
-    // Project coordinates linearly onto a standard 800x360 layout space
     const getXY = (lat, lon) => {
       const x = ((lon + 180) / 360) * 800;
       const y = ((90 - lat) / 180) * 360;
@@ -194,7 +197,7 @@ export default function CountryRiskIntelligence() {
     return {
       origin: getXY(originLat, originLon),
       target: getXY(targetLat, targetLon),
-      color: activeRouteForMap.severity === 'HIGH' ? '#f59e0b' : activeRouteForMap.severity === 'MEDIUM' ? '#3b82f6' : '#94a3b8'
+      color: activeRouteForMap.severity === 'HIGH' ? '#f59e0b' : activeRouteForMap.severity === 'MEDIUM' ? '#3b82f6' : '#10b981'
     };
   }, [activeRouteForMap]);
 
@@ -219,11 +222,11 @@ export default function CountryRiskIntelligence() {
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <Globe className="text-blue-500" size={24} /> Jurisdictional Risk & Transshipment Intelligence
           </h1>
-          <p className="text-xs text-slate-400 mt-1">Comprehensive structural analysis of multi-jurisdictional route splitting, customs transshipment hubs, and logistics discrepancies.</p>
+          <p className="text-xs text-slate-200 mt-1">Comprehensive structural analysis of multi-jurisdictional route splitting, customs transshipment hubs, and logistics discrepancies.</p>
         </div>
         <button 
           onClick={() => window.print()} 
-          className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer text-slate-200 transition shadow-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer text-slate-100 transition shadow-sm"
         >
           <FileText size={14} className="text-blue-400" /> Print Corridor Dossier
         </button>
@@ -231,21 +234,21 @@ export default function CountryRiskIntelligence() {
 
       {/* Risk Tier Index Reference Bar */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 print-break-avoid print-border-clean">
-        <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider flex items-center gap-2 mb-3 print-text-dark">
+        <h3 className="text-xs font-mono font-black text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-3 print-text-dark">
           <Layers size={14} className="text-blue-500" /> Global Risk Tier Index Reference Matrix
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[11px]">
           <div className="p-3 bg-slate-950/40 border-l-4 border-amber-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-amber-400 mb-1 print-text-dark">Tier 1: Elevated Diversion</div>
-            <p className="text-slate-400 leading-tight print-text-muted">Strategic, restricted, or dual-use commodities routed through verified global grey-market transshipment hubs.</p>
+            <p className="text-slate-200 leading-tight print-text-muted">Strategic, restricted, or dual-use commodities routed through verified global grey-market transshipment hubs.</p>
           </div>
           <div className="p-3 bg-slate-950/40 border-l-4 border-blue-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-blue-400 mb-1 print-text-dark">Tier 2: Route Splits / FTZ Loops</div>
-            <p className="text-slate-400 leading-tight print-text-muted">Complex logistics routing utilizing dynamic waypoint insertion, regional loop structures, or Free Trade Zones.</p>
+            <p className="text-slate-200 leading-tight print-text-muted">Complex logistics routing utilizing dynamic waypoint insertion, regional loop structures, or Free Trade Zones.</p>
           </div>
-          <div className="p-3 bg-slate-950/40 border-l-4 border-slate-600 rounded-r border-y border-r border-slate-900 print-border-clean">
-            <div className="font-bold text-slate-400 mb-1 print-text-dark">Tier 3: Monitored Baseline</div>
-            <p className="text-slate-400 leading-tight print-text-muted">Standard linear trade alignments running along transparent, well-mapped bilateral shipping corridors.</p>
+          <div className="p-3 bg-slate-950/40 border-l-4 border-slate-400 rounded-r border-y border-r border-slate-900 print-border-clean">
+            <div className="font-bold text-slate-100 mb-1 print-text-dark">Tier 3: Monitored Baseline</div>
+            <p className="text-slate-200 leading-tight print-text-muted">Standard linear trade alignments running along transparent, well-mapped bilateral shipping corridors.</p>
           </div>
         </div>
       </div>
@@ -256,22 +259,22 @@ export default function CountryRiskIntelligence() {
           <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2 print-text-dark">
             <Server size={14}/> Forensic Corridor Impact Assessment & Summary
           </h3>
-          <p className="text-xs text-slate-300 font-mono leading-relaxed print-text-dark">
+          <p className="text-sm text-white font-mono leading-relaxed print-text-dark">
             <strong>Logistical Context:</strong> {structuralInsights.contextText}
           </p>
-          <p className="text-xs text-slate-400 font-mono leading-relaxed print-text-muted">
+          <p className="text-sm text-slate-200 font-mono leading-relaxed print-text-muted">
             <strong>Evidentiary Finding:</strong> {structuralInsights.evidentiaryFinding}
           </p>
         </div>
 
         {/* High Contrast Audit Balance Card */}
         <div className="bg-[#111827] border border-slate-800 p-5 rounded-xl flex flex-col justify-center space-y-2 print-border-clean">
-          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider print-text-muted">Audited Corridor Value Risk</span>
+          <span className="text-[10px] font-mono font-bold text-slate-300 uppercase tracking-wider print-text-muted">Audited Corridor Value Risk</span>
           <div className="text-2xl font-mono font-black text-emerald-400 print-text-dark">
             ${structuralInsights.totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </div>
-          <span className="text-[10px] font-mono text-slate-400 block border-t border-slate-800/60 pt-2 print-text-muted print-border-clean">
-            Concentrated across <strong>{structuralInsights.uniqueTargets} unique consignees</strong> globally.
+          <span className="text-[11px] font-mono text-slate-200 block border-t border-slate-800/60 pt-2 print-text-muted print-border-clean">
+            Concentrated across <strong className="text-white">{structuralInsights.uniqueTargets} unique consignees</strong> globally.
           </span>
         </div>
       </div>
@@ -286,7 +289,7 @@ export default function CountryRiskIntelligence() {
             </h3>
           </div>
           {activeRouteForMap && (
-            <span className="text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-400 print-text-muted">
+            <span className="text-[10px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-200 print-text-muted">
               Mapping Item: <strong className="text-blue-400">{activeRouteForMap.cleanProduct}</strong>
             </span>
           )}
@@ -295,66 +298,74 @@ export default function CountryRiskIntelligence() {
         {activeRouteForMap && mapVectors ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center pt-2">
             
-            {/* Pure SVG Scalable Map Layout (Zero Dependencies, Fully Bundle Safe & High-Contrast Style) */}
-            <div className="lg:col-span-3 bg-[#0b0f19] rounded-xl border border-slate-900 relative h-[320px] p-2 print-border-clean print-container-expand flex items-center justify-center">
+            {/* High-Visibility Vector Map Canvas Layer */}
+            <div className="lg:col-span-3 bg-[#0a0f1d] rounded-xl border border-slate-800 relative h-[360px] p-2 print-border-clean print-container-expand flex items-center justify-center">
               <svg 
                 viewBox="0 0 800 360" 
-                className="w-full h-full max-h-[300px] text-slate-800"
-                style={{ background: '#0b0f19' }}
+                className="w-full h-full text-slate-700"
+                style={{ background: '#0a0f1d' }}
               >
-                {/* Background Tech Mesh Grid */}
+                {/* Tech Grid Pattern */}
                 <defs>
-                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.5" strokeOpacity="0.4" />
+                  <pattern id="grid" width="25" height="25" patternUnits="userSpaceOnUse">
+                    <path d="M 25 0 L 0 0 0 25" fill="none" stroke="#1e293b" strokeWidth="0.5" strokeOpacity="0.6" />
                   </pattern>
                 </defs>
                 <rect width="100%" height="100%" fill="url(#grid)" />
 
-                {/* Tactical Baseline Continent Reference Circles */}
-                <circle cx="160" cy="120" r="40" fill="#1e293b" fillOpacity="0.15" /> {/* North America */}
-                <circle cx="480" cy="130" r="50" fill="#1e293b" fillOpacity="0.15" /> {/* Eurasia / Europe */}
-                <circle cx="560" cy="160" r="45" fill="#1e293b" fillOpacity="0.15" /> {/* Southeast Asia */}
+                {/* Visible Light-Colored Continental Landmass Outlines */}
+                <g fill="#1e2d4a" stroke="#33476a" strokeWidth="1" strokeOpacity="0.7" fillOpacity="0.4">
+                  {/* North America */}
+                  <path d="M 50,50 L 180,40 L 220,120 L 150,180 L 110,160 L 70,120 Z" />
+                  {/* South America */}
+                  <path d="M 160,190 L 210,210 L 180,320 L 140,240 Z" />
+                  {/* Eurasia & Europe */}
+                  <path d="M 360,60 L 450,40 L 680,50 L 650,150 L 520,160 L 480,120 L 380,110 Z" />
+                  {/* Africa */}
+                  <path d="M 380,130 L 460,140 L 490,200 L 450,290 L 410,210 L 360,170 Z" />
+                  {/* Australia */}
+                  <path d="M 620,240 L 690,250 L 670,300 L 600,280 Z" />
+                </g>
 
-                {/* Connection Flight/Sailing Vector Arc Line */}
+                {/* Connection Flight/Sailing Vector Curved Pathway Arc */}
                 <path
-                  d={`M ${mapVectors.origin.x} ${mapVectors.origin.y} Q ${(mapVectors.origin.x + mapVectors.target.x) / 2} ${Math.min(mapVectors.origin.y, mapVectors.target.y) - 40} ${mapVectors.target.x} ${mapVectors.target.y}`}
+                  d={`M ${mapVectors.origin.x} ${mapVectors.origin.y} Q ${(mapVectors.origin.x + mapVectors.target.x) / 2} ${Math.min(mapVectors.origin.y, mapVectors.target.y) - 60} ${mapVectors.target.x} ${mapVectors.target.y}`}
                   fill="none"
                   stroke={mapVectors.color}
-                  strokeWidth="2.5"
-                  strokeDasharray="5,5"
-                  className="animate-[dash_30s_linear_infinite]"
+                  strokeWidth="3"
+                  strokeDasharray="6,4"
                 />
 
                 {/* Origin Marker Node */}
-                <circle cx={mapVectors.origin.x} cy={mapVectors.origin.y} r="7" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
-                <text x={mapVectors.origin.x + 12} y={mapVectors.origin.y + 4} fill="#94a3b8" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                <circle cx={mapVectors.origin.x} cy={mapVectors.origin.y} r="8" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+                <text x={mapVectors.origin.x + 12} y={mapVectors.origin.y - 6} fill="#ffffff" fontSize="11" fontFamily="monospace" fontWeight="bold" backgroundColor="#000000">
                   {activeRouteForMap.cleanOrigin}
                 </text>
 
                 {/* Destination Target Node */}
-                <circle cx={mapVectors.target.x} cy={mapVectors.target.y} r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
-                <text x={mapVectors.target.x + 12} y={mapVectors.target.y + 4} fill="#10b981" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                <circle cx={mapVectors.target.x} cy={mapVectors.target.y} r="8" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
+                <text x={mapVectors.target.x + 12} y={mapVectors.target.y + 14} fill="#10b981" fontSize="11" fontFamily="monospace" fontWeight="bold">
                   {activeRouteForMap.Importer || 'TARGET'}
                 </text>
               </svg>
             </div>
 
-            {/* Micro Dynamic Route Context Card */}
-            <div className="bg-slate-950/40 border border-slate-800/80 p-4 rounded-xl space-y-2 h-full flex flex-col justify-center print-border-clean">
-              <span className="text-[9px] font-mono font-black text-slate-500 uppercase tracking-wider block">Audited Pathway Vector</span>
-              <div className="text-xs font-mono font-bold text-slate-200 line-clamp-2 print-text-dark">
+            {/* Dynamic Route Context Sidebar */}
+            <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-2 h-full flex flex-col justify-center print-border-clean">
+              <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-wider block">Audited Pathway Vector</span>
+              <div className="text-xs font-mono font-bold text-white line-clamp-2 print-text-dark">
                 {activeRouteForMap.routePath}
               </div>
-              <div className="pt-2 border-t border-slate-800/60 flex items-center justify-between text-[10px] font-mono print-border-clean">
-                <span className="text-slate-400 print-text-muted">Risk Severity:</span>
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between text-[11px] font-mono print-border-clean">
+                <span className="text-slate-300 print-text-muted">Risk Severity:</span>
                 <span className={`font-bold uppercase ${
-                  activeRouteForMap.severity === 'HIGH' ? 'text-amber-400' : activeRouteForMap.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-400'
+                  activeRouteForMap.severity === 'HIGH' ? 'text-amber-400' : activeRouteForMap.severity === 'MEDIUM' ? 'text-blue-400' : 'text-emerald-400'
                 }`}>{activeRouteForMap.severity}</span>
               </div>
             </div>
           </div>
         ) : (
-          <div className="text-center py-6 text-xs font-mono text-slate-500 bg-slate-950/40 border border-dashed border-slate-800 rounded-xl">
+          <div className="text-center py-6 text-xs font-mono text-slate-300 bg-slate-950/40 border border-dashed border-slate-800 rounded-xl">
             No active trade records found to generate visual vector maps.
           </div>
         )}
@@ -370,24 +381,24 @@ export default function CountryRiskIntelligence() {
             <h3 className="text-sm font-black tracking-wider text-white font-mono uppercase print-text-dark">
               Executive AI Briefing & Operational Analysis
             </h3>
-            <p className="text-[11px] text-slate-400 font-mono print-text-muted">Dynamic algorithmic threat overview and supply chain verification matrix</p>
+            <p className="text-[11px] text-slate-200 font-mono print-text-muted">Dynamic algorithmic threat overview and supply chain verification matrix</p>
           </div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-mono leading-relaxed print-container-expand">
-          <div className="bg-slate-950/60 p-4 rounded-lg border border-slate-800/80 space-y-1 print-break-avoid print-border-clean">
-            <span className="text-blue-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800/60 pb-1 mb-2 print-text-dark print-border-clean">
+          <div className="bg-slate-950/60 p-4 rounded-lg border border-slate-800 space-y-1 print-break-avoid print-border-clean">
+            <span className="text-blue-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark print-border-clean">
               Strategic Threat Briefing
             </span>
-            <p className="text-slate-300 print-text-dark">
+            <p className="text-slate-100 print-text-dark">
               {structuralInsights.executiveBriefing}
             </p>
           </div>
-          <div className="bg-slate-950/60 p-4 rounded-lg border border-slate-800/80 space-y-1 print-break-avoid print-border-clean">
-            <span className="text-emerald-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800/60 pb-1 mb-2 print-text-dark print-border-clean">
+          <div className="bg-slate-950/60 p-4 rounded-lg border border-slate-800 space-y-1 print-break-avoid print-border-clean">
+            <span className="text-emerald-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark print-border-clean">
               Operational Vector Analysis
             </span>
-            <p className="text-slate-300 print-text-dark">
+            <p className="text-slate-100 print-text-dark">
               {structuralInsights.operationalAnalysis}
             </p>
           </div>
@@ -399,7 +410,7 @@ export default function CountryRiskIntelligence() {
         
         {/* Sidebar Filtering Controls */}
         <div className="space-y-2 non-printable">
-          <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-widest block px-1 mb-2">Logistical Risk Class</span>
+          <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-widest block px-1 mb-2">Logistical Risk Class</span>
           {[
             { id: 'ALL', label: 'All Audited Shipments' },
             { id: 'TIER_1_ELEVATED_DIVERSION', label: 'Tier 1: Elevated Diversion' },
@@ -415,7 +426,7 @@ export default function CountryRiskIntelligence() {
               className={`w-full text-left p-3 rounded font-mono text-xs cursor-pointer block border transition-all ${
                 filterType === tab.id 
                   ? 'bg-[#1e293b] border-blue-500 text-white font-bold' 
-                  : 'bg-[#111827]/60 border-slate-800 text-slate-400 hover:bg-[#111827]'
+                  : 'bg-[#111827]/60 border-slate-800 text-slate-300 hover:bg-[#111827] hover:text-white'
               }`}
             >
               {tab.label} ({tab.id === 'ALL' ? riskAnalysis.length : riskAnalysis.filter(e => e.riskType === tab.id).length})
@@ -437,46 +448,46 @@ export default function CountryRiskIntelligence() {
                 }`}
               >
                 
-                <div className="flex justify-between border-b border-slate-800/60 pb-2 mb-3 font-mono text-xs print-border-clean">
+                <div className="flex justify-between border-b border-slate-800 pb-2 mb-3 font-mono text-xs print-border-clean">
                   <span className={`font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                    evt.severity === 'HIGH' ? 'text-amber-400' : evt.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-400'
+                    evt.severity === 'HIGH' ? 'text-amber-400' : evt.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-200'
                   } print-text-dark`}>
                     {evt.severity === 'HIGH' && <AlertTriangle size={13} className="non-printable" />}
                     {evt.severity === 'MEDIUM' && <ShieldAlert size={13} className="non-printable" />}
                     {evt.severity === 'LOW' && <CheckCircle2 size={13} className="non-printable" />}
                     {(evt.riskType || '').replace(/_/g, ' ')}
                   </span>
-                  <span className="text-slate-400 font-bold print-text-muted">{evt.Date || '2026 Audit Cycle'}</span>
+                  <span className="text-slate-200 font-bold print-text-muted">{evt.Date || '2026 Audit Cycle'}</span>
                 </div>
 
                 {/* Audit Narrative block */}
                 <div className="space-y-2 mb-4">
-                  <p className="text-xs font-mono text-slate-200 leading-relaxed print-text-dark">
-                    <span className="text-slate-500 font-black uppercase tracking-tight print-text-muted">Logistical Record Brief:</span> {evt.brief}
+                  <p className="text-xs font-mono text-white leading-relaxed print-text-dark">
+                    <span className="text-slate-300 font-black uppercase tracking-tight print-text-muted">Logistical Record Brief:</span> {evt.brief}
                   </p>
                 </div>
 
                 {/* Granular Supply-Chain Mapping Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800/40 text-xs font-mono print-border-clean print-container-expand">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800 text-xs font-mono print-border-clean print-container-expand">
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5 print-text-muted">Reconstructed Sourcing Route Path</span>
-                    <span className="text-slate-200 font-bold print-text-dark">{evt.routePath}</span>
+                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5 print-text-muted">Reconstructed Sourcing Route Path</span>
+                    <span className="text-white font-bold print-text-dark">{evt.routePath}</span>
                   </div>
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5 print-text-muted">Commodity Description</span>
-                    <span className="text-slate-300 truncate block max-w-xs print-text-dark">{evt.Product || 'Unclassified Item'}</span>
+                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5 print-text-muted">Commodity Description</span>
+                    <span className="text-slate-100 truncate block max-w-xs print-text-dark">{evt.Product || 'Unclassified Item'}</span>
                   </div>
                   <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5 print-text-muted">Target Consignee (Entity Linkage)</span>
+                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5 print-text-muted">Target Consignee (Entity Linkage)</span>
                     <span className="text-blue-400 font-bold block truncate print-text-dark">{evt.Importer || 'UNKNOWN CONSIGNEE'}</span>
                   </div>
                 </div>
 
                 {/* Defensible Legal Findings Sub-Section */}
-                <div className="mt-4 pt-3 border-t border-slate-800/20 text-[10px] font-mono text-slate-400 flex items-start gap-1.5 bg-[#0f172a]/40 p-2.5 rounded-lg border border-slate-800/40 print-border-clean">
+                <div className="mt-4 pt-3 border-t border-slate-800 text-[10px] font-mono text-slate-200 flex items-start gap-1.5 bg-[#0f172a]/40 p-2.5 rounded-lg border border-slate-800 print-border-clean">
                   <Info size={12} className="text-blue-400 mt-0.5 flex-shrink-0 non-printable" />
                   <div>
-                    <strong className="text-slate-300 uppercase tracking-tight block mb-0.5 print-text-dark">Possible Litigation Relevance:</strong>
+                    <strong className="text-white uppercase tracking-tight block mb-0.5 print-text-dark">Possible Litigation Relevance:</strong>
                     Potentially relevant to parallel importation analysis and regulatory compliance modeling. Sourcing proprietary assets or manufacturing nodes via known third-country transshipment legs supports commercial scale audits and indicates structural related-party or gray-market distribution routing.
                   </div>
                 </div>
@@ -484,7 +495,7 @@ export default function CountryRiskIntelligence() {
               </div>
             ))
           ) : (
-            <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl text-xs font-mono text-slate-500 print-border-clean">
+            <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl text-xs font-mono text-slate-300 print-border-clean">
               No entries found matching the current analytical parameters.
             </div>
           )}
