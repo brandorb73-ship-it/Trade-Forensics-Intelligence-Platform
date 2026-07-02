@@ -15,45 +15,124 @@ export default function HSIntelligence() {
     const corridorsMap = {};
     const chaptersMap = {};
     const discrepancyRecords = [];
+    const deviationMatrix = {};
+    const mismatchedChapters = new Set();
+
+    // 1. Pre-scan dataset to build statistical mode baselines per product group dynamically
+    const productBaselines = {};
+    const productCounts = {};
+    const brandCounts = {};
 
     tradeData.forEach(row => {
-      const hsString = String(row.HSCode || '');
-      const productDesc = (row.Product || '').toUpperCase();
+      const prod = (row.Product || '').toUpperCase().trim();
+      const brand = (row.Brand || '').toUpperCase().trim();
+      const hs = String(row.HSCode || '').trim();
+      const chapter2D = hs && hs !== '?' ? hs.substring(0, 2) : null;
+
+      if (prod) {
+        productCounts[prod] = (productCounts[prod] || 0) + 1;
+        if (chapter2D) {
+          if (!productBaselines[prod]) productBaselines[prod] = {};
+          productBaselines[prod][chapter2D] = (productBaselines[prod][chapter2D] || 0) + 1;
+        }
+      }
+      if (brand && brand !== 'NOT DECLARED') {
+        brandCounts[brand] = (brandCounts[brand] || 0) + 1;
+      }
+    });
+
+    // Derive the dominant, expected standard chapter prefix for each commodity name
+    const expectedChapterMap = {};
+    Object.entries(productBaselines).forEach(([prod, chapters]) => {
+      const sortedChapters = Object.entries(chapters).sort((a, b) => b[1] - a[1]);
+      if (sortedChapters.length > 0) {
+        expectedChapterMap[prod] = sortedChapters[0][0]; 
+      }
+    });
+
+    // Isolate top descriptors for natural phrasing insertion in dynamic intelligence summaries
+    const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'CARGO STOCKS';
+    const topBrand = Object.entries(brandCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'UNBRANDED';
+
+    // 2. Secondary Primary Diagnostic Evaluation Loop
+    tradeData.forEach(row => {
+      const hsString = String(row.HSCode || '').trim();
+      const productDesc = (row.Product || '').toUpperCase().trim();
       const amount = parseFloat(row.Amount) || 0;
       const origin = row.OriginCountry || 'UNKNOWN';
       const dest = row.DestinationCountry || 'UNKNOWN';
       const keyCorridor = `${origin} → ${dest}`;
       
-      const chapterPrefix = hsString.substring(0, 4) || 'UNKNOWN';
-      const isMismatched = productDesc.includes('SEMAGLUTIDE') && hsString.startsWith('9101');
+      const chapterPrefix = hsString && hsString !== '?' ? hsString.substring(0, 4) : 'UNASSIGNED';
+      const currentChapter2D = hsString && hsString !== '?' ? hsString.substring(0, 2) : null;
+
+      let isMismatched = false;
+      let expectedChapterText = 'Calculated Baseline';
+      let declaredChapterText = hsString && hsString !== '?' ? `Chapter ${hsString.substring(0, 2)}` : 'Missing / Secret';
+
+      // Advanced Adaptive Pattern Profiling Rules
+      if (productDesc.includes('SEMAGLUTIDE')) {
+        expectedChapterText = 'Chapter 30 (Pharma)';
+        if (currentChapter2D !== '30') {
+          isMismatched = true;
+        }
+      } else if (productDesc.includes('FILTER RODS') || productDesc.includes('CIGARETTE')) {
+        expectedChapterText = 'Chapter 56 (Wadding/Tow)';
+        // Flag paper/cellulose deviations (48) or blank variables as nomenclature threats
+        if (currentChapter2D === '48' || hsString === '?' || !currentChapter2D) {
+          isMismatched = true;
+        }
+      } else {
+        // Universal Statistical Outlier Fallback Engine
+        const modeChapter2D = expectedChapterMap[productDesc];
+        if (modeChapter2D) {
+          expectedChapterText = `Chapter ${modeChapter2D}`;
+          if (currentChapter2D !== modeChapter2D || hsString === '?') {
+            isMismatched = true;
+          }
+        } else if (hsString === '?') {
+          isMismatched = true;
+          expectedChapterText = 'Verification Required';
+        }
+      }
       
       if (isMismatched) {
         globalMismatchedValue += amount;
         highRiskIncidentCount += 1;
         corridorsMap[keyCorridor] = (corridorsMap[keyCorridor] || 0) + amount;
+        
+        const displayFlaggedChapter = hsString && hsString !== '?' ? `Chapter ${hsString.substring(0, 2)}` : 'Undisclosed / ?';
+        mismatchedChapters.add(hsString && hsString !== '?' ? hsString.substring(0, 2) : 'Missing Code');
+
+        if (!deviationMatrix[displayFlaggedChapter]) {
+          deviationMatrix[displayFlaggedChapter] = { name: displayFlaggedChapter, value: 0, count: 0 };
+        }
+        deviationMatrix[displayFlaggedChapter].value += amount;
+        deviationMatrix[displayFlaggedChapter].count += 1;
       }
 
-      if (!chaptersMap[chapterPrefix]) {
-        chaptersMap[chapterPrefix] = {
-          code: chapterPrefix,
+      const chapterKey = hsString && hsString !== '?' ? hsString.substring(0, 2) : 'UNKNOWN';
+      if (!chaptersMap[chapterKey]) {
+        chaptersMap[chapterKey] = {
+          code: chapterKey,
           totalValue: 0,
           shipmentCount: 0,
           flaggedCount: 0
         };
       }
       
-      chaptersMap[chapterPrefix].totalValue += amount;
-      chaptersMap[chapterPrefix].shipmentCount += 1;
+      chaptersMap[chapterKey].totalValue += amount;
+      chaptersMap[chapterKey].shipmentCount += 1;
       if (isMismatched) {
-        chaptersMap[chapterPrefix].flaggedCount += 1;
+        chaptersMap[chapterKey].flaggedCount += 1;
       }
 
       discrepancyRecords.push({
         ...row,
         chapterPrefix,
         isMismatched,
-        expectedChapter: 'Chapter 30 (Pharma)',
-        declaredChapter: `Chapter ${hsString.substring(0, 2)} (Watches)`
+        expectedChapter: expectedChapterText,
+        declaredChapter: declaredChapterText
       });
     });
 
@@ -62,19 +141,29 @@ export default function HSIntelligence() {
       .sort((a, b) => b.val - a.val)
       .slice(0, 4);
 
+    const deviationsList = Object.values(deviationMatrix).sort((a, b) => b.value - a.value);
+
+    const chapterListStr = mismatchedChapters.size > 0 
+      ? Array.from(mismatchedChapters).map(ch => ch.length === 2 ? `Chapter ${ch}` : ch).join(' / ')
+      : 'alternative headers';
+
     return {
       globalMismatchedValue,
       highRiskIncidentCount,
       chapters: Object.values(chaptersMap).sort((a, b) => b.totalValue - a.totalValue),
       records: discrepancyRecords,
-      topCorridors
+      topCorridors,
+      deviations: deviationsList,
+      topProduct,
+      topBrand,
+      chapterListStr
     };
   }, [tradeData]);
 
   const filteredRecords = useMemo(() => {
     if (selectedChapterFilter === 'ALL') return hsAnalysis.records;
     if (selectedChapterFilter === 'RISK_ONLY') return hsAnalysis.records.filter(r => r.isMismatched);
-    return hsAnalysis.records.filter(r => r.chapterPrefix === selectedChapterFilter);
+    return hsAnalysis.records.filter(r => r.hsString?.substring(0, 2) === selectedChapterFilter || r.chapterPrefix === selectedChapterFilter);
   }, [hsAnalysis.records, selectedChapterFilter]);
 
   return (
@@ -103,7 +192,7 @@ export default function HSIntelligence() {
         )}
       </div>
 
-      {/* Forensic Intelligence Briefing Notice - Diagnostic Red Flag Breakdown */}
+      {/* Forensic Intelligence Briefing Notice - Fully Adaptive Assessment Panels */}
       <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3">
         <h2 className="text-sm font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2">
           <Info size={16} /> Diagnostic Risk Analysis: Strategic Misdeclaration Framework
@@ -111,15 +200,15 @@ export default function HSIntelligence() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed">
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1">PRODUCT SPECIES RISK</span>
-            Semaglutide is a strictly regulated biopharmaceutical requiring temperature-controlled logistics chain integrity and health import licensing tokens. Misclassifying it avoids drug import declarations entirely.
+            Analytical profile tracking indicates <span className="text-amber-400 font-bold">{hsAnalysis.topProduct}</span> cargo operations exhibit clear classification variance. Utilizing alternative definitions subverts targeted security screening profiles and import verification triggers.
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-emerald-400 font-bold block border-b border-slate-800 pb-1 mb-1">BRAND INTEL & GRAY MARKETS</span>
-            The lack of legitimate pharmaceutical distribution credentials paired with high-value gray market branded items signals parallel distribution networks circumventing official, audited pharma trade routes.
+            The monitoring of structural trade pathways utilizing the <span className="text-emerald-400 font-bold">{hsAnalysis.topBrand !== 'UNBRANDED' ? `'${hsAnalysis.topBrand}'` : 'unbranded product'}</span> signature reveals sudden routing diversions, a core indicator for unverified parallel diversion lines.
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-cyan-400 font-bold block border-b border-slate-800 pb-1 mb-1">TARIFF EVASION DYNAMICS</span>
-            Utilizing HS Chapter 9101 (Precious Metal Watches) strips out the regulatory "Pharma" risk profiling markers in automated regional container clearing systems, intentionally blinding compliance audits.
+            Applying variable headings such as <span className="text-cyan-400 font-bold">{hsAnalysis.chapterListStr}</span> alters the tracking footprint inside global supply chain records, neutralizing standard automated risk audit triggers.
           </div>
         </div>
       </div>
@@ -163,7 +252,7 @@ export default function HSIntelligence() {
         </div>
       </div>
 
-      {/* Mid-Tier Graphical Matrix & Ranked Corridor Breakdowns */}
+      {/* Dynamic Adaptive Graphical Matrix & Ranked Corridor Breakdowns */}
       {tradeData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
@@ -175,16 +264,34 @@ export default function HSIntelligence() {
                 <span>RAW NOMENCLATURE MATRICES</span>
                 <span>AGGREGATE DISCREPANCY VOLUME</span>
               </div>
-              <div className="space-y-2.5">
-                <div className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2">
-                  <div className="flex justify-between items-center text-xs font-mono">
-                    <span className="text-slate-300 font-bold">Declared Chapter 9101 (Clocks & Watches)</span>
-                    <span className="text-rose-400 font-black">100% Deviation</span>
+              <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
+                {hsAnalysis.deviations.length > 0 ? (
+                  hsAnalysis.deviations.map((dev, idx) => {
+                    const maxDevVal = hsAnalysis.deviations[0].value || 1;
+                    const deviationPercentage = hsAnalysis.globalMismatchedValue > 0 
+                      ? ((dev.value / hsAnalysis.globalMismatchedValue) * 100).toFixed(0) 
+                      : '100';
+
+                    return (
+                      <div key={idx} className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2">
+                        <div className="flex justify-between items-center text-xs font-mono">
+                          <span className="text-slate-300 font-bold">Declared {dev.name}</span>
+                          <span className="text-rose-400 font-black">{deviationPercentage}% Anomaly Weight</span>
+                        </div>
+                        <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex">
+                          <div 
+                            className="bg-rose-500 h-full rounded transition-all duration-500" 
+                            style={{ width: `${Math.max(15, (dev.value / maxDevVal) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="text-center text-xs font-mono text-slate-500 py-6">
+                    Zero automated classification deviations detected.
                   </div>
-                  <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex">
-                    <div className="bg-rose-500 h-full rounded" style={{ width: '100%' }}></div>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -203,7 +310,7 @@ export default function HSIntelligence() {
                       <div key={idx} className="space-y-1">
                         <div className="flex justify-between text-xs font-mono">
                           <span className="text-slate-300 font-semibold">{c.name}</span>
-                          <span className="text-amber-400 font-bold">${c.val.toLocaleString()}</span>
+                          <span className="text-amber-400 font-bold">${c.val.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
                         <div className="w-full bg-slate-900 h-2 rounded-full">
                           <div className="bg-gradient-to-r from-amber-600 to-amber-400 h-2 rounded-full" style={{ width: `${pct}%` }}></div>
@@ -249,6 +356,19 @@ export default function HSIntelligence() {
               <span className="flex items-center gap-1.5"><ShieldAlert size={12} /> High-Risk Anomaly Set</span>
               <span className="bg-rose-900/60 px-1.5 py-0.5 rounded text-[10px] text-rose-200 font-bold">{hsAnalysis.highRiskIncidentCount}</span>
             </button>
+            
+            {hsAnalysis.chapters.map((ch, idx) => (
+              <button
+                key={idx}
+                onClick={() => setSelectedChapterFilter(ch.code)}
+                className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                  selectedChapterFilter === ch.code ? 'bg-slate-900 border border-slate-600 text-white font-bold' : 'bg-slate-900/40 border border-transparent text-slate-400 hover:bg-slate-900/70 hover:text-slate-200'
+                }`}
+              >
+                <span>Heading Prefix: {ch.code}</span>
+                <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">{ch.shipmentCount}</span>
+              </button>
+            ))}
           </div>
         </div>
 
@@ -266,7 +386,7 @@ export default function HSIntelligence() {
                 <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
                   <th className="px-4 py-3">Date</th>
                   <th className="px-4 py-3">Nomenclature Map</th>
-                  <th className="px-4 py-3">Brand</th>
+                  <th className="px-4 py-3">Brand Identifier</th>
                   <th className="px-4 py-3">Product Description</th>
                   <th className="px-4 py-3 text-right">Value (USD)</th>
                   <th className="px-4 py-3">Corridor Paths</th>
@@ -276,29 +396,35 @@ export default function HSIntelligence() {
               <tbody className="divide-y divide-slate-700/60 font-mono text-xs">
                 {filteredRecords.length > 0 ? (
                   filteredRecords.map((rec, i) => (
-                    <tr key={rec.id || i} className={`hover:bg-slate-700/30 transition-colors ${rec.isMismatched ? 'bg-rose-950/10' : ''}`}>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{rec.Date}</td>
+                    <tr key={rec.id || i} className={`hover:bg-slate-700/30 transition-colors ${rec.isMismatched ? 'bg-rose-950/20' : ''}`}>
+                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{rec.Date || 'UNKNOWN'}</td>
                       <td className="px-4 py-3 space-y-1">
                         <span className={`px-1.5 py-0.5 rounded font-bold ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
-                          {rec.HSCode}
+                          {rec.HSCode || '?'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[120px] truncate">{rec.Brand || 'UNBRANDED'}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate">{rec.Product}</td>
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate">{rec.Brand || 'NOT DECLARED'}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate">{rec.Product || 'UNCATEGORIZED'}</td>
                       <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono">
-                        ${rec.Amount ? Number(rec.Amount).toLocaleString() : '0.00'}
+                        ${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                       </td>
                       <td className="px-4 py-3 text-[11px] whitespace-nowrap">
-                        <div>{rec.OriginCountry} → {rec.DestinationCountry}</div>
+                        <div className="text-slate-300">{rec.OriginCountry || 'UNKNOWN'} → {rec.DestinationCountry || 'UNKNOWN'}</div>
                       </td>
                       <td className="px-4 py-3">
-                        {rec.isMismatched ? <span className="text-rose-400 font-bold text-[10px]">CRITICAL DEVIATION</span> : <span className="text-slate-500 text-[10px]">Clean</span>}
+                        {rec.isMismatched ? (
+                          <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
+                            MISCLASSIFICATION SHIFT
+                          </span>
+                        ) : (
+                          <span className="text-slate-500 text-[10px]">Clean Pass</span>
+                        )}
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={7} className="text-center py-16 text-slate-500">No records to load.</td>
+                    <td colSpan={7} className="text-center py-16 text-slate-500">No records found matching current data filters.</td>
                   </tr>
                 )}
               </tbody>
