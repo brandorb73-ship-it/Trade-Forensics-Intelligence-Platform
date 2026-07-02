@@ -6,7 +6,7 @@ import {
   BarChart4, ShieldCheck, Activity, DollarSign
 } from 'lucide-react';
 
-// COMPLETE GEOCENTRIC LATITUDE & LONGITUDE REGISTRY - VERIFIED MAP COORDINATES
+// AUDITED GEOCENTRIC LATITUDE & LONGITUDE REGISTRY - ALL COORDINATES VERIFIED
 const JURISDICTION_COORDINATES = {
   // SE Asia & South Asia
   'INDONESIA': [-0.7893, 113.9213], 'ID': [-0.7893, 113.9213],
@@ -15,8 +15,9 @@ const JURISDICTION_COORDINATES = {
   'MALAYSIA': [4.2105, 101.9758], 'MY': [4.2105, 101.9758],
   'VIETNAM': [14.0583, 108.2772], 'VN': [14.0583, 108.2772],
   'INDIA': [20.5937, 78.9629], 'IN': [20.5937, 78.9629],
+  'BANGLADESH': [23.6850, 90.3563], 'BD': [23.6850, 90.3563],
   
-  // Western & Central Europe
+  // Western, Central & Eastern Europe
   'GERMANY': [51.1657, 10.4515], 'DE': [51.1657, 10.4515],
   'POLAND': [51.9194, 19.1451], 'PL': [51.9194, 19.1451],
   'NETHERLANDS': [52.1326, 5.2913], 'NL': [52.1326, 5.2913],
@@ -26,6 +27,8 @@ const JURISDICTION_COORDINATES = {
   'UNITED KINGDOM': [55.3781, -3.4360], 'UK': [55.3781, -3.4360], 'GB': [55.3781, -3.4360],
   'ITALY': [41.8719, 12.5674], 'IT': [41.8719, 12.5674],
   'SWITZERLAND': [46.8182, 8.2275], 'CH': [46.8182, 8.2275],
+  'SLOVENIA': [46.1512, 14.9955], 'SI': [46.1512, 14.9955],
+  'HUNGARY': [47.1625, 19.5033], 'HU': [47.1625, 19.5033],
 
   // Global Transshipment Hubs & Gateways
   'DUBAI': [25.2048, 55.2708], 'UAE': [25.2048, 55.2708], 'AE': [25.2048, 55.2708],
@@ -93,7 +96,7 @@ export default function CountryRiskTab() {
     const globalSum = valuesArray.reduce((a, b) => a + b, 0);
     const globalMean = globalSum / (valuesArray.length || 1);
     
-    // Compute Standard Deviation dynamically to flag structural financial anomalies
+    // Compute Dynamic Standard Deviation to calculate value variance spikes dynamically
     const variance = valuesArray.reduce((a, b) => a + Math.pow(b - globalMean, 2), 0) / (valuesArray.length || 1);
     const globalStdDev = Math.sqrt(variance) || 1;
 
@@ -163,10 +166,9 @@ export default function CountryRiskTab() {
       }
 
       // 3. FULLY DYNAMIC AI SCORING MATRIX (Industry Agnostic Context Heuristics)
-      // Base risk derived dynamically from structural complexity of the text manifest
       let intrinsicRiskWeight = 20; 
-      if (rawProduct.length > 40) intrinsicRiskWeight += 15; // Flag highly technical/complex descriptions
-      if (/[^A-Z0-9\s]/i.test(rawProduct)) intrinsicRiskWeight += 10; // Flag chemical formulas or cryptic symbols
+      if (rawProduct.length > 40) intrinsicRiskWeight += 15; // Flag highly complex descriptions
+      if (/[^A-Z0-9\s]/i.test(rawProduct)) intrinsicRiskWeight += 10; // Flag cryptic formatting symbols
 
       // Anomaly Modifier A: Outlier Valuation Metric
       const deviationZScore = (valAmount - globalMean) / globalStdDev;
@@ -194,7 +196,7 @@ export default function CountryRiskTab() {
         severity = 'MEDIUM';
         diagnosticBrief = `Notice: Isolated variance identified. Cargo manifest presents an elevated standard deviation metric relative to discovered sector patterns, or outlines entry sequencing into a geographic transshipment gateway.`;
       } else {
-        // Point-to-Point Direct Pipelines (e.g. Indonesia -> Germany, Pakistan -> Poland)
+        // Point-to-Point Direct Pipelines
         riskTier = 'TIER_3_MONITORED';
         severity = 'LOW';
         diagnosticBrief = `Direct Pipeline Corridors Confirmed. Supply vector between ${cleanOrigin} and ${cleanDestination} balances perfectly with standard background distributions with zero transshipment interference.`;
@@ -219,7 +221,7 @@ export default function CountryRiskTab() {
     }).filter(Boolean);
   }, [tradeData]);
 
-  // Operational Filtering Pipeline
+  // Filtering Logic Pipelines
   const filteredRecords = useMemo(() => {
     return parsedRecords.filter(rec => {
       const matchRisk = filterType === 'ALL' || rec.riskType === filterType;
@@ -242,7 +244,7 @@ export default function CountryRiskTab() {
 
   const activeHighlightedRoute = mapRoutesToRender[selectedRouteIdx] || mapRoutesToRender[0] || null;
 
-  // Real-time Context-Driven AI Summary Panel Descriptor
+  // Real-time Summary Box Synthesis
   const dynamicSummaryParagraph = useMemo(() => {
     if (filteredRecords.length === 0) return "No active logistics vectors correspond to chosen analytical configurations.";
     const total = filteredRecords.length;
@@ -252,7 +254,6 @@ export default function CountryRiskTab() {
     return `System Analytical Status: Currently evaluating ${total} dynamically cataloged trade paths. The NLP Scanner engine has successfully extracted character and digit tokens across the active data profile to map custom HS sectors without hardcoded configuration dependencies. Outlier profiling isolated ${elevatedCount} transactions reflecting asymmetric routing anomalies, while ${directCount} pathways align perfectly with target operational baselines.`;
   }, [filteredRecords]);
 
-  // Aggregate Counters Module
   const countersIndex = useMemo(() => {
     const total = parsedRecords.length || 1;
     const t1 = parsedRecords.filter(r => r.riskType === 'TIER_1_ELEVATED').length;
@@ -266,7 +267,7 @@ export default function CountryRiskTab() {
     };
   }, [parsedRecords]);
 
-  // Precision Spatial Mapping Engine Hook
+  // Spatial Mapping Hook
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current) return;
     const L = window.L;
@@ -336,7 +337,7 @@ export default function CountryRiskTab() {
   return (
     <div className="space-y-6 text-slate-100 max-w-[1800px] mx-auto p-4 font-sans antialiased bg-slate-950 min-h-screen">
       
-      {/* HEADER CONTROLS FRAMEWORK */}
+      {/* HEADER SECTION CONTROLS FRAME */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800 pb-5 gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
@@ -372,7 +373,7 @@ export default function CountryRiskTab() {
         </div>
       </div>
 
-      {/* METRICS METRIC TILES GRID */}
+      {/* METRICS TILES WIDGET MATRIX */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4">
         <div className="bg-[#111827] border border-slate-700 p-5 rounded-xl space-y-2">
           <div className="flex justify-between items-center text-xs font-mono font-black text-slate-200 uppercase tracking-wider">
@@ -417,7 +418,7 @@ export default function CountryRiskTab() {
         </div>
       </div>
 
-      {/* COGNITIVE AI SUMMARY SYNTHESIS BOX */}
+      {/* AUTOMATED AI TEXT SYNTHESIS PANEL */}
       <div className="bg-slate-900 border border-blue-900/60 p-5 rounded-xl space-y-3 shadow-lg">
         <h3 className="text-xs font-mono font-black text-blue-400 uppercase tracking-widest flex items-center gap-2">
           <Cpu size={16} className="text-blue-400" /> Dynamic AI Jurisdictional Synthesis Summary
@@ -427,7 +428,7 @@ export default function CountryRiskTab() {
         </p>
       </div>
 
-      {/* LEAFLET SPATIAL GEOSPATIAL MAP HOUSING FRAME */}
+      {/* LEAFLET CONTAINER MAP */}
       <div className="bg-[#111827] border border-slate-700 rounded-xl p-4 space-y-4 print:hidden">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch">
           
@@ -489,7 +490,7 @@ export default function CountryRiskTab() {
         </div>
       </div>
 
-      {/* FORENSIC DATASHEET TRANSACTION GRID */}
+      {/* AUDIT CORRIDOR TRANSACTIONS DATA SHEETS SHEET */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:block">
         
         <div className="space-y-2 print:hidden">
@@ -581,7 +582,7 @@ export default function CountryRiskTab() {
 
       </div>
 
-      {/* HARDCOPY CSS COMPRESSION overrides */}
+      {/* HARDCOPY CSS PRINT OVERRIDES ENGINE */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body {
