@@ -228,6 +228,47 @@ export default function HSIntelligence() {
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
       
+      {/* Explicit Print Target Parameter Style Injector */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          @page {
+            size: landscape;
+            margin: 10mm;
+          }
+          body {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .id-print-section {
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+          }
+          .non-printable {
+            display: none !important;
+          }
+          /* Prevent layout compression clipping components */
+          .overflow-x-auto, .overflow-hidden {
+            overflow: visible !important;
+            max-height: none !important;
+          }
+          table {
+            width: 100% !important;
+            table-layout: auto !important;
+            page-break-inside: auto !important;
+          }
+          tr {
+            page-break-inside: avoid !important;
+            page-break-after: auto !important;
+          }
+          th, td {
+            white-space: normal !important;
+            word-break: break-word !important;
+          }
+        }
+      `}} />
+      
       {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
         <div>
@@ -311,7 +352,7 @@ export default function HSIntelligence() {
         </div>
       </div>
 
-      {/* NEW: Comprehensive Dynamic AI Summary & Operational Analysis Panel */}
+      {/* Comprehensive Dynamic AI Summary & Operational Analysis Panel */}
       <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 rounded-xl p-5 space-y-4 shadow-xl">
         <h3 className="text-xs font-bold font-mono tracking-wider text-amber-400 uppercase flex items-center gap-2">
           <FileText size={15} /> Dynamic Executive AI Briefing & Operational Analysis
@@ -365,7 +406,7 @@ export default function HSIntelligence() {
       {/* Dynamic Adaptive Graphical Matrix & Ranked Corridor Breakdowns */}
       {tradeData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Enhanced Discrepancy Matrix Context (Fixed structural rendering and math logic) */}
+          {/* Enhanced Discrepancy Matrix Context */}
           <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
             <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span> Discrepancy Matrix: Declared vs. Expected Tariff Paths
@@ -383,7 +424,6 @@ export default function HSIntelligence() {
                       ? ((dev.value / hsAnalysis.globalMismatchedValue) * 100).toFixed(0) 
                       : '0';
 
-                    // Use accurate math instead of forcing a 15% arbitrary fill bar length for 0 value lines
                     const computedWidth = maxDevVal > 0 && dev.value > 0 ? (dev.value / maxDevVal) * 100 : 0;
 
                     return (
@@ -403,7 +443,7 @@ export default function HSIntelligence() {
                               style={{ width: `${computedWidth}%` }}
                             ></div>
                           ) : (
-                            <div className="bg-slate-700/40 h-full w-[2%] rounded"></div> // Clean baseline point for unvalued entries
+                            <div className="bg-slate-700/40 h-full w-[2%] rounded"></div>
                           )}
                         </div>
                       </div>
@@ -452,7 +492,7 @@ export default function HSIntelligence() {
       )}
 
       {/* Split Navigation and Table Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-4 print:flex print:flex-col gap-6 items-start">
         <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1 non-printable">
           <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
             <span>Tariff Frameworks</span>
@@ -495,24 +535,24 @@ export default function HSIntelligence() {
         </div>
 
         {/* Audit Data Table Container Frame */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl lg:col-span-3">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden print:overflow-visible shadow-2xl lg:col-span-3 print:w-full print:border-none">
           <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center non-printable">
             <span className="text-xs font-bold font-mono tracking-wider text-slate-200 uppercase">
               Tariff Framework Audit Ledger ({filteredRecords.length} Lines Displayed)
             </span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto print:overflow-visible print:w-full">
+            <table className="w-full text-left border-collapse print:w-full">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
-                  <th className="px-4 py-3">Date</th>
-                  <th className="px-4 py-3">Nomenclature Map</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Date</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Nomenclature Map</th>
                   <th className="px-4 py-3">Brand Identifier</th>
                   <th className="px-4 py-3">Product Description</th>
-                  <th className="px-4 py-3 text-right">Value (USD)</th>
+                  <th className="px-4 py-3 text-right whitespace-nowrap">Value (USD)</th>
                   <th className="px-4 py-3">Corridor Paths</th>
-                  <th className="px-4 py-3">Audit Outcome</th>
+                  <th className="px-4 py-3 whitespace-nowrap">Audit Outcome</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-700/60 font-mono text-xs">
@@ -525,15 +565,15 @@ export default function HSIntelligence() {
                           {rec.HSCode || '?'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate">{rec.Brand || 'NOT DECLARED'}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate">{rec.Product || 'UNCATEGORIZED'}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono">
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate print:max-w-none print:whitespace-normal">{rec.Brand || 'NOT DECLARED'}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate print:max-w-none print:whitespace-normal">{rec.Product || 'UNCATEGORIZED'}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono whitespace-nowrap">
                         ${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                       </td>
-                      <td className="px-4 py-3 text-[11px] whitespace-nowrap">
+                      <td className="px-4 py-3 text-[11px] whitespace-nowrap print:whitespace-normal">
                         <div className="text-slate-300">{rec.OriginCountry || 'UNKNOWN'} → {rec.DestinationCountry || 'UNKNOWN'}</div>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {rec.isMismatched ? (
                           <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                             MISCLASSIFICATION SHIFT
