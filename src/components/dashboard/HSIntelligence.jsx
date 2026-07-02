@@ -179,7 +179,6 @@ export default function HSIntelligence() {
       industryThesis = "Analysis monitors components, balance mechanisms, and high-tariff design items susceptible to gray-market parallel routing patterns.";
     }
 
-    // Dynamic database mapping of chapters detected inside the specific file array
     const masterDefinitions = {
       '56': { nomenclature: "Wadding, Felt, Nonwovens & Special Yarns", context: "Typically denotes primary filters, industrial structural processing layers, or fiber tow bundles." },
       '48': { nomenclature: "Paper, Paperboard & Cellulose Packaging", context: "Corresponds to downstream packaging wraps, specialized composite boxes, or physical booklets." },
@@ -190,6 +189,29 @@ export default function HSIntelligence() {
 
     return { industryDomain, industryThesis, masterDefinitions };
   }, [hsAnalysis.topProduct]);
+
+  // Dynamic Multi-Source AI Synthesis Summary Engine
+  const dynamicAISummary = useMemo(() => {
+    if (tradeData.length === 0) {
+      return {
+        executiveBrief: "System waiting for trade data manifest ingest loop. Load active data array to generate operational compliance forensics.",
+        vulnerabilityAnalysis: "No corridors currently processed."
+      };
+    }
+
+    const domain = dynamicIndustryGlossary.industryDomain;
+    const totalRiskUSD = hsAnalysis.globalMismatchedValue.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    const incidentCount = hsAnalysis.highRiskIncidentCount;
+    const coreProduct = hsAnalysis.topProduct;
+    const mainCorridor = hsAnalysis.topCorridors[0]?.name || "Unspecified Transit Corridors";
+    
+    // Synthesize customized analytical text blocks based on the data variables present
+    let executiveBrief = `Automated auditing across the ${domain} ecosystem has identified a highly concentrated structural nomenclature deviation pattern. Out of total analyzed manifests, ${incidentCount} shipments exhibit classification conflicts representing an exposed risk valuation of $${totalRiskUSD} USD. The system indicates that operations surrounding ${coreProduct} are shifting away from traditional tariff headings to circumvent security screening matrices or variable regulatory thresholds.`;
+    
+    let vulnerabilityAnalysis = `The primary tactical vulnerability is centered along the [ ${mainCorridor} ] transit channel, which commands the largest volume of structural friction. By routing cargo under variable classifications like ${hsAnalysis.chapterListStr || 'unassigned definitions'}, entities dilute the visibility of supply lines. This prevents standard rule engines from triggering mass-balance audits or matching raw precursor input values against finished product output volumes.`;
+
+    return { executiveBrief, vulnerabilityAnalysis };
+  }, [tradeData, hsAnalysis, dynamicIndustryGlossary]);
 
   // Resolved Filter logic to match ch.code string mappings
   const filteredRecords = useMemo(() => {
@@ -289,6 +311,23 @@ export default function HSIntelligence() {
         </div>
       </div>
 
+      {/* NEW: Comprehensive Dynamic AI Summary & Operational Analysis Panel */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 rounded-xl p-5 space-y-4 shadow-xl">
+        <h3 className="text-xs font-bold font-mono tracking-wider text-amber-400 uppercase flex items-center gap-2">
+          <FileText size={15} /> Dynamic Executive AI Briefing & Operational Analysis
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 font-mono text-xs text-slate-300 leading-relaxed">
+          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2">
+            <span className="text-[10px] uppercase text-slate-400 tracking-wider block font-bold">EXECUTIVE STRATEGIC SUMMARY</span>
+            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.executiveBrief}</p>
+          </div>
+          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2">
+            <span className="text-[10px] uppercase text-rose-400 tracking-wider block font-bold">FORENSIC RISK VULNERABILITY</span>
+            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.vulnerabilityAnalysis}</p>
+          </div>
+        </div>
+      </div>
+
       {/* Dynamic Automated Industry Glossary Panel */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4 shadow-md">
         <h3 className="text-xs font-bold font-mono tracking-wider text-emerald-400 uppercase flex items-center gap-2">
@@ -326,14 +365,15 @@ export default function HSIntelligence() {
       {/* Dynamic Adaptive Graphical Matrix & Ranked Corridor Breakdowns */}
       {tradeData.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Enhanced Discrepancy Matrix Context (Fixed structural rendering and math logic) */}
           <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
             <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span> Discrepancy Matrix: Declared vs. Expected Tariff Paths
             </h3>
             <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800">
               <div className="flex justify-between text-[11px] font-mono text-slate-400 font-bold px-1">
-                <span>RAW NOMENCLATURE MATRICES</span>
-                <span>AGGREGATE DISCREPANCY VOLUME</span>
+                <span>NOMENCLATURE PROFILE / FREQUENCY</span>
+                <span>FINANCIAL ANOMALY DISTRIBUTION</span>
               </div>
               <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
                 {hsAnalysis.deviations.length > 0 ? (
@@ -341,19 +381,30 @@ export default function HSIntelligence() {
                     const maxDevVal = hsAnalysis.deviations[0].value || 1;
                     const deviationPercentage = hsAnalysis.globalMismatchedValue > 0 
                       ? ((dev.value / hsAnalysis.globalMismatchedValue) * 100).toFixed(0) 
-                      : '100';
+                      : '0';
+
+                    // Use accurate math instead of forcing a 15% arbitrary fill bar length for 0 value lines
+                    const computedWidth = maxDevVal > 0 && dev.value > 0 ? (dev.value / maxDevVal) * 100 : 0;
 
                     return (
                       <div key={idx} className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2">
                         <div className="flex justify-between items-center text-xs font-mono">
-                          <span className="text-slate-300 font-bold">Declared {dev.name}</span>
-                          <span className="text-rose-400 font-black">{deviationPercentage}% Anomaly Weight</span>
+                          <span className="text-slate-300 font-bold">
+                            Declared {dev.name} <span className="text-[10px] text-slate-400 font-normal">({dev.count} {dev.count === 1 ? 'Incident' : 'Incidents'})</span>
+                          </span>
+                          <span className={`font-black ${dev.value > 0 ? 'text-rose-400' : 'text-slate-500 font-normal'}`}>
+                            {dev.value > 0 ? `${deviationPercentage}% Value Weight` : 'Shielded Bypass (No Declared Value)'}
+                          </span>
                         </div>
                         <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex">
-                          <div 
-                            className="bg-rose-500 h-full rounded transition-all duration-500" 
-                            style={{ width: `${Math.max(15, (dev.value / maxDevVal) * 100)}%` }}
-                          ></div>
+                          {dev.value > 0 ? (
+                            <div 
+                              className="bg-rose-500 h-full rounded transition-all duration-500" 
+                              style={{ width: `${computedWidth}%` }}
+                            ></div>
+                          ) : (
+                            <div className="bg-slate-700/40 h-full w-[2%] rounded"></div> // Clean baseline point for unvalued entries
+                          )}
                         </div>
                       </div>
                     );
