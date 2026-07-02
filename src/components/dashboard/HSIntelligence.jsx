@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext.jsx'; // Add explicit .jsx extension to force exact chunk matching
-import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info, BookOpen } from 'lucide-react';
 
 export default function HSIntelligence() {
   const contextData = useTradeData();
@@ -64,7 +64,7 @@ export default function HSIntelligence() {
       const keyCorridor = `${origin} → ${dest}`;
       
       const chapterPrefix = hsString && hsString !== '?' ? hsString.substring(0, 4) : 'UNASSIGNED';
-      const currentChapter2D = hsString && hsString !== '?' ? hsString.substring(0, 2) : null;
+      const currentChapter2D = hsString && hsString !== '?' ? hsString.substring(0, 2) : 'UNKNOWN';
 
       let isMismatched = false;
       let expectedChapterText = 'Calculated Baseline';
@@ -79,7 +79,7 @@ export default function HSIntelligence() {
       } else if (productDesc.includes('FILTER RODS') || productDesc.includes('CIGARETTE')) {
         expectedChapterText = 'Chapter 56 (Wadding/Tow)';
         // Flag paper/cellulose deviations (48) or blank variables as nomenclature threats
-        if (currentChapter2D === '48' || hsString === '?' || !currentChapter2D) {
+        if (currentChapter2D === '48' || hsString === '?' || currentChapter2D === 'UNKNOWN') {
           isMismatched = true;
         }
       } else {
@@ -160,10 +160,47 @@ export default function HSIntelligence() {
     };
   }, [tradeData]);
 
+  // Dynamic Industry & Chapter Description Interpreter Module
+  const dynamicIndustryGlossary = useMemo(() => {
+    const rawProd = hsAnalysis.topProduct;
+    
+    let industryDomain = "General Industrial Operations & Logistics";
+    let industryThesis = "The application is auditing multi-commodity distributions across unverified customs profiles.";
+    
+    // Dynamic rule parsing engine to identify dataset type
+    if (rawProd.includes('FILTER') || rawProd.includes('CIGARETTE') || rawProd.includes('TOBACCO')) {
+      industryDomain = "Tobacco Logistics & Downstream Material Inputs";
+      industryThesis = "Analysis emphasizes strategic components such as acetate tow, specialized cellulose coverings, and automated processing machinery prone to misdeclaration.";
+    } else if (rawProd.includes('SEMAGLUTIDE') || rawProd.includes('PHARMA') || rawProd.includes('MEDICINAL')) {
+      industryDomain = "Biochemical Vectors & Finished Pharmaceutical Cargo";
+      industryThesis = "Analysis covers high-demand biologicals, temperature-sensitive therapeutic assets, and raw chemical precursor distribution layers.";
+    } else if (rawProd.includes('WATCH') || rawProd.includes('CLOCK') || rawProd.includes('HOROLOGY')) {
+      industryDomain = "High-Value Premium Manufacturing & Luxury Assets";
+      industryThesis = "Analysis monitors components, balance mechanisms, and high-tariff design items susceptible to gray-market parallel routing patterns.";
+    }
+
+    // Dynamic database mapping of chapters detected inside the specific file array
+    const masterDefinitions = {
+      '56': { nomenclature: "Wadding, Felt, Nonwovens & Special Yarns", context: "Typically denotes primary filters, industrial structural processing layers, or fiber tow bundles." },
+      '48': { nomenclature: "Paper, Paperboard & Cellulose Packaging", context: "Corresponds to downstream packaging wraps, specialized composite boxes, or physical booklets." },
+      '30': { nomenclature: "Pharmaceutical Products & Blended Medicinals", context: "Covers standard finished formulation quantities, sterile packaging layouts, or clinical reagents." },
+      '91': { nomenclature: "Precision Horological Instrumentation & Components", context: "Identifies dedicated movement setups, specialized metal frames, and physical timepieces." },
+      'UNKNOWN': { nomenclature: "Undisclosed Heading / Shielded Data String", context: "Indicates manifest nodes passing blank strings or non-standard characters to evade automated checks." }
+    };
+
+    return { industryDomain, industryThesis, masterDefinitions };
+  }, [hsAnalysis.topProduct]);
+
+  // Resolved Filter logic to match ch.code string mappings
   const filteredRecords = useMemo(() => {
     if (selectedChapterFilter === 'ALL') return hsAnalysis.records;
     if (selectedChapterFilter === 'RISK_ONLY') return hsAnalysis.records.filter(r => r.isMismatched);
-    return hsAnalysis.records.filter(r => r.hsString?.substring(0, 2) === selectedChapterFilter || r.chapterPrefix === selectedChapterFilter);
+    
+    return hsAnalysis.records.filter(r => {
+      const currentHS = String(r.HSCode || '').trim();
+      const normalizedChapter = currentHS && currentHS !== '?' ? currentHS.substring(0, 2) : 'UNKNOWN';
+      return normalizedChapter === selectedChapterFilter;
+    });
   }, [hsAnalysis.records, selectedChapterFilter]);
 
   return (
@@ -248,6 +285,40 @@ export default function HSIntelligence() {
           </div>
           <div className="p-3 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-300">
             <Layers size={22} />
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Automated Industry Glossary Panel */}
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4 shadow-md">
+        <h3 className="text-xs font-bold font-mono tracking-wider text-emerald-400 uppercase flex items-center gap-2">
+          <BookOpen size={15} /> Dynamic Intelligent Nomenclature Dictionary
+        </h3>
+        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-4 space-y-3 font-mono text-xs">
+          <div className="border-b border-slate-800 pb-2">
+            <span className="text-slate-400 uppercase tracking-wider block text-[10px]">Identified Trade Domain Context</span>
+            <span className="text-white font-black text-sm">{dynamicIndustryGlossary.industryDomain}</span>
+            <p className="text-slate-300 mt-1 font-sans text-xs">{dynamicIndustryGlossary.industryThesis}</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+            {hsAnalysis.chapters.map((ch) => {
+              const staticDef = dynamicIndustryGlossary.masterDefinitions[ch.code] || {
+                nomenclature: "Alternative Dynamic Trade Category",
+                context: "Custom baseline matrix entries isolated during data array scan."
+              };
+              return (
+                <div key={ch.code} className="bg-slate-950 p-3 rounded border border-slate-850 space-y-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-cyan-400 font-bold">Chapter {ch.code} Framework</span>
+                    <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 text-slate-400 rounded">
+                      {ch.shipmentCount} Manifest Rows
+                    </span>
+                  </div>
+                  <div className="text-slate-200 font-bold text-[11px] uppercase tracking-wide">{staticDef.nomenclature}</div>
+                  <div className="text-slate-400 text-[11px] leading-relaxed font-sans">{staticDef.context}</div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </div>
@@ -366,7 +437,7 @@ export default function HSIntelligence() {
                 }`}
               >
                 <span>Heading Prefix: {ch.code}</span>
-                <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400">{ch.shipmentCount}</span>
+                <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-400 font-bold">{ch.shipmentCount}</span>
               </button>
             ))}
           </div>
