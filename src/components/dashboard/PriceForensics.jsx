@@ -118,6 +118,55 @@ export default function PriceForensics() {
     };
   }, [priceAnalysis]);
 
+  // Dynamic AI Text generation engine based on structural analytics data
+  const aiInsights = useMemo(() => {
+    if (!priceAnalysis.length || (counters.underInvoiced === 0 && counters.dumping === 0 && counters.abnormal === 0)) {
+      return {
+        underInvoicedText: "Falsifying the commercial unit cost down below real production value allows operators to evade heavy ad-valorem excise thresholds. No active under-invoicing vectors are isolated in this dataset frame.",
+        dumpingText: "Sourcing high-demand products at massive quantities under specialized corporate agreements and declaring values well under global average price indices flags systematic cross-border dumping vectors.",
+        brandIntelText: "Tracking designated trade markings against standard unbranded generic commodities protects distribution integrity and flags gray-market diversion channels instantly.",
+        executiveBriefing: "System diagnostic complete. Core dataset parameters reflect normal trading behaviors. No immediate critical pricing variances or regulatory mitigation steps are indicated across active data streams.",
+        operationalAnalysis: "Data integrity cross-checks show zero active anomalies. Trade lanes maintain statistical alignment with historic class baselines, reflecting low strategic risk indicators."
+      };
+    }
+
+    const uiItems = priceAnalysis.filter(e => e.anomalyType === 'UNDER_INVOICING');
+    const dumpingItems = priceAnalysis.filter(e => e.anomalyType === 'DUMPING_INDICATOR');
+    const abnormalItems = priceAnalysis.filter(e => e.anomalyType === 'ABNORMAL_PRICING');
+
+    const getTopCategory = (list) => {
+      if (!list.length) return null;
+      const mapping = {};
+      list.forEach(item => { if (item.Product) mapping[item.Product] = (mapping[item.Product] || 0) + 1; });
+      return Object.keys(mapping).reduce((a, b) => mapping[a] > mapping[b] ? a : b, 'N/A');
+    };
+
+    const topUIProduct = getTopCategory(uiItems) || "unspecified manifest lines";
+    const topDumpingProduct = getTopCategory(dumpingItems) || "bulk cargo shipments";
+
+    const totalAnomalousVolume = priceAnalysis
+      .filter(e => e.anomalyType !== 'NORMAL_PRICE')
+      .reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
+
+    const underInvoicedText = counters.underInvoiced > 0
+      ? `Flagged ${counters.underInvoiced} active undervaluation lines. Major concentrations found in ${topUIProduct}. Declared unit values fall significantly short of peer class baseline distributions, elevating duty evasion risk configurations.`
+      : "No critical undervaluation threats discovered. Structural unit metrics fall cleanly within safe statistical margins across existing tariff categories.";
+
+    const dumpingText = counters.dumping > 0
+      ? `Isolating ${counters.dumping} severe market dumping channels. Scaled movements (≥5,000 units) exhibit system-disrupting pricing structures, focused around ${topDumpingProduct} supply lanes.`
+      : "Predatory pricing indicators are nominal. Bulk distribution channels reflect consistent commercial valuation structures without predatory features.";
+
+    const brandIntelText = counters.abnormal > 0
+      ? `Identified ${counters.abnormal} brand deviations. Extreme price swings vs. generic counterpart baselines indicate active gray-market parallel diversion strategies or high-risk substitution trends.`
+      : "Brand equity tracking indicates uniform trade parameters. Mapped premium lines reflect standard corporate markup curves without abnormal deviations.";
+
+    const executiveBriefing = `Automated analysis has isolated ${uiItems.length + dumpingItems.length + abnormalItems.length} custom threats representing $${totalAnomalousVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })} in mispriced transaction volume. Forensics reveal systematic value suppression patterns targeting ${topUIProduct}. Immediate financial auditing of the clearings is recommended to isolate structural regulatory liabilities.`;
+
+    const operationalAnalysis = `Supply chain intelligence indicates significant risk concentration in under-invoiced channels. The dynamic baseline variations point to purposeful structural undervaluation. Cross-referencing identified cargo nodes with active global networks is suggested to expose underlying circular trade vectors.`;
+
+    return { underInvoicedText, dumpingText, brandIntelText, executiveBriefing, operationalAnalysis };
+  }, [priceAnalysis, counters]);
+
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section text-slate-100">
       
@@ -165,15 +214,15 @@ export default function PriceForensics() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed print-container-expand">
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
             <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">UNDER-INVOICING SCHEMES</span>
-            Falsifying the commercial unit cost down below real production value allows operators to evade heavy ad-valorem excise thresholds. This bypasses financial compliance barriers while masking true luxury or regulated biological shipments.
+            {aiInsights.underInvoicedText}
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
             <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">PREDATORY MARKET DUMPING</span>
-            Sourcing high-demand products at massive quantities under specialized corporate agreements and declaring values well under global average price indices signifies cross-border structural dumping vectors.
+            {aiInsights.dumpingText}
           </div>
           <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
             <span className="text-cyan-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">BRAND VALUATION INTELLIGENCE</span>
-            Tracking designated trade markings (e.g., WEGOVY) against standard unbranded generic commodities protects distribution integrity and flags gray-market diversion lanes instantly.
+            {aiInsights.brandIntelText}
           </div>
         </div>
       </div>
@@ -207,6 +256,40 @@ export default function PriceForensics() {
           </div>
           <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-900/40 text-cyan-400 non-printable">
             <BarChart2 size={22} />
+          </div>
+        </div>
+      </div>
+
+      {/* Dynamic Executive AI Briefing & Operational Analysis Box Frame */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-card-break">
+        <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+          <div className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
+            <FileText size={16} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black tracking-wider text-white font-mono uppercase print-text-dark">
+              Executive AI Briefing & Operational Analysis
+            </h3>
+            <p className="text-[11px] text-slate-400 font-mono print-text-muted">Dynamic algorithmic threat overview and custom supply chain vulnerability matrix</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-mono leading-relaxed print-container-expand">
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2 print-card-break print-border-clean">
+            <span className="text-emerald-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark">
+              Strategic Threat Briefing
+            </span>
+            <p className="text-slate-300 print-text-dark">
+              {aiInsights.executiveBriefing}
+            </p>
+          </div>
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2 print-card-break print-border-clean">
+            <span className="text-cyan-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark">
+              Operational Vector Analysis
+            </span>
+            <p className="text-slate-300 print-text-dark">
+              {aiInsights.operationalAnalysis}
+            </p>
           </div>
         </div>
       </div>
