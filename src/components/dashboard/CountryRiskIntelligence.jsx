@@ -1,28 +1,66 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
 import { Globe, ShieldAlert, FileText, Server, Info, ArrowRight, Share2, AlertTriangle, CheckCircle2, Layers } from 'lucide-react';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
 
-// Geocoding Look-up Matrix for transforming country strings to geospatial coordinates
+// Comprehensive Global Geolocation Look-up Matrix
 const GEOLOCATION_REGISTRY = {
+  // Southeast Asia & East Asia Hubs
   'MALAYSIA': [4.2105, 101.9758],
   'MY': [4.2105, 101.9758],
   'SINGAPORE': [1.3521, 103.8198],
   'SG': [1.3521, 103.8198],
   'HONG KONG': [22.3193, 114.1694],
   'HK': [22.3193, 114.1694],
-  'DUBAI': [25.2048, 55.2708],
-  'UAE': [25.2048, 55.2708],
-  'AE': [25.2048, 55.2708],
-  'TURKEY': [38.9637, 35.2433],
-  'TR': [38.9637, 35.2433],
   'CHINA': [35.8617, 104.1954],
   'CN': [35.8617, 104.1954],
   'VIETNAM': [14.0583, 108.2772],
   'VN': [14.0583, 108.2772],
+  'JAPAN': [36.2048, 138.2529],
+  'JP': [36.2048, 138.2529],
+  'SOUTH KOREA': [35.9078, 127.7669],
+  'KR': [35.9078, 127.7669],
   'INDIA': [20.5937, 78.9629],
-  'IN': [20.5937, 78.9629]
+  'IN': [20.5937, 78.9629],
+
+  // Middle East & Mediterranean Hubs
+  'DUBAI': [25.2048, 55.2708],
+  'UAE': [25.2048, 55.2708],
+  'AE': [25.2048, 55.2708],
+  'TURKEY': [38.9637, 35.2433],
+  'TURKIYE': [38.9637, 35.2433],
+  'TR': [38.9637, 35.2433],
+
+  // European Gateways & Ingestion Zones
+  'UNITED KINGDOM': [55.3781, -3.4360],
+  'UK': [55.3781, -3.4360],
+  'GB': [55.3781, -3.4360],
+  'GERMANY': [51.1657, 10.4515],
+  'DE': [51.1657, 10.4515],
+  'FRANCE': [46.2276, 2.2137],
+  'FR': [46.2276, 2.2137],
+  'ITALY': [41.8719, 12.5674],
+  'IT': [41.8719, 12.5674],
+  'SPAIN': [40.4637, -3.7492],
+  'ES': [40.4637, -3.7492],
+  'NETHERLANDS': [52.1326, 5.2913],
+  'NL': [52.1326, 5.2913],
+  'BELGIUM': [50.5039, 4.4699],
+  'BE': [50.5039, 4.4699],
+  'SWITZERLAND': [46.8182, 8.2275],
+  'CH': [46.8182, 8.2275],
+  'RUSSIA': [61.5240, 105.3188],
+  'RU': [61.5240, 105.3188],
+
+  // Americas & Oceania Baseline Parameters
+  'UNITED STATES': [37.0902, -95.7129],
+  'USA': [37.0902, -95.7129],
+  'US': [37.0902, -95.7129],
+  'CANADA': [56.1304, -106.3468],
+  'CA': [56.1304, -106.3468],
+  'BRAZIL': [-14.2350, -51.9253],
+  'BR': [-14.2350, -51.9253],
+  'AUSTRALIA': [-25.2744, 133.7751],
+  'AU': [-25.2744, 133.7751]
 };
 
 export default function CountryRiskIntelligence() {
@@ -30,10 +68,7 @@ export default function CountryRiskIntelligence() {
   const [filterType, setFilterType] = useState('ALL');
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
 
-  const mapContainerRef = useRef(null);
-  const leafletMapInstance = useRef(null);
-
-  // Broadened dynamic risk tiering engine mapped to Tiers 1, 2, and 3
+  // Dynamic risk tiering engine mapped to Tiers 1, 2, and 3
   const riskAnalysis = useMemo(() => {
     return tradeData.map((row, idx) => {
       if (!row) return null;
@@ -41,7 +76,6 @@ export default function CountryRiskIntelligence() {
       const origin = (row.OriginCountry || '').toUpperCase().trim();
       const product = (row.Product || '').toUpperCase().trim();
       const importer = (row.Importer || '').toUpperCase().trim();
-      const exporter = (row.Exporter || '').toUpperCase().trim();
       
       const hasRouteString = origin.includes('→') || origin.includes('VIA');
       
@@ -50,15 +84,15 @@ export default function CountryRiskIntelligence() {
       let severity = 'LOW';
       let brief = 'Logistical routing falls within standard bilateral parameters. Direct shipping lanes observed.';
 
-      // Expanded ISO & Text matching for global transshipment hubs
+      // Expanded matching parameters for tracking global transshipment hubs
       const isHub = 
         origin.includes('MALAYSIA') || origin.includes('MY') ||
         origin.includes('SINGAPORE') || origin.includes('SG') || 
         origin.includes('HONG KONG') || origin.includes('HK') || 
         origin.includes('DUBAI') || origin.includes('UAE') || origin.includes('AE') ||
-        origin.includes('TURKEY') || origin.includes('TR');
+        origin.includes('TURKEY') || origin.includes('TR') || origin.includes('NETHERLANDS') || origin.includes('NL');
 
-      // Strategic commodity classification including filter rods and acetate tow
+      // Strategic cargo classifications
       const isStrategic = 
         product.includes('FILTER') || product.includes('ROD') || product.includes('TOW') || 
         product.includes('ACETATE') || product.includes('TOBACCO') || product.includes('CIG') ||
@@ -90,13 +124,12 @@ export default function CountryRiskIntelligence() {
     }).filter(Boolean);
   }, [tradeData]);
 
-  // Filtering filter logic mapped precisely across the structural tiers
   const filtered = useMemo(() => {
     if (filterType === 'ALL') return riskAnalysis;
     return riskAnalysis.filter(e => e.riskType === filterType);
   }, [riskAnalysis, filterType]);
 
-  // Dynamic calculations for the executive overview
+  // Dynamic insights engine calculations
   const structuralInsights = useMemo(() => {
     const totalVolume = filtered.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
     const uniqueTargets = new Set(filtered.map(e => e.Importer)).size;
@@ -135,80 +168,34 @@ export default function CountryRiskIntelligence() {
 
   const activeRouteForMap = filtered[selectedRouteIdx] || filtered[0] || null;
 
-  // Leaflet Synchronization Engine
-  useEffect(() => {
-    if (!mapContainerRef.current) return;
+  // Standalone Geospatial Projection Computations (Equirectangular Map Translation)
+  const mapVectors = useMemo(() => {
+    if (!activeRouteForMap) return null;
 
-    if (!leafletMapInstance.current) {
-      leafletMapInstance.current = L.map(mapContainerRef.current, {
-        center: [15, 60],
-        zoom: 2.5,
-        zoomControl: true,
-        attributionControl: false
-      });
-
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 19
-      }).addTo(leafletMapInstance.current);
-    }
-
-    const map = leafletMapInstance.current;
-
-    // Flush active dynamic vector/node layers
-    map.eachLayer((layer) => {
-      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-        map.removeLayer(layer);
-      }
-    });
-
-    if (!activeRouteForMap) return;
-
-    const parseCoordinates = (locString) => {
+    const parseCoords = (locString) => {
       const normal = (locString || '').toUpperCase().trim();
       for (const [key, coords] of Object.entries(GEOLOCATION_REGISTRY)) {
         if (normal.includes(key)) return coords;
       }
-      // Geometric dynamic offset baseline generator to stop overlapping coordinate sets
       const hash = normal.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      return [20 + (hash % 10), 40 + (hash % 40)];
+      return [20 + (hash % 25), 10 + (hash % 60)]; // Balanced visual fallback vector
     };
 
-    const originCoordinates = parseCoordinates(activeRouteForMap.cleanOrigin);
-    const targetCoordinates = parseCoordinates(activeRouteForMap.Importer || 'FINAL_DESTINATION');
+    const [originLat, originLon] = parseCoords(activeRouteForMap.cleanOrigin);
+    const [targetLat, targetLon] = parseCoords(activeRouteForMap.Importer || 'FINAL_DESTINATION');
 
-    const runtimeRouteColor = activeRouteForMap.severity === 'HIGH' ? '#f59e0b' : activeRouteForMap.severity === 'MEDIUM' ? '#3b82f6' : '#94a3b8';
+    // Project coordinates linearly onto a standard 800x360 layout space
+    const getXY = (lat, lon) => {
+      const x = ((lon + 180) / 360) * 800;
+      const y = ((90 - lat) / 180) * 360;
+      return { x, y };
+    };
 
-    // Node plotting definitions
-    const nodeIconOrigin = L.divIcon({
-      className: 'custom-leaflet-node',
-      html: `<div style="width:14px; height:14px; background:#3b82f6; border:2px solid #ffffff; border-radius:50%; box-shadow: 0 0 10px #3b82f6;"></div>`,
-      iconSize: [14, 14]
-    });
-
-    const nodeIconTarget = L.divIcon({
-      className: 'custom-leaflet-node',
-      html: `<div style="width:14px; height:14px; background:#10b981; border:2px solid #ffffff; border-radius:50%; box-shadow: 0 0 10px #10b981;"></div>`,
-      iconSize: [14, 14]
-    });
-
-    L.marker(originCoordinates, { icon: nodeIconOrigin }).addTo(map)
-      .bindPopup(`<div style="color:#000; font-family:monospace; font-size:11px;"><b>Origin Node:</b> ${activeRouteForMap.cleanOrigin}</div>`);
-
-    L.marker(targetCoordinates, { icon: nodeIconTarget }).addTo(map)
-      .bindPopup(`<div style="color:#000; font-family:monospace; font-size:11px;"><b>Consignee Node:</b> ${activeRouteForMap.Importer || 'Unverified Target'}</div>`);
-
-    const structuralFlowVector = L.polyline([originCoordinates, targetCoordinates], {
-      color: runtimeRouteColor,
-      weight: 2.5,
-      opacity: 0.8,
-      dashArray: '6, 6'
-    }).addTo(map);
-
-    try {
-      map.fitBounds(structuralFlowVector.getBounds(), { padding: [40, 40], maxZoom: 5 });
-    } catch (e) {
-      map.setView(originCoordinates, 3);
-    }
+    return {
+      origin: getXY(originLat, originLon),
+      target: getXY(targetLat, targetLon),
+      color: activeRouteForMap.severity === 'HIGH' ? '#f59e0b' : activeRouteForMap.severity === 'MEDIUM' ? '#3b82f6' : '#94a3b8'
+    };
   }, [activeRouteForMap]);
 
   return (
@@ -224,7 +211,6 @@ export default function CountryRiskIntelligence() {
           .print-border-clean { border-color: #cbd5e1 !important; }
           .print-container-expand { display: block !important; width: 100% !important; max-height: none !important; overflow: visible !important; }
         }
-        .leaflet-container { background: #0b0f19 !important; outline: none; }
       `}} />
 
       {/* Header Panel */}
@@ -290,7 +276,7 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* Dynamic Visual Component: Interactive Vector Flow Map Frame */}
+      {/* Dynamic Visual Component: Build-Safe Geospatial Tracker Map */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-break-avoid print-border-clean">
         <div className="flex justify-between items-center border-b border-slate-800 pb-2 print-border-clean">
           <div className="flex items-center gap-2">
@@ -306,38 +292,51 @@ export default function CountryRiskIntelligence() {
           )}
         </div>
 
-        {activeRouteForMap ? (
+        {activeRouteForMap && mapVectors ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center pt-2">
             
-            {/* The Dynamic Interactive Leaflet Map Wrapper Layer */}
-            <div className="lg:col-span-3 bg-slate-950/80 rounded-xl border border-slate-900 relative h-[320px] overflow-hidden print-border-clean print-container-expand">
-              {/* Leaflet Screen Target Map Instance */}
-              <div ref={mapContainerRef} className="w-full h-full absolute inset-0 z-10 non-printable" />
+            {/* Pure SVG Scalable Map Layout (Zero Dependencies, Fully Bundle Safe & High-Contrast Style) */}
+            <div className="lg:col-span-3 bg-[#0b0f19] rounded-xl border border-slate-900 relative h-[320px] p-2 print-border-clean print-container-expand flex items-center justify-center">
+              <svg 
+                viewBox="0 0 800 360" 
+                className="w-full h-full max-h-[300px] text-slate-800"
+                style={{ background: '#0b0f19' }}
+              >
+                {/* Background Tech Mesh Grid */}
+                <defs>
+                  <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                    <path d="M 40 0 L 0 0 0 40" fill="none" stroke="#1e293b" strokeWidth="0.5" strokeOpacity="0.4" />
+                  </pattern>
+                </defs>
+                <rect width="100%" height="100%" fill="url(#grid)" />
 
-              {/* High-Fidelity Static SVG Print Fallback ( Leaflet does not reliably capture raster tiles inside window.print() pipelines ) */}
-              <div className="hidden print:flex w-full h-full justify-between items-center max-w-2xl mx-auto relative p-6">
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center text-blue-400 font-mono font-black text-xs">
-                    ORG
-                  </div>
-                  <span className="text-[11px] font-mono font-bold text-slate-300 block max-w-[120px] truncate print-text-dark">
-                    {activeRouteForMap.cleanOrigin}
-                  </span>
-                </div>
-                <div className="flex-1 flex flex-col items-center mx-2 relative">
-                  <div className="w-full h-[2px] bg-gradient-to-r from-blue-500 to-emerald-500 relative flex items-center justify-center">
-                    <ArrowRight size={12} className="text-emerald-400 absolute right-0 -mt-[5px]" />
-                  </div>
-                </div>
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-emerald-950 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-black text-xs">
-                    CON
-                  </div>
-                  <span className="text-[11px] font-mono font-bold text-slate-300 block max-w-[120px] truncate print-text-dark">
-                    {activeRouteForMap.Importer || 'UNKNOWN TARGET'}
-                  </span>
-                </div>
-              </div>
+                {/* Tactical Baseline Continent Reference Circles */}
+                <circle cx="160" cy="120" r="40" fill="#1e293b" fillOpacity="0.15" /> {/* North America */}
+                <circle cx="480" cy="130" r="50" fill="#1e293b" fillOpacity="0.15" /> {/* Eurasia / Europe */}
+                <circle cx="560" cy="160" r="45" fill="#1e293b" fillOpacity="0.15" /> {/* Southeast Asia */}
+
+                {/* Connection Flight/Sailing Vector Arc Line */}
+                <path
+                  d={`M ${mapVectors.origin.x} ${mapVectors.origin.y} Q ${(mapVectors.origin.x + mapVectors.target.x) / 2} ${Math.min(mapVectors.origin.y, mapVectors.target.y) - 40} ${mapVectors.target.x} ${mapVectors.target.y}`}
+                  fill="none"
+                  stroke={mapVectors.color}
+                  strokeWidth="2.5"
+                  strokeDasharray="5,5"
+                  className="animate-[dash_30s_linear_infinite]"
+                />
+
+                {/* Origin Marker Node */}
+                <circle cx={mapVectors.origin.x} cy={mapVectors.origin.y} r="7" fill="#3b82f6" stroke="#ffffff" strokeWidth="2" />
+                <text x={mapVectors.origin.x + 12} y={mapVectors.origin.y + 4} fill="#94a3b8" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                  {activeRouteForMap.cleanOrigin}
+                </text>
+
+                {/* Destination Target Node */}
+                <circle cx={mapVectors.target.x} cy={mapVectors.target.y} r="7" fill="#10b981" stroke="#ffffff" strokeWidth="2" />
+                <text x={mapVectors.target.x + 12} y={mapVectors.target.y + 4} fill="#10b981" fontSize="10" fontFamily="monospace" fontWeight="bold">
+                  {activeRouteForMap.Importer || 'TARGET'}
+                </text>
+              </svg>
             </div>
 
             {/* Micro Dynamic Route Context Card */}
