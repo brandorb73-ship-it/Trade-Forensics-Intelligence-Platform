@@ -190,6 +190,29 @@ export default function HSIntelligence() {
     return { industryDomain, industryThesis, masterDefinitions };
   }, [hsAnalysis.topProduct]);
 
+  // *** RESTORED: Dynamic Multi-Source AI Synthesis Summary Engine ***
+  const dynamicAISummary = useMemo(() => {
+    if (tradeData.length === 0) {
+      return {
+        executiveBrief: "System waiting for trade data manifest ingest loop. Load active data array to generate operational compliance forensics.",
+        vulnerabilityAnalysis: "No corridors currently processed."
+      };
+    }
+
+    const domain = dynamicIndustryGlossary.industryDomain;
+    const totalRiskUSD = hsAnalysis.globalMismatchedValue.toLocaleString(undefined, { minimumFractionDigits: 2 });
+    const incidentCount = hsAnalysis.highRiskIncidentCount;
+    const coreProduct = hsAnalysis.topProduct;
+    const mainCorridor = hsAnalysis.topCorridors[0]?.name || "Unspecified Transit Corridors";
+    
+    // Synthesize customized analytical text blocks based on the data variables present
+    let executiveBrief = `Automated auditing across the ${domain} ecosystem has identified a highly concentrated structural nomenclature deviation pattern. Out of total analyzed manifests, ${incidentCount} shipments exhibit classification conflicts representing an exposed risk valuation of $${totalRiskUSD} USD. The system indicates that operations surrounding ${coreProduct} are shifting away from traditional tariff headings to circumvent security screening matrices or variable regulatory thresholds.`;
+    
+    let vulnerabilityAnalysis = `The primary tactical vulnerability is centered along the [ ${mainCorridor} ] transit channel, which commands the largest volume of structural friction. By routing cargo under variable classifications like ${hsAnalysis.chapterListStr || 'unassigned definitions'}, entities dilute the visibility of supply lines. This prevents standard rule engines from triggering mass-balance audits or matching raw precursor input values against finished product output volumes.`;
+
+    return { executiveBrief, vulnerabilityAnalysis };
+  }, [tradeData, hsAnalysis, dynamicIndustryGlossary]);
+
   // Resolved Filter logic to match ch.code string mappings
   const filteredRecords = useMemo(() => {
     if (selectedChapterFilter === 'ALL') return hsAnalysis.records;
@@ -253,13 +276,6 @@ export default function HSIntelligence() {
           .text-amber-400, .text-emerald-400, .text-cyan-400, .text-rose-400 {
             color: black !important;
           }
-          /* Overwrite dynamic text highlights to be clean black */
-          .TerminologyContext .text-amber-400, .TerminologyContext .text-emerald-400 {
-             color: black !important;
-          }
-          .DiagnosticAnalysisNotice .text-amber-400, .DiagnosticAnalysisNotice .text-emerald-400, .DiagnosticAnalysisNotice .text-cyan-400 {
-             color: black !important;
-          }
           /* Fix Terminology Dictionary specific card styling in print */
           .TerminologyContext .bg-slate-950 {
              background-color: white !important;
@@ -282,10 +298,7 @@ export default function HSIntelligence() {
              background-color: white !important;
              border: 1px solid #ddd !important;
           }
-          /* Ensure the table logic from the last turn remains, forcing full columns in landscape */
-          .DiagnosticAnalysisNotice, .NomenclatureRiskValue, .FlaggedClassificationShifts, .ActiveTariffHeadings, .DiscrepancyMatrixPaths, .RiskCorridorsMatrix, .NomenclatureDictionaryBlock {
-            page-break-inside: avoid !important;
-          }
+          /* Ensure full columns in landscape */
           .AuditTable ledger {
              page-break-inside: avoid !important;
           }
@@ -325,16 +338,6 @@ export default function HSIntelligence() {
           table tbody tr:hover {
             background-color: transparent !important;
           }
-          /* Flagged row logic from last turn remains, but force lighter backgrounds */
-          table tbody tr.bg-rose-950\/20 {
-             background-color: #fff1f2 !important; /* Keep a very light color for highlighted rows on print */
-             border: 1px solid #fecdd3 !important;
-          }
-          table td span.bg-rose-500\/20, table td span.bg-amber-500\/20, table td span.bg-emerald-500\/20, table td span.bg-cyan-500\/20 {
-             color: black !important;
-             background-color: #ffe4e6 !important; /* Light background for flagged cells */
-             border: 1px solid #fecdd3 !important;
-          }
           /* Table product/brand colors */
           .text-emerald-400, .text-slate-200 {
             color: black !important;
@@ -372,7 +375,7 @@ export default function HSIntelligence() {
       </div>
 
       {/* Forensic Intelligence Briefing Notice - Fully Adaptive Assessment Panels */}
-      <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3 DiagnosticAnalysisNotice">
+      <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3 DiagnosticAnalysisNoticeTerminologyContext">
         <h2 className="text-sm font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2">
           <Info size={16} /> Diagnostic Risk Analysis: Strategic Misdeclaration Framework
         </h2>
@@ -427,6 +430,23 @@ export default function HSIntelligence() {
           </div>
           <div className="p-3 rounded-lg bg-slate-700/50 border border-slate-600/50 text-slate-300">
             <Layers size={22} />
+          </div>
+        </div>
+      </div>
+
+      {/* *** RESTORED JSX: Comprehensive Dynamic AI Summary & Operational Analysis Panel *** */}
+      <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 rounded-xl p-5 space-y-4 shadow-xl TerminologyContext">
+        <h3 className="text-xs font-bold font-mono tracking-wider text-amber-400 uppercase flex items-center gap-2">
+          <FileText size={15} /> Dynamic Executive AI Briefing & Operational Analysis
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 font-mono text-xs text-slate-300 leading-relaxed">
+          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2">
+            <span className="text-[10px] uppercase text-slate-400 tracking-wider block font-bold">EXECUTIVE STRATEGIC SUMMARY</span>
+            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.executiveBrief}</p>
+          </div>
+          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2">
+            <span className="text-[10px] uppercase text-rose-400 tracking-wider block font-bold">FORENSIC RISK VULNERABILITY</span>
+            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.vulnerabilityAnalysis}</p>
           </div>
         </div>
       </div>
@@ -594,9 +614,9 @@ export default function HSIntelligence() {
           </div>
 
           <div className="overflow-x-auto print:overflow-visible print:w-full LedgerTableContainer">
-            <table className="w-full text-left border-collapse print:w-full LedgerTable">
+            <table className="w-full text-left border-collapse print:w-full LedgerTable LedgerTableHeaderRowLedgerTableBody LedgerTableDateCellLedgerTableNomenclatureCellLedgerTableBrandCellLedgerTableProductCellLedgerTableValueCellLedgerTableCorridorCellLedgerTableOutcomeCell">
               <thead>
-                <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs LedgerTableHeaderRow">
+                <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
                   <th className="px-4 py-3 whitespace-nowrap">Date</th>
                   <th className="px-4 py-3 whitespace-nowrap">Nomenclature Map</th>
                   <th className="px-4 py-3">Brand Identifier</th>
@@ -606,31 +626,31 @@ export default function HSIntelligence() {
                   <th className="px-4 py-3 whitespace-nowrap">Audit Outcome</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60 font-mono text-xs LedgerTableBody">
+              <tbody className="divide-y divide-slate-700/60 font-mono text-xs">
                 {filteredRecords.length > 0 ? (
                   filteredRecords.map((rec, i) => (
-                    <tr key={rec.id || i} className={`hover:bg-slate-700/30 transition-colors LedgerTableRow ${rec.isMismatched ? 'bg-rose-950/20' : ''}`}>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap LedgerTableDateCell">{rec.Date || 'UNKNOWN'}</td>
-                      <td className="px-4 py-3 space-y-1 LedgerTableNomenclatureCell">
-                        <span className={`px-1.5 py-0.5 rounded font-bold LedgerHSCodeMap ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
+                    <tr key={rec.id || i} className={`hover:bg-slate-700/30 transition-colors ${rec.isMismatched ? 'bg-rose-950/20' : ''}`}>
+                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{rec.Date || 'UNKNOWN'}</td>
+                      <td className="px-4 py-3 space-y-1">
+                        <span className={`px-1.5 py-0.5 rounded font-bold ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
                           {rec.HSCode || '?'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate LedgerTableBrandCell print:max-w-none print:whitespace-normal">{rec.Brand || 'NOT DECLARED'}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate LedgerTableProductCell print:max-w-none print:whitespace-normal">{rec.Product || 'UNCATEGORIZED'}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono whitespace-nowrap LedgerTableValueCell">
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate print:max-w-none print:whitespace-normal">{rec.Brand || 'NOT DECLARED'}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate print:max-w-none print:whitespace-normal">{rec.Product || 'UNCATEGORIZED'}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono whitespace-nowrap LedgerHSCodeMapLedgerTableRowMismatchOutcomeNotice CleanPassNotice AuditOutcome">
                         ${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                       </td>
-                      <td className="px-4 py-3 text-[11px] whitespace-nowrap LedgerTableCorridorCell print:whitespace-normal">
+                      <td className="px-4 py-3 text-[11px] whitespace-nowrap print:whitespace-normal">
                         <div className="text-slate-300">{rec.OriginCountry || 'UNKNOWN'} → {rec.DestinationCountry || 'UNKNOWN'}</div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap LedgerTableOutcomeCell AuditOutcome">
+                      <td className="px-4 py-3 whitespace-nowrap">
                         {rec.isMismatched ? (
-                          <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 MismatchOutcomeNotice">
+                          <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                             MISCLASSIFICATION SHIFT
                           </span>
                         ) : (
-                          <span className="text-slate-500 text-[10px] CleanPassNotice">Clean Pass</span>
+                          <span className="text-slate-500 text-[10px]">Clean Pass</span>
                         )}
                       </td>
                     </tr>
