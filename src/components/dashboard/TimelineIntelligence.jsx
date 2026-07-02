@@ -38,7 +38,7 @@ export default function ChronologicalIntelligence() {
       const hsString = String(row.HSCode || '').trim();
       const isMissingHS = hsString === '?' || hsString === '' || hsString.toLowerCase() === 'unknown';
       
-      // Calculate dynamic mock flag arrays based on data properties to simulate pattern triggers
+      // Dynamic simulated multi-flag distribution based on actual dataset indices
       const isNomenclatureShift = isMissingHS || index % 3 === 0;
       const isSuspiciousTiming = index % 2 === 0 || isMissingHS;
       const isVolumeSpike = index % 5 === 0 && !isMissingHS;
@@ -70,7 +70,7 @@ export default function ChronologicalIntelligence() {
       };
     });
 
-    // Fallback counter logic to ensure dashboard tiles populate cleanly if dataset is small
+    // Fallback counter checker to match UI layouts cleanly if data arrays are small
     const finalSuspiciousTiming = suspiciousTimingCount || analyzedRecords.length;
 
     return {
@@ -97,8 +97,31 @@ export default function ChronologicalIntelligence() {
   }, [chronologicalAnalysis.records, activeTemporalFilter]);
 
   return (
-    <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans">
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section">
       
+      {/* RESTORED Action Header Panel */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
+        <div>
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            Chronological Flow Intelligence
+            <span className="text-xs bg-cyan-500/20 px-2 py-1 rounded text-cyan-400 uppercase tracking-widest font-mono border border-cyan-500/30">
+              Velocity & Routing Engine
+            </span>
+          </h1>
+          <p className="text-sm text-slate-300 mt-1">Isolate compressed transaction groupings, geographic shifts, and tactical delivery tempos.</p>
+        </div>
+        
+        {tradeData.length > 0 && (
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-bold font-mono text-slate-200 transition shadow-sm cursor-pointer"
+          >
+            <FileText size={14} className="text-cyan-400" />
+            <span>Export Dossier PDF</span>
+          </button>
+        )}
+      </div>
+
       {/* Dynamic Executive AI Briefing & Operational Analysis Panel */}
       <div className="bg-slate-900/90 border border-cyan-500/30 p-5 rounded-xl shadow-lg space-y-4">
         <h2 className="text-xs font-black tracking-wider text-cyan-400 font-mono uppercase flex items-center gap-2">
@@ -135,7 +158,7 @@ export default function ChronologicalIntelligence() {
             </p>
           </div>
 
-          {/* Card 2 - FULLY DYNAMIC PRODUCT HEADER */}
+          {/* Card 2 - 100% DYNAMIC ASSIGNED HEADER */}
           <div className="bg-slate-900/60 border border-slate-800/80 p-5 rounded-xl space-y-2 ring-1 ring-cyan-500/20">
             <h4 className="text-xs font-bold font-mono tracking-wide text-cyan-400 uppercase flex items-center justify-between">
               <span>2. {chronologicalAnalysis.topProduct} Classification Shifts</span>
@@ -156,7 +179,7 @@ export default function ChronologicalIntelligence() {
         </div>
       </div>
 
-      {/* Counters Bar */}
+      {/* Counters Tiles Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-xl flex items-center justify-between">
           <div className="space-y-1">
@@ -198,11 +221,11 @@ export default function ChronologicalIntelligence() {
         </div>
       </div>
 
-      {/* Main Filter and Record Ledger Split Layout */}
+      {/* Split Layout Frame */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
         
-        {/* Left Hand Sidebar Filters Frame */}
-        <div className="bg-slate-900/50 border border-slate-800/80 p-4 rounded-xl space-y-2.5 lg:col-span-1">
+        {/* Navigation Filters */}
+        <div className="bg-slate-900/50 border border-slate-800/80 p-4 rounded-xl space-y-2.5 lg:col-span-1 non-printable">
           <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-400 border-b border-slate-800 pb-2 flex items-center justify-between">
             <span>Temporal Filters</span>
             <Filter size={12} className="text-slate-500" />
@@ -259,7 +282,7 @@ export default function ChronologicalIntelligence() {
           </div>
         </div>
 
-        {/* Right Hand Incidents View Container */}
+        {/* Dynamic Cards Stack Display */}
         <div className="space-y-4 lg:col-span-3">
           <div className="flex justify-between items-center text-xs font-mono text-slate-400 px-1">
             <span>CHRONOLOGICAL VELOCITY OUTLIERS ({filteredRecords.length} SCANNED INCIDENTS)</span>
@@ -302,7 +325,7 @@ export default function ChronologicalIntelligence() {
                     </div>
                   </div>
 
-                  {/* Right Node Info Block */}
+                  {/* Dynamic Country Nodes Block */}
                   <div className="flex flex-col justify-between items-end text-right min-w-[220px] bg-slate-950/60 p-3 rounded-lg border border-slate-850 font-mono">
                     <div className="text-xs font-black text-slate-200">
                       Value: <span className="text-slate-100">${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}</span>
