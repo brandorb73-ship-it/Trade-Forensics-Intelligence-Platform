@@ -66,6 +66,10 @@ export default function CountryRiskIntelligence() {
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [leafletReady, setLeafletReady] = useState(false);
   
+  // New Local Workspace Geographic Dropdown Drop States
+  const [mapOriginSelect, setMapOriginSelect] = useState('ALL');
+  const [mapDestSelect, setMapDestSelect] = useState('ALL');
+  
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
@@ -133,10 +137,15 @@ export default function CountryRiskIntelligence() {
         product.includes('FILTER') || product.includes('ROD') || product.includes('TOW') || 
         product.includes('ACETATE') || product.includes('TOBACCO') || product.includes('CIG');
 
+      // Forensic Logic Fix: Separate transshipment splits from direct industrial anomalies
       if (isHub && isStrategic) {
         riskType = 'TIER_1_ELEVATED_DIVERSION';
         severity = 'HIGH';
-        brief = `High-density transshipment mismatch identified. Strategic industrial components flowing into active logistical distribution hubs.`;
+        if (hasRouteString) {
+          brief = `High-density transshipment hub lane mismatch isolated. Strategic industrial items moving along variable customs handling zones.`;
+        } else {
+          brief = `Strategic industrial output capacity variance isolated. Concentrated export volume anomalies flagged via continuous mass-balance audits.`;
+        }
       } else if (hasRouteString || isHub) {
         riskType = 'TIER_2_ROUTE_SPLITS_FTZ_LOOPS';
         severity = 'MEDIUM';
@@ -157,30 +166,51 @@ export default function CountryRiskIntelligence() {
     }).filter(Boolean);
   }, [tradeData]);
 
+  // General Filter Stream Options
   const filtered = useMemo(() => {
     if (filterType === 'ALL') return riskAnalysis;
     return riskAnalysis.filter(e => e.riskType === filterType);
   }, [riskAnalysis, filterType]);
 
-  const activeRouteForHighlight = filtered[selectedRouteIdx] || filtered[0] || null;
+  // Derived Dropdown Selection Fields for Map-Specific Context Control
+  const uniqueOriginsList = useMemo(() => {
+    return Array.from(new Set(filtered.map(e => e.cleanOrigin))).sort();
+  }, [filtered]);
 
-  // Real-Time Simultaneous Multi-Route Leaflet Layer Coordinator
+  const uniqueDestsList = useMemo(() => {
+    return Array.from(new Set(filtered.map(e => e.cleanDestination))).sort();
+  }, [filtered]);
+
+  // Core Map Filter Pipeline (Combines Tab Risk Filter with local Dropdown overrides)
+  const mapsDisplayedRoutes = useMemo(() => {
+    return filtered.filter(item => {
+      const matchOrig = mapOriginSelect === 'ALL' || item.cleanOrigin === mapOriginSelect;
+      const matchDest = mapDestSelect === 'ALL' || item.cleanDestination === mapDestSelect;
+      return matchOrig && matchDest;
+    });
+  }, [filtered, mapOriginSelect, mapDestSelect]);
+
+  const activeRouteForHighlight = mapsDisplayedRoutes[selectedRouteIdx] || mapsDisplayedRoutes[0] || null;
+
+  // Real-Time Simultaneous Multi-Route Leaflet Layer Coordinator (Light Canvas Variant)
   useEffect(() => {
-    if (!leafletReady || !mapContainerRef.current || filtered.length === 0) return;
+    if (!leafletReady || !mapContainerRef.current) return;
 
     const L = window.L;
 
-    // Initialize standalone dark map layout canvas if not yet constructed
+    // Initialize standalone bright/clean map layout canvas if not yet constructed
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = L.map(mapContainerRef.current, {
-        center: [20, 20],
+        center: [25, 30],
         zoom: 2,
         zoomControl: true,
         attributionControl: false
       });
 
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        maxZoom: 18
+      // Switched map layout configuration to high-contrast clear corporate light style
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        maxZoom: 18,
+        bgBuffer: 2
       }).addTo(mapInstanceRef.current);
 
       layerGroupRef.current = L.layerGroup().addTo(mapInstanceRef.current);
@@ -189,21 +219,23 @@ export default function CountryRiskIntelligence() {
     const layerGroup = layerGroupRef.current;
     layerGroup.clearLayers();
 
+    if (mapsDisplayedRoutes.length === 0) return;
+
     const parseCoords = (locString, visualOffsetIdx = 0) => {
       const normal = (locString || '').toUpperCase().trim();
       for (const [key, coords] of Object.entries(GEOLOCATION_REGISTRY)) {
         if (normal.includes(key)) {
-          // Add micro visual adjustments to prevent overlapping nodes on the same country
-          return [coords[0] + (visualOffsetIdx * 0.15), coords[1] + (visualOffsetIdx * 0.15)];
+          // Micro visual offset adjustments to separate stacked parallel shipping vectors cleanly
+          return [coords[0] + (visualOffsetIdx * 0.25), coords[1] + (visualOffsetIdx * 0.25)];
         }
       }
-      return [48.1351 + (visualOffsetIdx * 0.2), 11.5820 + (visualOffsetIdx * 0.2)]; 
+      return [48.1351 + (visualOffsetIdx * 0.3), 11.5820 + (visualOffsetIdx * 0.3)]; 
     };
 
     const boundsLatLngs = [];
 
-    // Loop and simultaneously plot all active filtered shipments on the map
-    filtered.forEach((item, idx) => {
+    // Loop and simultaneously plot filtered elements onto light map matrix
+    mapsDisplayedRoutes.forEach((item, idx) => {
       const originCoords = parseCoords(item.cleanOrigin, idx);
       const destCoords = parseCoords(item.cleanDestination, idx + 1);
 
@@ -211,42 +243,42 @@ export default function CountryRiskIntelligence() {
       boundsLatLngs.push(destCoords);
 
       const isSelected = activeRouteForHighlight && activeRouteForHighlight.id === item.id;
-      const baseColor = item.severity === 'HIGH' ? '#f59e0b' : item.severity === 'MEDIUM' ? '#3b82f6' : '#10b981';
+      const baseColor = item.severity === 'HIGH' ? '#d97706' : item.severity === 'MEDIUM' ? '#2563eb' : '#059669';
       
       // Plot Sourcing Origins
       const originMarker = L.circleMarker(originCoords, {
-        radius: isSelected ? 9 : 5,
-        fillColor: '#3b82f6',
-        color: isSelected ? '#ffffff' : '#3b82f6',
-        weight: isSelected ? 3 : 1,
-        fillOpacity: 0.9
+        radius: isSelected ? 10 : 6,
+        fillColor: '#2563eb',
+        color: isSelected ? '#000000' : '#ffffff',
+        weight: isSelected ? 3 : 1.5,
+        fillOpacity: 0.95
       }).bindPopup(`
-        <div style="color:#0f172a; font-family:monospace; font-size:11px;">
-          <strong>Origin Node:</strong> ${item.cleanOrigin}<br/>
+        <div style="color:#0f172a; font-family:monospace; font-size:11px; line-height:1.3;">
+          <strong style="color:#2563eb;">ORIGIN:</strong> ${item.cleanOrigin}<br/>
           <strong>Product:</strong> ${item.cleanProduct}
         </div>
       `);
 
       // Plot Named Target Destinations
       const destMarker = L.circleMarker(destCoords, {
-        radius: isSelected ? 9 : 5,
+        radius: isSelected ? 10 : 6,
         fillColor: '#10b981',
-        color: isSelected ? '#ffffff' : '#10b981',
-        weight: isSelected ? 3 : 1,
-        fillOpacity: 0.9
+        color: isSelected ? '#000000' : '#ffffff',
+        weight: isSelected ? 3 : 1.5,
+        fillOpacity: 0.95
       }).bindPopup(`
-        <div style="color:#0f172a; font-family:monospace; font-size:11px;">
-          <strong>Destination Target:</strong> ${item.cleanDestination}<br/>
-          <strong>Consignee:</strong> ${item.Importer || 'Under Audit'}
+        <div style="color:#0f172a; font-family:monospace; font-size:11px; line-height:1.3;">
+          <strong style="color:#10b981;">DESTINATION:</strong> ${item.cleanDestination}<br/>
+          <strong>Consignee:</strong> ${item.Importer || 'Under Corporate Audit'}
         </div>
       `);
 
       // Draw Connection Trajectory Lines
       const connectionLine = L.polyline([originCoords, destCoords], {
         color: baseColor,
-        weight: isSelected ? 4 : 1.5,
-        dashArray: isSelected ? '8, 4' : '4, 4',
-        opacity: isSelected ? 1.0 : 0.4
+        weight: isSelected ? 5 : 2.5,
+        dashArray: isSelected ? '10, 5' : '6, 4',
+        opacity: isSelected ? 1.0 : 0.65
       });
 
       layerGroup.addLayer(originMarker);
@@ -260,13 +292,13 @@ export default function CountryRiskIntelligence() {
       }
     });
 
-    // Auto-fit view window bounds to frame all paths perfectly
-    if (boundsLatLngs.length > 0) {
+    // Auto-fit view bounds smoothly to frame all active mapped paths perfectly
+    if (boundsLatLngs.length > 0 && mapInstanceRef.current) {
       const bounds = L.latLngBounds(boundsLatLngs);
-      mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 5 });
+      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 });
     }
 
-  }, [leafletReady, filtered, activeRouteForHighlight]);
+  }, [leafletReady, mapsDisplayedRoutes, activeRouteForHighlight]);
 
   // Dynamic Executive Summary Insights Pipeline
   const structuralInsights = useMemo(() => {
@@ -289,8 +321,8 @@ export default function CountryRiskIntelligence() {
     return {
       totalVolume,
       uniqueTargets,
-      contextText: `Logistical trade vectors originating from or routed via ${topHub} demonstrate concentrated patterns regarding ${topProduct}. These networks are highly indicative of secondary diversion pipelines seeking optimized customs entry thresholds.`,
-      evidentiaryFinding: `Analysis confirms focused transaction volumes associated with ${uniqueTargets} unique target markets. Rather than declaring strict compliance failure, patterns suggest unverified grey-market or parallel distribution channels bypassing traditional authorized infrastructure.`,
+      contextText: `Logistical trade vectors originating from or routed via ${topHub} demonstrate concentrated patterns regarding ${topProduct}. These networks are evaluated under specific capacity and mass-balance threshold metrics.`,
+      evidentiaryFinding: `Analysis confirms focused transaction volumes associated with ${uniqueTargets} unique target markets. Supply chain validation loops isolate production metrics against cross-border customs clearing manifests.`,
       executiveBriefing: `Forensic auditing has isolated active cargo vectors totaling $${totalVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })} in tracked global value bounds. The structural shift maps directly to specialized shipments leaving ${topHub}.`,
       operationalAnalysis: `Cross-border trade matrix matches reveal systematic usage of regional transit corridors. Continuous structural mass-balance calculations are recommended to detect inventory discrepancies.`
     };
@@ -333,7 +365,7 @@ export default function CountryRiskIntelligence() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[11px]">
           <div className="p-3 bg-slate-950/40 border-l-4 border-amber-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-amber-400 mb-1 print-text-dark">Tier 1: Elevated Diversion</div>
-            <p className="text-slate-200 leading-tight print-text-muted">Strategic, restricted, or dual-use commodities routed through verified global grey-market transshipment hubs.</p>
+            <p className="text-slate-200 leading-tight print-text-muted">Strategic, restricted, or dual-use commodities routed through verified transshipment hubs or showing capacity variances.</p>
           </div>
           <div className="p-3 bg-slate-950/40 border-l-4 border-blue-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-blue-400 mb-1 print-text-dark">Tier 2: Route Splits / FTZ Loops</div>
@@ -372,48 +404,99 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* Dynamic Visual Component: Interactive Multi-Route Leaflet Map */}
+      {/* Dynamic Visual Component: Upgraded Light Cartographic Engine with Side Context Selectors */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-break-avoid print-border-clean">
         <div className="flex justify-between items-center border-b border-slate-800 pb-2 print-border-clean">
           <div className="flex items-center gap-2">
             <Share2 size={15} className="text-blue-500" />
             <h3 className="text-xs font-mono font-black text-white uppercase tracking-wider print-text-dark">
-              Geospatial Route Flow Tracker & Interactive Layer Matrix
+              Geospatial Route Flow Tracker & High-Contrast Light Mapped Canvas
             </h3>
           </div>
           <span className="text-[11px] font-mono bg-slate-900 border border-slate-800 px-2 py-0.5 rounded text-slate-200">
-            Status: <strong className="text-emerald-400">Displaying All Active Paths Simultaneously</strong>
+            Render Node Density: <strong className="text-blue-400">{mapsDisplayedRoutes.length} Lanes Active</strong>
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center pt-2">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch pt-2">
           
           {/* Map Frame Container Layout */}
-          <div className="lg:col-span-3 rounded-xl border border-slate-800 relative h-[380px] overflow-hidden z-10 print-border-clean">
+          <div className="lg:col-span-3 rounded-xl border border-slate-800 relative h-[420px] overflow-hidden z-10 bg-slate-200 print-border-clean">
             {!leafletReady && (
-              <div className="absolute inset-0 bg-[#0a0f1d] flex items-center justify-center font-mono text-xs text-slate-300">
-                Streaming live map layers...
+              <div className="absolute inset-0 bg-slate-100 flex items-center justify-center font-mono text-xs text-slate-800">
+                Streaming dynamic light tile arrays...
               </div>
             )}
-            <div ref={mapContainerRef} className="w-full h-full bg-[#0a0f1d]" />
+            <div ref={mapContainerRef} className="w-full h-full" />
           </div>
 
-          {/* Mapping Matrix Criterion Sidebar */}
-          <div className="bg-slate-950/40 border border-slate-800 p-4 rounded-xl space-y-3 h-full flex flex-col justify-center print-border-clean">
-            <div>
-              <span className="text-[9px] font-mono font-black text-blue-400 uppercase tracking-wider block mb-1">Simultaneous Tracking Matrix</span>
-              <p className="text-[11px] font-mono text-slate-200 leading-normal">
-                All identified transshipment movements for the chosen layer are drawn on-screen at once. Click a specific log item below to highlight its specific pathway line.
-              </p>
-            </div>
-            {activeRouteForHighlight && (
-              <div className="pt-2 border-t border-slate-800">
-                <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-wider block">Highlighted Core Vector</span>
-                <div className="text-xs font-mono font-bold text-white mt-0.5 print-text-dark">
-                  {activeRouteForHighlight.routePath}
-                </div>
+          {/* Upgraded Sidebar Controller: Dropdowns placed here to prevent unnecessary scrolling */}
+          <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-4 print-border-clean">
+            
+            <div className="space-y-3">
+              <span className="text-[10px] font-mono font-black text-blue-400 uppercase tracking-wider block">Local Workspace Filters</span>
+              
+              {/* Origin Country Node Filter */}
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-slate-300 uppercase font-bold">Filter Sourcing Origin</label>
+                <select 
+                  value={mapOriginSelect}
+                  onChange={(e) => {
+                    setMapOriginSelect(e.target.value);
+                    setSelectedRouteIdx(0);
+                  }}
+                  className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="ALL">All Mapped Origins ({uniqueOriginsList.length})</option>
+                  {uniqueOriginsList.map(orig => (
+                    <option key={orig} value={orig}>{orig}</option>
+                  ))}
+                </select>
               </div>
-            )}
+
+              {/* Destination Country Node Filter */}
+              <div className="space-y-1">
+                <label className="block font-mono text-[10px] text-slate-300 uppercase font-bold">Filter Target Destination</label>
+                <select 
+                  value={mapDestSelect}
+                  onChange={(e) => {
+                    setMapDestSelect(e.target.value);
+                    setSelectedRouteIdx(0);
+                  }}
+                  className="w-full bg-slate-900 border border-slate-700 rounded p-1.5 font-mono text-xs text-white focus:outline-none focus:border-blue-500 cursor-pointer"
+                >
+                  <option value="ALL">All Mapped Targets ({uniqueDestsList.length})</option>
+                  {uniqueDestsList.map(dest => (
+                    <option key={dest} value={dest}>{dest}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Quick-Jump Index for Current Mapped Subset */}
+            <div className="pt-3 border-t border-slate-800/80 flex-1 flex flex-col justify-end">
+              <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-wider block mb-1">Active View Subset Index</span>
+              {mapsDisplayedRoutes.length > 0 ? (
+                <div className="max-h-[120px] overflow-y-auto space-y-1 pr-1 border border-slate-900 p-1 rounded bg-slate-950/40">
+                  {mapsDisplayedRoutes.map((route, rIdx) => (
+                    <button
+                      key={route.id}
+                      onClick={() => setSelectedRouteIdx(rIdx)}
+                      className={`w-full text-left font-mono text-[10px] p-1 truncate rounded transition ${
+                        selectedRouteIdx === rIdx 
+                          ? 'bg-blue-600/30 text-white font-bold border border-blue-500/40' 
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
+                    >
+                      {rIdx + 1}. {route.cleanOrigin} $\rightarrow$ {route.cleanDestination}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-[11px] font-mono text-amber-400">No vectors match selector criteria.</p>
+              )}
+            </div>
+
           </div>
         </div>
       </div>
@@ -469,6 +552,8 @@ export default function CountryRiskIntelligence() {
               onClick={() => {
                 setFilterType(tab.id);
                 setSelectedRouteIdx(0);
+                setMapOriginSelect('ALL');
+                setMapDestSelect('ALL');
               }} 
               className={`w-full text-left p-3 rounded font-mono text-xs cursor-pointer block border transition-all ${
                 filterType === tab.id 
@@ -484,53 +569,55 @@ export default function CountryRiskIntelligence() {
         {/* Evidentiary Logs Stream */}
         <div className="lg:col-span-3 space-y-4">
           {filtered.length > 0 ? (
-            filtered.map((evt, idx) => (
-              <div 
-                key={evt.id} 
-                onClick={() => setSelectedRouteIdx(idx)}
-                className={`p-5 rounded-xl border bg-[#111827] cursor-pointer transition-all print-break-avoid print-border-clean ${
-                  (activeRouteForHighlight && activeRouteForHighlight.id === evt.id) ? 'border-blue-500 ring-1 ring-blue-500/30' : 'border-slate-800 hover:border-slate-700'
-                } ${
-                  evt.severity === 'HIGH' ? 'border-l-4 border-l-amber-500' : evt.severity === 'MEDIUM' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-slate-600'
-                }`}
-              >
-                
-                <div className="flex justify-between border-b border-slate-800 pb-2 mb-3 font-mono text-xs print-border-clean">
-                  <span className={`font-black uppercase tracking-wider flex items-center gap-1.5 ${
-                    evt.severity === 'HIGH' ? 'text-amber-400' : evt.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-200'
-                  } print-text-dark`}>
-                    {evt.severity === 'HIGH' && <AlertTriangle size={13} className="non-printable" />}
-                    {evt.severity === 'MEDIUM' && <ShieldAlert size={13} className="non-printable" />}
-                    {evt.severity === 'LOW' && <CheckCircle2 size={13} className="non-printable" />}
-                    {(evt.riskType || '').replace(/_/g, ' ')}
-                  </span>
-                  <span className="text-slate-200 font-bold">{evt.Date || '2026 Audit Cycle'}</span>
-                </div>
-
-                <div className="space-y-2 mb-4">
-                  <p className="text-xs font-mono text-white leading-relaxed print-text-dark">
-                    <span className="text-slate-300 font-black uppercase tracking-tight">Logistical Record Brief:</span> {evt.brief}
-                  </p>
-                </div>
-
-                {/* Reconstructed data parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800 text-xs font-mono print-border-clean">
-                  <div>
-                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Reconstructed Sourcing Route Path</span>
-                    <span className="text-white font-bold print-text-dark">{evt.routePath}</span>
+            filtered.map((evt, idx) => {
+              const isCurrentlySelectedInMap = activeRouteForHighlight && activeRouteForHighlight.id === evt.id;
+              return (
+                <div 
+                  key={evt.id} 
+                  className={`p-5 rounded-xl border bg-[#111827] transition-all print-break-avoid print-border-clean ${
+                    isCurrentlySelectedInMap ? 'border-blue-500 ring-1 ring-blue-500/30 shadow' : 'border-slate-800'
+                  } ${
+                    evt.severity === 'HIGH' ? 'border-l-4 border-l-amber-500' : evt.severity === 'MEDIUM' ? 'border-l-4 border-l-blue-500' : 'border-l-4 border-l-slate-600'
+                  }`}
+                >
+                  
+                  <div className="flex justify-between border-b border-slate-800 pb-2 mb-3 font-mono text-xs print-border-clean">
+                    <span className={`font-black uppercase tracking-wider flex items-center gap-1.5 ${
+                      evt.severity === 'HIGH' ? 'text-amber-400' : evt.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-200'
+                    } print-text-dark`}>
+                      {evt.severity === 'HIGH' && <AlertTriangle size={13} className="non-printable" />}
+                      {evt.severity === 'MEDIUM' && <ShieldAlert size={13} className="non-printable" />}
+                      {evt.severity === 'LOW' && <CheckCircle2 size={13} className="non-printable" />}
+                      {(evt.riskType || '').replace(/_/g, ' ')}
+                    </span>
+                    <span className="text-slate-200 font-bold">{evt.Date || '2026 Audit Cycle'}</span>
                   </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Commodity Description</span>
-                    <span className="text-slate-100 truncate block max-w-xs print-text-dark">{evt.Product || 'Filter Rods'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Target Destination Market</span>
-                    <span className="text-blue-400 font-bold block truncate print-text-dark">{evt.cleanDestination}</span>
-                  </div>
-                </div>
 
-              </div>
-            ))
+                  <div className="space-y-2 mb-4">
+                    <p className="text-xs font-mono text-white leading-relaxed print-text-dark">
+                      <span className="text-slate-300 font-black uppercase tracking-tight">Logistical Record Brief:</span> {evt.brief}
+                    </p>
+                  </div>
+
+                  {/* Reconstructed data parameters */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800 text-xs font-mono print-border-clean">
+                    <div>
+                      <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Reconstructed Sourcing Route Path</span>
+                      <span className="text-white font-bold print-text-dark">{evt.routePath}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Commodity Description</span>
+                      <span className="text-slate-100 truncate block max-w-xs print-text-dark">{evt.Product || 'Filter Rods'}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Target Destination Market</span>
+                      <span className="text-blue-400 font-bold block truncate print-text-dark">{evt.cleanDestination}</span>
+                    </div>
+                  </div>
+
+                </div>
+              );
+            })
           ) : (
             <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl text-xs font-mono text-slate-200 print-border-clean">
               No entries found matching the current analytical parameters.
