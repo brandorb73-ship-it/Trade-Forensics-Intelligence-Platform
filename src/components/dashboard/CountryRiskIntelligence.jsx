@@ -1,11 +1,37 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
 import { Globe, ShieldAlert, FileText, Server, Info, ArrowRight, Share2, AlertTriangle, CheckCircle2, Layers } from 'lucide-react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Geocoding Look-up Matrix for transforming country strings to geospatial coordinates
+const GEOLOCATION_REGISTRY = {
+  'MALAYSIA': [4.2105, 101.9758],
+  'MY': [4.2105, 101.9758],
+  'SINGAPORE': [1.3521, 103.8198],
+  'SG': [1.3521, 103.8198],
+  'HONG KONG': [22.3193, 114.1694],
+  'HK': [22.3193, 114.1694],
+  'DUBAI': [25.2048, 55.2708],
+  'UAE': [25.2048, 55.2708],
+  'AE': [25.2048, 55.2708],
+  'TURKEY': [38.9637, 35.2433],
+  'TR': [38.9637, 35.2433],
+  'CHINA': [35.8617, 104.1954],
+  'CN': [35.8617, 104.1954],
+  'VIETNAM': [14.0583, 108.2772],
+  'VN': [14.0583, 108.2772],
+  'INDIA': [20.5937, 78.9629],
+  'IN': [20.5937, 78.9629]
+};
 
 export default function CountryRiskIntelligence() {
   const { tradeData = [] } = useTradeData() || {};
   const [filterType, setFilterType] = useState('ALL');
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
+
+  const mapContainerRef = useRef(null);
+  const leafletMapInstance = useRef(null);
 
   // Broadened dynamic risk tiering engine mapped to Tiers 1, 2, and 3
   const riskAnalysis = useMemo(() => {
@@ -88,7 +114,6 @@ export default function CountryRiskIntelligence() {
       };
     }
 
-    // Determine top statistical weights dynamically
     const productCounts = {};
     const hubCounts = {};
     filtered.forEach(row => {
@@ -110,6 +135,82 @@ export default function CountryRiskIntelligence() {
 
   const activeRouteForMap = filtered[selectedRouteIdx] || filtered[0] || null;
 
+  // Leaflet Synchronization Engine
+  useEffect(() => {
+    if (!mapContainerRef.current) return;
+
+    if (!leafletMapInstance.current) {
+      leafletMapInstance.current = L.map(mapContainerRef.current, {
+        center: [15, 60],
+        zoom: 2.5,
+        zoomControl: true,
+        attributionControl: false
+      });
+
+      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19
+      }).addTo(leafletMapInstance.current);
+    }
+
+    const map = leafletMapInstance.current;
+
+    // Flush active dynamic vector/node layers
+    map.eachLayer((layer) => {
+      if (layer instanceof L.Marker || layer instanceof L.Polyline) {
+        map.removeLayer(layer);
+      }
+    });
+
+    if (!activeRouteForMap) return;
+
+    const parseCoordinates = (locString) => {
+      const normal = (locString || '').toUpperCase().trim();
+      for (const [key, coords] of Object.entries(GEOLOCATION_REGISTRY)) {
+        if (normal.includes(key)) return coords;
+      }
+      // Geometric dynamic offset baseline generator to stop overlapping coordinate sets
+      const hash = normal.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      return [20 + (hash % 10), 40 + (hash % 40)];
+    };
+
+    const originCoordinates = parseCoordinates(activeRouteForMap.cleanOrigin);
+    const targetCoordinates = parseCoordinates(activeRouteForMap.Importer || 'FINAL_DESTINATION');
+
+    const runtimeRouteColor = activeRouteForMap.severity === 'HIGH' ? '#f59e0b' : activeRouteForMap.severity === 'MEDIUM' ? '#3b82f6' : '#94a3b8';
+
+    // Node plotting definitions
+    const nodeIconOrigin = L.divIcon({
+      className: 'custom-leaflet-node',
+      html: `<div style="width:14px; height:14px; background:#3b82f6; border:2px solid #ffffff; border-radius:50%; box-shadow: 0 0 10px #3b82f6;"></div>`,
+      iconSize: [14, 14]
+    });
+
+    const nodeIconTarget = L.divIcon({
+      className: 'custom-leaflet-node',
+      html: `<div style="width:14px; height:14px; background:#10b981; border:2px solid #ffffff; border-radius:50%; box-shadow: 0 0 10px #10b981;"></div>`,
+      iconSize: [14, 14]
+    });
+
+    L.marker(originCoordinates, { icon: nodeIconOrigin }).addTo(map)
+      .bindPopup(`<div style="color:#000; font-family:monospace; font-size:11px;"><b>Origin Node:</b> ${activeRouteForMap.cleanOrigin}</div>`);
+
+    L.marker(targetCoordinates, { icon: nodeIconTarget }).addTo(map)
+      .bindPopup(`<div style="color:#000; font-family:monospace; font-size:11px;"><b>Consignee Node:</b> ${activeRouteForMap.Importer || 'Unverified Target'}</div>`);
+
+    const structuralFlowVector = L.polyline([originCoordinates, targetCoordinates], {
+      color: runtimeRouteColor,
+      weight: 2.5,
+      opacity: 0.8,
+      dashArray: '6, 6'
+    }).addTo(map);
+
+    try {
+      map.fitBounds(structuralFlowVector.getBounds(), { padding: [40, 40], maxZoom: 5 });
+    } catch (e) {
+      map.setView(originCoordinates, 3);
+    }
+  }, [activeRouteForMap]);
+
   return (
     <div className="space-y-6 text-slate-100 id-print-section max-w-[1800px] mx-auto p-1">
       
@@ -123,6 +224,7 @@ export default function CountryRiskIntelligence() {
           .print-border-clean { border-color: #cbd5e1 !important; }
           .print-container-expand { display: block !important; width: 100% !important; max-height: none !important; overflow: visible !important; }
         }
+        .leaflet-container { background: #0b0f19 !important; outline: none; }
       `}} />
 
       {/* Header Panel */}
@@ -206,56 +308,29 @@ export default function CountryRiskIntelligence() {
 
         {activeRouteForMap ? (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-center pt-2">
-            {/* The SVG Visual Flow Pipeline Map */}
-            <div className="lg:col-span-3 bg-slate-950/80 rounded-xl p-6 border border-slate-900 flex flex-col justify-center items-center relative min-h-[160px] overflow-hidden print-border-clean print-container-expand">
-              
-              <div className="absolute inset-0 opacity-[0.02] bg-[radial-gradient(#3b82f6_1px,transparent_1px)] [background-size:16px_16px] non-printable"></div>
-              
-              <div className="w-full flex justify-between items-center max-w-2xl relative z-10">
-                {/* Node 1: Origin */}
+            
+            {/* The Dynamic Interactive Leaflet Map Wrapper Layer */}
+            <div className="lg:col-span-3 bg-slate-950/80 rounded-xl border border-slate-900 relative h-[320px] overflow-hidden print-border-clean print-container-expand">
+              {/* Leaflet Screen Target Map Instance */}
+              <div ref={mapContainerRef} className="w-full h-full absolute inset-0 z-10 non-printable" />
+
+              {/* High-Fidelity Static SVG Print Fallback ( Leaflet does not reliably capture raster tiles inside window.print() pipelines ) */}
+              <div className="hidden print:flex w-full h-full justify-between items-center max-w-2xl mx-auto relative p-6">
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center text-blue-400 font-mono font-black text-xs shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+                  <div className="w-10 h-10 rounded-full bg-blue-950 border-2 border-blue-500 flex items-center justify-center text-blue-400 font-mono font-black text-xs">
                     ORG
                   </div>
                   <span className="text-[11px] font-mono font-bold text-slate-300 block max-w-[120px] truncate print-text-dark">
                     {activeRouteForMap.cleanOrigin}
                   </span>
                 </div>
-
-                {/* Vector Flow Line 1 */}
                 <div className="flex-1 flex flex-col items-center mx-2 relative">
-                  <span className="text-[9px] text-slate-500 font-mono mb-1 tracking-tighter uppercase non-printable">Transit Link</span>
-                  <div className="w-full h-[2px] bg-gradient-to-r from-blue-500 to-amber-500 relative flex items-center justify-center">
-                    <div className="w-2 h-2 rounded-full bg-amber-400 animate-ping absolute non-printable"></div>
-                    <ArrowRight size={12} className="text-amber-400 absolute right-0 -mt-[5px]" />
-                  </div>
-                </div>
-
-                {/* Node 2: Intermediary Hub / FTZ */}
-                <div className="flex flex-col items-center text-center space-y-2">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-mono font-black text-xs border-2 ${
-                    activeRouteForMap.severity === 'HIGH' 
-                      ? 'bg-amber-950 border-amber-500 text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.3)]' 
-                      : 'bg-slate-900 border-slate-700 text-slate-400'
-                  }`}>
-                    HUB
-                  </div>
-                  <span className="text-[11px] font-mono font-bold text-slate-400 block max-w-[140px] truncate print-text-muted">
-                    {activeRouteForMap.riskType === 'TIER_1_ELEVATED_DIVERSION' ? 'FTZ TRANSIT HUB' : 'DIRECT CROSS-BORDER'}
-                  </span>
-                </div>
-
-                {/* Vector Flow Line 2 */}
-                <div className="flex-1 flex flex-col items-center mx-2 relative">
-                  <span className="text-[9px] text-slate-500 font-mono mb-1 tracking-tighter uppercase non-printable">Consignee Leg</span>
-                  <div className="w-full h-[2px] bg-gradient-to-r from-amber-500 to-emerald-500 relative flex items-center justify-center">
+                  <div className="w-full h-[2px] bg-gradient-to-r from-blue-500 to-emerald-500 relative flex items-center justify-center">
                     <ArrowRight size={12} className="text-emerald-400 absolute right-0 -mt-[5px]" />
                   </div>
                 </div>
-
-                {/* Node 3: Target Consignee / Importer */}
                 <div className="flex flex-col items-center text-center space-y-2">
-                  <div className="w-10 h-10 rounded-full bg-emerald-950 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-black text-xs shadow-[0_0_15px_rgba(16,185,129,0.3)]">
+                  <div className="w-10 h-10 rounded-full bg-emerald-950 border-2 border-emerald-500 flex items-center justify-center text-emerald-400 font-mono font-black text-xs">
                     CON
                   </div>
                   <span className="text-[11px] font-mono font-bold text-slate-300 block max-w-[120px] truncate print-text-dark">
@@ -366,7 +441,7 @@ export default function CountryRiskIntelligence() {
                 <div className="flex justify-between border-b border-slate-800/60 pb-2 mb-3 font-mono text-xs print-border-clean">
                   <span className={`font-black uppercase tracking-wider flex items-center gap-1.5 ${
                     evt.severity === 'HIGH' ? 'text-amber-400' : evt.severity === 'MEDIUM' ? 'text-blue-400' : 'text-slate-400'
-                   font-black} print-text-dark`}>
+                  } print-text-dark`}>
                     {evt.severity === 'HIGH' && <AlertTriangle size={13} className="non-printable" />}
                     {evt.severity === 'MEDIUM' && <ShieldAlert size={13} className="non-printable" />}
                     {evt.severity === 'LOW' && <CheckCircle2 size={13} className="non-printable" />}
