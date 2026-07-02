@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext.jsx'; // Add explicit .jsx extension to force exact chunk matching
-import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info, BookOpen, Clock } from 'lucide-react';
+import { ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info, BookOpen } from 'lucide-react';
 
 export default function HSIntelligence() {
   const contextData = useTradeData();
@@ -179,6 +179,7 @@ export default function HSIntelligence() {
       industryThesis = "Analysis monitors components, balance mechanisms, and high-tariff design items susceptible to gray-market parallel routing patterns.";
     }
 
+    // Dynamic database mapping of chapters detected inside the specific file array
     const masterDefinitions = {
       '56': { nomenclature: "Wadding, Felt, Nonwovens & Special Yarns", context: "Typically denotes primary filters, industrial structural processing layers, or fiber tow bundles." },
       '48': { nomenclature: "Paper, Paperboard & Cellulose Packaging", context: "Corresponds to downstream packaging wraps, specialized composite boxes, or physical booklets." },
@@ -189,29 +190,6 @@ export default function HSIntelligence() {
 
     return { industryDomain, industryThesis, masterDefinitions };
   }, [hsAnalysis.topProduct]);
-
-  // Restored Dynamic Multi-Source AI Synthesis Summary Engine
-  const dynamicAISummary = useMemo(() => {
-    if (tradeData.length === 0) {
-      return {
-        executiveBrief: "System waiting for trade data manifest ingest loop. Load active data array to generate operational compliance forensics.",
-        vulnerabilityAnalysis: "No corridors currently processed."
-      };
-    }
-
-    const domain = dynamicIndustryGlossary.industryDomain;
-    const totalRiskUSD = hsAnalysis.globalMismatchedValue.toLocaleString(undefined, { minimumFractionDigits: 2 });
-    const incidentCount = hsAnalysis.highRiskIncidentCount;
-    const coreProduct = hsAnalysis.topProduct;
-    const mainCorridor = hsAnalysis.topCorridors[0]?.name || "Unspecified Transit Corridors";
-    
-    // Synthesize customized analytical text blocks based on the data variables present
-    let executiveBrief = `Automated auditing across the ${domain} ecosystem has identified a highly concentrated structural nomenclature deviation pattern. Out of total analyzed manifests, ${incidentCount} shipments exhibit classification conflicts representing an exposed risk valuation of $${totalRiskUSD} USD. The system indicates that operations surrounding ${coreProduct} are shifting away from traditional tariff headings to circumvent security screening matrices or variable regulatory thresholds.`;
-    
-    let vulnerabilityAnalysis = `The primary tactical vulnerability is centered along the [ ${mainCorridor} ] transit channel, which commands the largest volume of structural friction. By routing cargo under variable classifications like ${hsAnalysis.chapterListStr || 'unassigned definitions'}, entities dilute the visibility of supply lines. This prevents standard rule engines from triggering mass-balance audits or matching raw precursor input values against finished product output volumes.`;
-
-    return { executiveBrief, vulnerabilityAnalysis };
-  }, [tradeData, hsAnalysis, dynamicIndustryGlossary]);
 
   // Resolved Filter logic to match ch.code string mappings
   const filteredRecords = useMemo(() => {
@@ -228,145 +206,95 @@ export default function HSIntelligence() {
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
       
-      {/* Explicit Print Target Parameter Style Injector - FORCING LANDSCAPE & CLEAR WHITE MODE VERBATIM AS onscreen verbatim Legible Contrasting Dark Mode verbatim */}
+      {/* Explicit Print Target Style Injector - FORCING WHITE MODE LAYOUT */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page {
-            size: landscape;
-            margin: 10mm;
-          }
-          body {
+          body * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
           .id-print-section {
-            width: 100% !important;
-            max-width: 100% !important;
+            background-color: white !important;
+            color: #1f2937 !important; /* bg-slate-800 */
             padding: 0 !important;
             margin: 0 !important;
-            background-color: #111 !important;
-            color: #e2e8f0 !important;
+            width: 100% !important;
+            max-width: none !important;
           }
           .non-printable {
             display: none !important;
           }
-          /* Target specific elements to force contrasting light contrasting off-white contrasting colored text on dark background and contrasting contrasting lucide icon contrasting ink Contrasting Dark Mode verbatim */
-          .text-slate-400 {
-             color: #94a3b8 !important;
-          }
-          .text-slate-300 {
-             color: #cbd5e1 !important;
-          }
-          .text-slate-200 {
-             color: #e2e8f0 !important;
-          }
-          .text-slate-100 {
-             color: #f1f5f9 !important;
-          }
-          .font-mono, .font-sans {
-            color: #e2e8f0 !important;
-          }
-          /* Component backgrounds for print */
-          .bg-slate-900, .bg-slate-950 {
-            background-color: #1a202c !important;
-            border: 1px solid #2d3748 !important;
-          }
-          .bg-slate-800 {
-            background-color: #222 !important;
-            border: 1px solid #333 !important;
-          }
-          /* Target contrasting coloured Lucide SVG ink verbatim for clean print against dark backgrounds */
-          .bg-rose-950\/50 svg {
-             color: #f43f5e !important;
-          }
-          .bg-amber-950\/50 svg {
-             color: #f59e0b !important;
-          }
-          .bg-slate-700\/50 svg {
-             color: #a0aec0 !important;
-          }
-          /* Restore specific colors for dynamic text highlights */
-          .TerminologyContext .text-amber-400, .DiagnosticAnalysisNotice .text-amber-400, .DiagnosticAnalysisNotice .text-emerald-400 {
-             color: black !important;
-          }
-          /* Restore specific contrasting ink colors verbatim for print based on screen view of lucide icons seen in image_10.png verbatim Legible Contrasting Dark Mode verbatim */
-          svg.lucide-file-text, svg.lucide-alert-triangle, svg.lucide-shield-alert, svg.lucide-book-open, svg.lucide-info, svg.lucide-clock {
-             color: inherit !important;
-          }
-          /* Ensure table logic verbatim landscape verbatim fit remains Legible Contrasting Dark Mode verbatim verbatim verbatim from image_10.png verbatim from last turn verbatim is Legible Contrasting Dark Mode verbatim for print */
-          .DiagnosticAnalysisNotice, .NomenclatureRiskValue, .FlaggedClassificationShifts, .ActiveTariffHeadings, .DiscrepancyMatrixPaths, .RiskCorridorsMatrix, .NomenclatureDictionaryBlock {
-            page-break-inside: avoid !important;
-          }
-          .AuditTable ledger {
-             page-break-inside: avoid !important;
-          }
-          /* Table formatting to force landscape full fit verbatim ledger verbatim full columnar fit from Date verbatim Audit Outcome verbatim from previous turnkey logic seen verbatim in image_10.png verbatim Contrasting Dark Mode verbatim for print */
-          .overflow-x-auto, .overflow-hidden {
+          /* Ensure the containers expand, removing horizontal scrollbars */
+          .overflow-x-auto {
             overflow: visible !important;
-            max-height: none !important;
+            width: auto !important;
           }
           table {
             width: 100% !important;
-            table-layout: auto !important;
-            page-break-inside: auto !important;
+            table-layout: auto !important; /* Let columns adjust width */
           }
-          tr {
-            page-break-inside: avoid !important;
-            page-break-after: auto !important;
+          /* Specific column wrapping for print */
+          table td.col-brand,
+          table td.col-product {
+            white-space: normal !important; /* Allow wrapping */
+            word-wrap: break-word !important;
+            max-width: none !important; /* Remove screen-specific max-width */
+            text-overflow: clip !important; /* Disable truncation */
           }
-          th, td {
-            white-space: normal !important;
-            word-break: break-word !important;
-            border-bottom: 1px solid #333 !important;
-            color: #eee !important;
+          /* Invert color scheme of dark background panels to light for print */
+          .bg-slate-900, .bg-slate-800, .bg-slate-950, .bg-slate-900\\/60 {
+            background-color: #f3f4f6 !important; /* bg-slate-100 */
+            border-color: #e5e7eb !important; /* border-slate-200 */
+            color: #1f2937 !important;
           }
-          table thead th {
-             color: #aaa !important; /* Contrasting off-white contrasting colored text for table headers on print */
+          .border-slate-800, .border-slate-700 {
+            border-color: #e5e7eb !important;
           }
-          table td span.text-rose-400 {
-             color: #f43f5e !important;
+          /* Override specific text colors that might look bad on white */
+          .text-white, .text-slate-300, .text-slate-200 {
+            color: #1f2937 !important;
           }
-          /* Audit outcome cell fix for dark mode print Contrasting Dark Mode verbatim Contrasting Dark Mode verbatim Legible Contrasting Dark Mode verbatim to match image_10.png verbatim Legible Contrasting Dark Mode verbatim Contrasting Dark Mode verbatim for print */
-          table tbody tr:hover {
-            background-color: transparent !important;
+          .text-slate-400 {
+            color: #6b7280 !important; /* bg-slate-500 */
           }
-          /* Table product/brand colors verbatim Legible Contrasting Dark Mode verbatim as screen contrasting dark mode verbatim as seen verbatim image_10.png verbatim as contrasting dark mode verbatim for print */
-          .text-emerald-400 {
-            color: #10b981 !important;
+          /* Ensure dynamic interpreter descriptions look good on white in print */
+          .bg-slate-950 p.text-slate-400,
+          .bg-slate-950 div.text-slate-400,
+          .bg-slate-950 div.text-slate-200 {
+             color: #1f2937 !important;
           }
-          .font-semibold.text-slate-200 {
-             color: #e2e8f0 !important;
+          /* Adjust Discrepancy Matrix panel background in print */
+          .DiscrepancyMatrixCard {
+             background-color: #f9fafb !important; /* bg-gray-50 */
+             border: 1px solid #e5e7eb !important;
           }
-          /* Result Outcome flags verbatim Legible Contrasting Dark Mode verbatim as screen Contrasting dark mode verbatim Contrasting Dark Mode verbatim Contrasting Dark Mode verbatim as seen verbatim image_10.png verbatim verbatim contrasting dark mode verbatim for print */
-          .bg-rose-500\/10 {
-             color: #f43f5e !important;
-             background-color: #2e101a !important; /* Contrasting dark contrasting colored ink tag against charcoal background verbatim for Contrasting Dark Mode print */
-             border: 1px solid #571221 !important;
+          /* Red alert text should stay red, maybe adjust color slightly */
+          .text-rose-400 {
+            color: #b91c1c !important; /* text-red-700 */
           }
-          table td span.text-rose-400 {
-             color: #f43f5e !important;
-             background-color: #2e101a !important;
-             border: 1px solid #571221 !important;
+          /* Ensure Icons print in dark color */
+          svg {
+            stroke: #1f2937 !important;
           }
         }
       `}} />
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable HeaderContext">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
         <div>
-          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2 LedgerTitle">
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
             HS Intelligence System 
-            <span className="text-xs bg-amber-500/20 px-2 py-1 rounded text-amber-400 uppercase tracking-widest font-mono border border-amber-500/30 NomenclatureAuditingLabel">
+            <span className="text-xs bg-amber-500/20 px-2 py-1 rounded text-amber-400 uppercase tracking-widest font-mono border border-amber-500/30">
               Forensic Nomenclature Auditing
             </span>
           </h1>
-          <p className="text-sm text-slate-300 mt-1 LedgerSubtitle">Isolate structural anomalies where declared descriptions conflict with international tariff code frameworks.</p>
+          <p className="text-sm text-slate-300 mt-1">Isolate structural anomalies where declared descriptions conflict with international tariff code frameworks.</p>
         </div>
         
         {tradeData.length > 0 && (
           <button
             onClick={() => window.print()}
-            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-bold font-mono text-slate-200 transition shadow-sm cursor-pointer ExportPDFBtn"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-bold font-mono text-slate-200 transition shadow-sm cursor-pointer"
           >
             <FileText size={14} className="text-amber-400" />
             <span>Export Briefing PDF</span>
@@ -375,20 +303,20 @@ export default function HSIntelligence() {
       </div>
 
       {/* Forensic Intelligence Briefing Notice - Fully Adaptive Assessment Panels */}
-      <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3 DiagnosticAnalysisNotice DiagnosticAnalysisNoticeTerminologyContextDiagnosticAnalysisNoticeTerminologyContext DiagnosticAnalysisPanel DiagnosticAnalysisPanelDiagnosticLedgerTableContainerLedgerTableDiagnosticOutcomeCell CleanPassNotice MismatchOutcomeNoticeLedgerTableHeaderRow AuditOutcome DiagnosticNoticeDiagnosticLedgerLedgerHeader">
-        <h2 className="text-sm font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2 diagnosticAnalysish2">
+      <div className="bg-slate-900 border-l-4 border-amber-500 p-5 rounded-xl shadow-md space-y-3">
+        <h2 className="text-sm font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2">
           <Info size={16} /> Diagnostic Risk Analysis: Strategic Misdeclaration Framework
         </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed DiagnosticNoticeGrid">
-          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 DiagnosticSpeciesRisk">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1">PRODUCT SPECIES RISK</span>
             Analytical profile tracking indicates <span className="text-amber-400 font-bold">{hsAnalysis.topProduct}</span> cargo operations exhibit clear classification variance. Utilizing alternative definitions subverts targeted security screening profiles and import verification triggers.
           </div>
-          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 DiagnosticBrandIntel">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-emerald-400 font-bold block border-b border-slate-800 pb-1 mb-1">BRAND INTEL & GRAY MARKETS</span>
             The monitoring of structural trade pathways utilizing the <span className="text-emerald-400 font-bold">{hsAnalysis.topBrand !== 'UNBRANDED' ? `'${hsAnalysis.topBrand}'` : 'unbranded product'}</span> signature reveals sudden routing diversions, a core indicator for unverified parallel diversion lines.
           </div>
-          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 DiagnosticTariffEvasion">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
             <span className="text-cyan-400 font-bold block border-b border-slate-800 pb-1 mb-1">TARIFF EVASION DYNAMICS</span>
             Applying variable headings such as <span className="text-cyan-400 font-bold">{hsAnalysis.chapterListStr}</span> alters the tracking footprint inside global supply chain records, neutralizing standard automated risk audit triggers.
           </div>
@@ -396,8 +324,8 @@ export default function HSIntelligence() {
       </div>
 
       {/* Top Counters Metrics Layout Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 MetricsRow NomenclatureAuditingPanel NomenclatureAuditingPanel MetricsNoticeAuditOutcome">
-        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between NomenclatureRiskValue">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase">Nomenclature Risk Value</span>
             <span className="text-2xl font-black text-rose-400 font-mono">
@@ -409,7 +337,7 @@ export default function HSIntelligence() {
           </div>
         </div>
 
-        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between FlaggedClassificationShifts">
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase">Flagged Classification Shifts</span>
             <span className="text-2xl font-black text-amber-400 font-mono">
@@ -421,7 +349,7 @@ export default function HSIntelligence() {
           </div>
         </div>
 
-        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between ActiveTariffHeadings">
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-md flex items-center justify-between">
           <div className="space-y-1">
             <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase">Active Tariff Headings</span>
             <span className="text-2xl font-black text-slate-100 font-mono">
@@ -435,7 +363,7 @@ export default function HSIntelligence() {
       </div>
 
       {/* Dynamic Automated Industry Glossary Panel */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4 shadow-md NomenclatureDictionaryBlock TerminologyContext GlossaryDictionary BlockTermTerminologyDictionary Terminology Context Glossary DictionaryTerm Dictionary GlossaryTerminologyDictionary GlossaryTerm">
+      <div className="bg-slate-800 border border-slate-700 rounded-xl p-5 space-y-4 shadow-md">
         <h3 className="text-xs font-bold font-mono tracking-wider text-emerald-400 uppercase flex items-center gap-2">
           <BookOpen size={15} /> Dynamic Intelligent Nomenclature Dictionary
         </h3>
@@ -452,7 +380,7 @@ export default function HSIntelligence() {
                 context: "Custom baseline matrix entries isolated during data array scan."
               };
               return (
-                <div key={ch.code} className="bg-slate-950 p-3 rounded border border-slate-850 space-y-1 TerminologyCard">
+                <div key={ch.code} className="bg-slate-950 p-3 rounded border border-slate-850 space-y-1">
                   <div className="flex justify-between items-center">
                     <span className="text-cyan-400 font-bold">Chapter {ch.code} Framework</span>
                     <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 text-slate-400 rounded">
@@ -468,36 +396,19 @@ export default function HSIntelligence() {
         </div>
       </div>
 
-      {/* Restored: Comprehensive Dynamic AI Summary & Operational Analysis Panel *** */}
-      <div className="bg-gradient-to-br from-slate-900 to-slate-950 border border-slate-700 rounded-xl p-5 space-y-4 shadow-xl TerminologyContext AIForensicBrief">
-        <h3 className="text-xs font-bold font-mono tracking-wider text-amber-400 uppercase flex items-center gap-2 dynamicAISummaryH3">
-          <FileText size={15} /> Dynamic Executive AI Briefing & Operational Analysis
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 font-mono text-xs text-slate-300 leading-relaxed AIForensicBriefGrid">
-          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2 ExecutiveStrategicSummary">
-            <span className="text-[10px] uppercase text-slate-400 tracking-wider block font-bold">EXECUTIVE STRATEGIC SUMMARY</span>
-            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.executiveBrief}</p>
-          </div>
-          <div className="bg-slate-900/90 border border-slate-800 p-4 rounded-lg space-y-2 ForensicRiskVulnerability">
-            <span className="text-[10px] uppercase text-rose-400 tracking-wider block font-bold">FORENSIC RISK VULNERABILITY</span>
-            <p className="font-sans text-slate-200 text-xs antialiased">{dynamicAISummary.vulnerabilityAnalysis}</p>
-          </div>
-        </div>
-      </div>
-
       {/* Dynamic Adaptive Graphical Matrix & Ranked Corridor Breakdowns */}
       {tradeData.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 MidSection AnalyticalProfile PanelPanel">
-          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 DiscrepancyMatrixPaths">
-            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2 discrepancyH3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-rose-500"></span> Discrepancy Matrix: Declared vs. Expected Tariff Paths
             </h3>
-            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800 DiscrepancyMatrixGrid">
+            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800">
               <div className="flex justify-between text-[11px] font-mono text-slate-400 font-bold px-1">
                 <span>RAW NOMENCLATURE MATRICES</span>
                 <span>AGGREGATE DISCREPANCY VOLUME</span>
               </div>
-              <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1 DiscrepancyRecordsScroll">
+              <div className="space-y-2.5 max-h-[180px] overflow-y-auto pr-1">
                 {hsAnalysis.deviations.length > 0 ? (
                   hsAnalysis.deviations.map((dev, idx) => {
                     const maxDevVal = hsAnalysis.deviations[0].value || 1;
@@ -506,14 +417,14 @@ export default function HSIntelligence() {
                       : '100';
 
                     return (
-                      <div key={idx} className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2 DiscrepancyCard">
+                      <div key={idx} className="bg-slate-950 p-3 rounded border border-slate-800/80 space-y-2 DiscrepancyMatrixCard">
                         <div className="flex justify-between items-center text-xs font-mono">
                           <span className="text-slate-300 font-bold">Declared {dev.name}</span>
                           <span className="text-rose-400 font-black">{deviationPercentage}% Anomaly Weight</span>
                         </div>
-                        <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex ProgressBarContainer">
+                        <div className="w-full bg-slate-900 h-2.5 rounded overflow-hidden flex ProgressBar">
                           <div 
-                            className="bg-rose-500 h-full rounded transition-all duration-500 DeviationFill" 
+                            className="bg-rose-500 h-full rounded transition-all duration-500" 
                             style={{ width: `${Math.max(15, (dev.value / maxDevVal) * 100)}%` }}
                           ></div>
                         </div>
@@ -529,24 +440,24 @@ export default function HSIntelligence() {
             </div>
           </div>
 
-          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4 RiskCorridorsMatrix">
-            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2 riskCorridorH3">
+          <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 space-y-4">
+            <h3 className="text-xs font-bold font-mono tracking-wider text-slate-300 uppercase flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-amber-500"></span> Risk Corridors Ranked by Disguised Tariff Value
             </h3>
-            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800 min-h-[140px] flex flex-col justify-center RiskCorridorsGrid">
+            <div className="space-y-3 bg-slate-900/60 p-4 rounded-lg border border-slate-800 min-h-[140px] flex flex-col justify-center">
               {hsAnalysis.topCorridors.length > 0 ? (
                 <div className="space-y-3">
                   {hsAnalysis.topCorridors.map((c, idx) => {
                     const maxVal = hsAnalysis.topCorridors[0].val || 1;
                     const pct = (c.val / maxVal) * 100;
                     return (
-                      <div key={idx} className="space-y-1 RiskCorridorCard">
+                      <div key={idx} className="space-y-1">
                         <div className="flex justify-between text-xs font-mono">
                           <span className="text-slate-300 font-semibold">{c.name}</span>
                           <span className="text-amber-400 font-bold">${c.val.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                         </div>
-                        <div className="w-full bg-slate-900 h-2 rounded-full RiskCorridorBarContainer">
-                          <div className="bg-gradient-to-r from-amber-600 to-amber-400 h-2 rounded-full RiskCorridorFill" style={{ width: `${pct}%` }}></div>
+                        <div className="w-full bg-slate-900 h-2 rounded-full">
+                          <div className="bg-gradient-to-r from-amber-600 to-amber-400 h-2 rounded-full" style={{ width: `${pct}%` }}></div>
                         </div>
                       </div>
                     );
@@ -563,16 +474,16 @@ export default function HSIntelligence() {
       )}
 
       {/* Split Navigation and Table Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 print:flex print:flex-col gap-6 items-start DiagnosticLedgerSection">
-        <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1 non-printable TariffFrameworksFilter">
-          <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between frameworksH3">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+        <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 shadow-lg lg:col-span-1 non-printable">
+          <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
             <span>Tariff Frameworks</span>
             <TrendingUp size={12} className="text-slate-400" />
           </h3>
-          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1 filterButtonsScroll">
+          <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
             <button
               onClick={() => setSelectedChapterFilter('ALL')}
-              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer showAllManifestBtn ${
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
                 selectedChapterFilter === 'ALL' ? 'bg-slate-900 border border-slate-600 text-white font-bold' : 'bg-slate-900/40 border border-transparent text-slate-400 hover:bg-slate-900/70 hover:text-slate-200'
               }`}
             >
@@ -582,7 +493,7 @@ export default function HSIntelligence() {
 
             <button
               onClick={() => setSelectedChapterFilter('RISK_ONLY')}
-              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center border cursor-pointer highRiskAnomalyBtn ${
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center border cursor-pointer ${
                 selectedChapterFilter === 'RISK_ONLY' ? 'bg-rose-950/60 border-rose-600 text-rose-300 font-bold' : 'bg-rose-950/20 border-rose-950 text-rose-400 hover:bg-rose-950/40'
               }`}
             >
@@ -594,7 +505,7 @@ export default function HSIntelligence() {
               <button
                 key={idx}
                 onClick={() => setSelectedChapterFilter(ch.code)}
-                className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer headingPrefixBtn ${
+                className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
                   selectedChapterFilter === ch.code ? 'bg-slate-900 border border-slate-600 text-white font-bold' : 'bg-slate-900/40 border border-transparent text-slate-400 hover:bg-slate-900/70 hover:text-slate-200'
                 }`}
               >
@@ -606,51 +517,51 @@ export default function HSIntelligence() {
         </div>
 
         {/* Audit Data Table Container Frame */}
-        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden print:overflow-visible shadow-2xl lg:col-span-3 print:w-full print:border-none AuditTable ledger">
-          <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center non-printable LedgerHeader">
-            <span className="text-xs font-bold font-mono tracking-wider text-slate-200 uppercase ledgerHeaderSpan">
+        <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl lg:col-span-3">
+          <div className="p-4 bg-slate-900/80 border-b border-slate-700 flex justify-between items-center non-printable">
+            <span className="text-xs font-bold font-mono tracking-wider text-slate-200 uppercase">
               Tariff Framework Audit Ledger ({filteredRecords.length} Lines Displayed)
             </span>
           </div>
 
-          <div className="overflow-x-auto print:overflow-visible print:w-full LedgerTableContainer">
-            <table className="w-full text-left border-collapse print:w-full LedgerTable LedgerTableHeaderRowLedgerTableBody LedgerTableDateCellLedgerTableNomenclatureCellLedgerTableBrandCellLedgerTableProductCellLedgerTableValueCellLedgerTableCorridorCellLedgerTableOutcomeCell">
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full text-left border-collapse print:text-black">
               <thead>
                 <tr className="bg-slate-950/80 border-b border-slate-700 text-slate-300 font-mono text-xs">
-                  <th className="px-4 py-3 whitespace-nowrap">Date</th>
-                  <th className="px-4 py-3 whitespace-nowrap">Nomenclature Map</th>
+                  <th className="px-4 py-3">Date</th>
+                  <th className="px-4 py-3">Nomenclature Map</th>
                   <th className="px-4 py-3">Brand Identifier</th>
                   <th className="px-4 py-3">Product Description</th>
-                  <th className="px-4 py-3 text-right whitespace-nowrap">Value (USD)</th>
+                  <th className="px-4 py-3 text-right">Value (USD)</th>
                   <th className="px-4 py-3">Corridor Paths</th>
-                  <th className="px-4 py-3 whitespace-nowrap">Audit Outcome</th>
+                  <th className="px-4 py-3">Audit Outcome</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-700/60 font-mono text-xs LedgerTableBody">
+              <tbody className="divide-y divide-slate-700/60 font-mono text-xs">
                 {filteredRecords.length > 0 ? (
                   filteredRecords.map((rec, i) => (
                     <tr key={rec.id || i} className={`hover:bg-slate-700/30 transition-colors ${rec.isMismatched ? 'bg-rose-950/20' : ''}`}>
-                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap LedgerTableDateCell">{rec.Date || 'UNKNOWN'}</td>
-                      <td className="px-4 py-3 space-y-1 LedgerTableNomenclatureCell">
-                        <span className={`px-1.5 py-0.5 rounded font-bold LedgerHSCodeMap ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
+                      <td className="px-4 py-3 text-slate-400 whitespace-nowrap">{rec.Date || 'UNKNOWN'}</td>
+                      <td className="px-4 py-3 space-y-1">
+                        <span className={`px-1.5 py-0.5 rounded font-bold ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' : 'bg-slate-900 text-slate-300'}`}>
                           {rec.HSCode || '?'}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate LedgerTableBrandCell print:max-w-none print:whitespace-normal">{rec.Brand || 'NOT DECLARED'}</td>
-                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate LedgerTableProductCell print:max-w-none print:whitespace-normal">{rec.Product || 'UNCATEGORIZED'}</td>
-                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono whitespace-nowrap LedgerTableValueCell">
+                      <td className="px-4 py-3 text-emerald-400 font-bold max-w-[140px] truncate col-brand">{rec.Brand || 'NOT DECLARED'}</td>
+                      <td className="px-4 py-3 font-semibold text-slate-200 max-w-xs truncate col-product">{rec.Product || 'UNCATEGORIZED'}</td>
+                      <td className="px-4 py-3 text-right font-bold text-slate-100 font-mono">
                         ${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}
                       </td>
-                      <td className="px-4 py-3 text-[11px] whitespace-nowrap LedgerTableCorridorCell print:whitespace-normal">
+                      <td className="px-4 py-3 text-[11px] whitespace-nowrap">
                         <div className="text-slate-300">{rec.OriginCountry || 'UNKNOWN'} → {rec.DestinationCountry || 'UNKNOWN'}</div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap LedgerTableOutcomeCell">
+                      <td className="px-4 py-3">
                         {rec.isMismatched ? (
-                          <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20 MismatchOutcomeNotice">
+                          <span className="text-rose-400 font-bold text-[10px] bg-rose-500/10 px-2 py-0.5 rounded border border-rose-500/20">
                             MISCLASSIFICATION SHIFT
                           </span>
                         ) : (
-                          <span className="text-slate-500 text-[10px] CleanPassNotice">Clean Pass</span>
+                          <span className="text-slate-500 text-[10px]">Clean Pass</span>
                         )}
                       </td>
                     </tr>
