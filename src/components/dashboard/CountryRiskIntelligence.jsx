@@ -1,170 +1,441 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Globe, ShieldAlert, FileText, Compass, Server, Info } from 'lucide-react';
+import { DollarSign, AlertTriangle, TrendingDown, FileText, Info, BarChart2, ShieldAlert, ArrowDownRight, ArrowRight } from 'lucide-react';
 
-export default function CountryRiskIntelligence() {
-  const { tradeData = [] } = useTradeData() || {};
-  const [filterType, setFilterType] = useState('ALL');
+export default function PriceForensics() {
+  const contextData = useTradeData();
+  const tradeData = contextData?.tradeData || [];
 
-  const riskAnalysis = useMemo(() => {
-    return tradeData.map(row => {
-      // Safely capture origin and any implied destinations or route legs
-      const origin = (row.OriginCountry || '').toUpperCase();
-      const product = (row.Product || '').toUpperCase();
-      const importer = (row.Importer || '').toUpperCase();
-      const exporter = (row.Exporter || '').toUpperCase();
+  const [activePriceFilter, setActivePriceFilter] = useState('ALL_ANOMALIES');
+
+  // Forensic Valuation, Unit-Pricing, and Dumping Analytical Engine
+  const priceAnalysis = useMemo(() => {
+    const productStatsMap = {};
+    const processedEvents = [];
+
+    // Step 1: Establish pricing baselines by aggregating product descriptions & brands
+    tradeData.forEach(row => {
+      if (!row || !row.Product) return;
       
-      // Determine if the data contains an explicit path string
-      const hasRouteString = origin.includes('→') || origin.includes('VIA');
-      const routePath = hasRouteString ? origin : `${origin} → [SINGAPORE FTZ TRANSIT INTERMEDIARY]`;
+      const productKey = (row.Product || '').toUpperCase();
+      const brandKey = (row.Brand || 'UNBRANDED').toUpperCase();
+      const lookupKey = `${productKey}::${brandKey}`;
 
-      let riskType = 'STANDARD_ROUTE';
-      let severity = 'LOW';
-      let brief = 'Logistical routing falls within standard bilateral parameters.';
+      const amount = Number(row.Amount) || 0;
+      const quantity = Number(row.Quantity) || 1; 
+      const unitPrice = quantity > 0 ? amount / quantity : amount;
 
-      // Contextual Pharma Risk Flags (e.g., Semaglutide / Wegovy / Ozempic distribution leaks)
-      const isPharmaRisk = product.includes('SEMAGLUTIDE') || product.includes('WEGOVY') || product.includes('OZEMPIC') || product.includes('MED');
-      const isSoutheastAsianHub = origin.includes('MALAYSIA') || origin.includes('SINGAPORE') || origin.includes('HK') || origin.includes('HONG KONG');
-
-      if (isSoutheastAsianHub && isPharmaRisk) {
-        riskType = 'UNAUTHORIZED_PHARMA_DIVERSION';
-        severity = 'HIGH';
-        brief = `High-risk pharmaceutical corridor activity identified via Southeast Asian transshipment hubs. Route parameters match classic parallel trade / grey market distribution networks bypassing authorized manufacturer supply chains.`;
-      } else if (hasRouteString) {
-        riskType = 'CIRCUMVENTION_RISK';
-        severity = 'MEDIUM';
-        brief = `Multi-jurisdictional route splitting detected. The inclusion of free-trade zone (FTZ) transshipment loops indicates potential origin-switching to manipulate tariff liabilities.`;
+      if (!productStatsMap[lookupKey]) {
+        productStatsMap[lookupKey] = {
+          totalAmount: 0,
+          totalQuantity: 0,
+          prices: [],
+        };
       }
 
-      return { ...row, riskType, severity, brief, routePath, isPharmaRisk };
-    }).filter(e => e.riskType !== 'STANDARD_ROUTE');
+      productStatsMap[lookupKey].totalAmount += amount;
+      productStatsMap[lookupKey].totalQuantity += quantity;
+      productStatsMap[lookupKey].prices.push(unitPrice);
+    });
+
+    // Calculate dynamic statistical averages per product/brand cluster
+    Object.keys(productStatsMap).forEach(key => {
+      const stats = productStatsMap[key];
+      const count = stats.prices.length;
+      stats.averagePrice = count > 0 ? stats.prices.reduce((a, b) => a + b, 0) / count : 0;
+    });
+
+    // Step 2: Evaluate individual line items against historical statistical baselines
+    tradeData.forEach(row => {
+      if (!row) return;
+
+      const productKey = (row.Product || '').toUpperCase();
+      const brandKey = (row.Brand || 'UNBRANDED').toUpperCase();
+      const lookupKey = `${productKey}::${brandKey}`;
+      
+      const amount = Number(row.Amount) || 0;
+      const quantity = Number(row.Quantity) || 1;
+      const unitPrice = quantity > 0 ? amount / quantity : amount;
+      
+      const stats = productStatsMap[lookupKey] || { averagePrice: unitPrice };
+      const globalAverage = stats.averagePrice;
+
+      // Anomaly Logic Triggers
+      // Under-invoicing: Value is significantly beneath average for this product class (evading tariffs)
+      const isUnderInvoiced = unitPrice < (globalAverage * 0.4) && amount > 0;
+      // Dumping Indicator: Bulk commercial quantity moved at clear loss leader or system-disrupting pricing structures
+      const isDumping = unitPrice < (globalAverage * 0.55) && quantity >= 5000;
+      // Over-invoicing or extreme variance deviation
+      const isAbnormalPrice = (unitPrice > globalAverage * 2.5 || unitPrice < globalAverage * 0.3) && !isDumping && !isUnderInvoiced;
+
+      let anomalyType = 'NORMAL_PRICE';
+      let severity = 'LOW';
+      let summary = 'Transaction falls within normal baseline valuation bounds.';
+
+      if (isUnderInvoiced) {
+        anomalyType = 'UNDER_INVOICING';
+        severity = 'CRITICAL';
+        summary = `Severe value depression. Declared unit cost drops ${Math.round((1 - (unitPrice / globalAverage)) * 100)}% below established class averages, indicating deliberate tariff asset masking.`;
+      } else if (isDumping) {
+        anomalyType = 'DUMPING_INDICATOR';
+        severity = 'HIGH';
+        summary = `High-volume predatory pricing layout. Bulk commercial cargo injected into local markets below recognized historical production costs.`;
+      } else if (isAbnormalPrice) {
+        anomalyType = 'ABNORMAL_PRICING';
+        severity = 'MEDIUM';
+        summary = `Significant baseline price variation detected. Unit price deviates sharply from peer transactions.`;
+      }
+
+      processedEvents.push({
+        ...row,
+        unitPrice,
+        globalAverage,
+        anomalyType,
+        severity,
+        summary
+      });
+    });
+
+    // Sort by priority severity weight so critical vectors display first
+    return processedEvents.sort((a, b) => {
+      const severityWeight = { 'CRITICAL': 3, 'HIGH': 2, 'MEDIUM': 1, 'LOW': 0 };
+      return (severityWeight[b.severity] || 0) - (severityWeight[a.severity] || 0);
+    });
   }, [tradeData]);
 
-  const filtered = useMemo(() => {
-    if (filterType === 'ALL') return riskAnalysis;
-    return riskAnalysis.filter(e => e.riskType === filterType);
-  }, [riskAnalysis, filterType]);
+  const filteredEvents = useMemo(() => {
+    if (activePriceFilter === 'ALL_ANOMALIES') {
+      return priceAnalysis.filter(e => e.anomalyType !== 'NORMAL_PRICE');
+    }
+    return priceAnalysis.filter(e => e.anomalyType === activePriceFilter);
+  }, [priceAnalysis, activePriceFilter]);
 
-  // Dynamic Summary Metrics for the Legal Dossier Summary Block
-  const summaryMetrics = useMemo(() => {
-    const totalVolume = filtered.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
-    const uniqueTargets = new Set(filtered.map(e => e.Importer)).size;
-    return { totalVolume, uniqueTargets };
-  }, [filtered]);
+  const counters = useMemo(() => {
+    return {
+      underInvoiced: priceAnalysis.filter(e => e.anomalyType === 'UNDER_INVOICING').length,
+      dumping: priceAnalysis.filter(e => e.anomalyType === 'DUMPING_INDICATOR').length,
+      abnormal: priceAnalysis.filter(e => e.anomalyType === 'ABNORMAL_PRICING').length
+    };
+  }, [priceAnalysis]);
+
+  // Dynamic AI Text generation engine based on structural analytics data
+  const aiInsights = useMemo(() => {
+    if (!priceAnalysis.length || (counters.underInvoiced === 0 && counters.dumping === 0 && counters.abnormal === 0)) {
+      return {
+        underInvoicedText: "Falsifying the commercial unit cost down below real production value allows operators to evade heavy ad-valorem excise thresholds. No active under-invoicing vectors are isolated in this dataset frame.",
+        dumpingText: "Sourcing high-demand products at massive quantities under specialized corporate agreements and declaring values well under global average price indices flags systematic cross-border dumping vectors.",
+        brandIntelText: "Tracking designated trade markings against standard unbranded generic commodities protects distribution integrity and flags gray-market diversion channels instantly.",
+        executiveBriefing: "System diagnostic complete. Core dataset parameters reflect normal trading behaviors. No immediate critical pricing variances or regulatory mitigation steps are indicated across active data streams.",
+        operationalAnalysis: "Data integrity cross-checks show zero active anomalies. Trade lanes maintain statistical alignment with historic class baselines, reflecting low strategic risk indicators."
+      };
+    }
+
+    const uiItems = priceAnalysis.filter(e => e.anomalyType === 'UNDER_INVOICING');
+    const dumpingItems = priceAnalysis.filter(e => e.anomalyType === 'DUMPING_INDICATOR');
+    const abnormalItems = priceAnalysis.filter(e => e.anomalyType === 'ABNORMAL_PRICING');
+
+    const getTopCategory = (list) => {
+      if (!list.length) return null;
+      const mapping = {};
+      list.forEach(item => { if (item.Product) mapping[item.Product] = (mapping[item.Product] || 0) + 1; });
+      return Object.keys(mapping).reduce((a, b) => mapping[a] > mapping[b] ? a : b, 'N/A');
+    };
+
+    const topUIProduct = getTopCategory(uiItems) || "unspecified manifest lines";
+    const topDumpingProduct = getTopCategory(dumpingItems) || "bulk cargo shipments";
+
+    const totalAnomalousVolume = priceAnalysis
+      .filter(e => e.anomalyType !== 'NORMAL_PRICE')
+      .reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
+
+    const underInvoicedText = counters.underInvoiced > 0
+      ? `Flagged ${counters.underInvoiced} active undervaluation lines. Major concentrations found in ${topUIProduct}. Declared unit values fall significantly short of peer class baseline distributions, elevating duty evasion risk configurations.`
+      : "No critical undervaluation threats discovered. Structural unit metrics fall cleanly within safe statistical margins across existing tariff categories.";
+
+    const dumpingText = counters.dumping > 0
+      ? `Isolating ${counters.dumping} severe market dumping channels. Scaled movements (≥5,000 units) exhibit system-disrupting pricing structures, focused around ${topDumpingProduct} supply lanes.`
+      : "Predatory pricing indicators are nominal. Bulk distribution channels reflect consistent commercial valuation structures without predatory features.";
+
+    const brandIntelText = counters.abnormal > 0
+      ? `Identified ${counters.abnormal} brand deviations. Extreme price swings vs. generic counterpart baselines indicate active gray-market parallel diversion strategies or high-risk substitution trends.`
+      : "Brand equity tracking indicates uniform trade parameters. Mapped premium lines reflect standard corporate markup curves without abnormal deviations.";
+
+    const executiveBriefing = `Automated analysis has isolated ${uiItems.length + dumpingItems.length + abnormalItems.length} custom threats representing $${totalAnomalousVolume.toLocaleString(undefined, { maximumFractionDigits: 0 })} in mispriced transaction volume. Forensics reveal systematic value suppression patterns targeting ${topUIProduct}. Immediate financial auditing of the clearings is recommended to isolate structural regulatory liabilities.`;
+
+    const operationalAnalysis = `Supply chain intelligence indicates significant risk concentration in under-invoiced channels. The dynamic baseline variations point to purposeful structural undervaluation. Cross-referencing identified cargo nodes with active global networks is suggested to expose underlying circular trade vectors.`;
+
+    return { underInvoicedText, dumpingText, brandIntelText, executiveBriefing, operationalAnalysis };
+  }, [priceAnalysis, counters]);
 
   return (
-    <div className="space-y-6 text-slate-100 id-print-section">
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section text-slate-100">
       
-      {/* Header Panel */}
-      <div className="flex justify-between items-center border-b border-slate-800 pb-4 non-printable">
+      {/* Print Layout Isolation Styles overrides */}
+      <style dangerouslySetInnerHTML={{__html: `
+        @media print {
+          .id-print-section { background: white !important; color: #000000 !important; padding: 0 !important; }
+          .non-printable { display: none !important; }
+          .print-card-break { page-break-inside: avoid !important; break-inside: avoid !important; margin-bottom: 1.5rem !important; border: 1px solid #cbd5e1 !important; background: #ffffff !important; }
+          .print-text-dark { color: #0f172a !important; }
+          .print-text-muted { color: #475569 !important; }
+          .print-border-clean { border-color: #cbd5e1 !important; }
+          .print-container-expand { display: block !important; width: 100% !important; max-height: none !important; overflow: visible !important; }
+        }
+      `}} />
+
+      {/* Header Controls */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b border-slate-800 pb-5 non-printable">
         <div>
-          <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
-            <Globe className="text-blue-500" size={24} /> Jurisdictional Risk & Transshipment Intelligence
+          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
+            Valuation & Price Forensics Engine
+            <span className="text-xs bg-emerald-500/10 px-2 py-1 rounded text-emerald-400 uppercase tracking-widest font-mono border border-emerald-500/20">
+              Unit-Value Auditing
+            </span>
           </h1>
-          <p className="text-xs text-slate-400 mt-1">Defensible evaluation of route optimization anomalies, customs border diversion hubs, and unverified pharmaceutical shipping legs.</p>
+          <p className="text-sm text-slate-300 mt-1">Audit unit-pricing anomalies, identify illicit tariff suppression, and isolate systemic market dumping channels.</p>
         </div>
-        <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer text-slate-200">
-          <FileText size={14} className="text-blue-400" /> Print Corridor Dossier
-        </button>
+
+        {tradeData.length > 0 && (
+          <button
+            onClick={() => window.print()}
+            className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg text-xs font-bold font-mono text-slate-200 transition shadow-sm cursor-pointer"
+          >
+            <FileText size={14} className="text-emerald-400" />
+            <span>Export Valuation Dossier</span>
+          </button>
+        )}
       </div>
 
-      {/* Corporate Executive Analytics Summary & Context Panel */}
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 print-break-avoid">
-        <div className="bg-[#111827] border-l-4 border-blue-500 p-5 rounded-xl xl:col-span-2 space-y-3">
-          <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
-            <Server size={14}/> Forensic Corridor Impact Assessment & Summary
-          </h3>
-          <p className="text-xs text-slate-300 font-mono leading-relaxed">
-            <strong>Logistical Context:</strong> Southeast Asian routes (specifically <em>Malaysia to Singapore</em> networks) represent primary risk vectors for the unauthorized diversion of patent-protected pharmaceutical commodities. Singapore’s Free Trade Zones (FTZs) permit the breaking of bulk freight without immediate customs import declarations. 
-          </p>
-          <p className="text-xs text-slate-400 font-mono leading-relaxed">
-            <strong>Evidentiary Finding:</strong> Rather than assigning definitive sanctions non-compliance without explicit entity matches, this framework targets **distribution leakage**. Sourcing proprietary molecules through these secondary intermediaries creates structural pricing variances and points to unverified grey market trade activity.
-          </p>
-        </div>
-
-        {/* Mini High Contrast Audit Balance Card */}
-        <div className="bg-[#111827] border border-slate-800 p-5 rounded-xl flex flex-col justify-center space-y-2">
-          <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-wider">Audited Route Exposure Value</span>
-          <div className="text-2xl font-mono font-black text-emerald-400">
-            ${summaryMetrics.totalVolume.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+      {/* Pricing Risk Framework Strategic Matrix */}
+      <div className="bg-slate-900 border-l-4 border-emerald-500 p-5 rounded-xl shadow-md space-y-3 print-card-break">
+        <h2 className="text-sm font-black tracking-wider text-emerald-400 font-mono uppercase flex items-center gap-2 print-text-dark">
+          <Info size={16} /> Diagnostic Valuation Analysis: Regulatory Price Discrepancies
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs text-slate-300 font-mono leading-relaxed print-container-expand">
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
+            <span className="text-white font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">UNDER-INVOICING SCHEMES</span>
+            {aiInsights.underInvoicedText}
           </div>
-          <span className="text-[10px] font-mono text-slate-400 block border-t border-slate-800/60 pt-2">
-            Concentrated across <strong>{summaryMetrics.uniqueTargets} unique consignees</strong> using unverified distribution lanes.
-          </span>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
+            <span className="text-amber-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">PREDATORY MARKET DUMPING</span>
+            {aiInsights.dumpingText}
+          </div>
+          <div className="space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800 print-card-break print-border-clean">
+            <span className="text-cyan-400 font-bold block border-b border-slate-800 pb-1 mb-1 print-text-dark print-border-clean">BRAND VALUATION INTELLIGENCE</span>
+            {aiInsights.brandIntelText}
+          </div>
         </div>
       </div>
 
-      {/* Main Core Architecture Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        
-        {/* Sidebar Filtering Controls */}
-        <div className="space-y-2 non-printable">
-          <span className="text-[10px] font-mono font-black text-slate-500 uppercase tracking-widest block px-1 mb-2">Logistical Risk Class</span>
-          {[
-            { id: 'ALL', label: 'All Tracked Anomalies' },
-            { id: 'UNAUTHORIZED_PHARMA_DIVERSION', label: 'Pharma Diversion Corridor' },
-            { id: 'CIRCUMVENTION_RISK', label: 'Customs Circumvention' }
-          ].map(tab => (
-            <button 
-              key={tab.id} 
-              onClick={() => setFilterType(tab.id)} 
-              className={`w-full text-left p-3 rounded font-mono text-xs cursor-pointer block border transition-all ${filterType === tab.id ? 'bg-[#1e293b] border-blue-500 text-white font-bold' : 'bg-[#111827]/60 border-slate-800 text-slate-400 hover:bg-[#111827]'}`}
-            >
-              {tab.label} ({tab.id === 'ALL' ? riskAnalysis.length : riskAnalysis.filter(e => e.riskType === tab.id).length})
-            </button>
-          ))}
+      {/* Metrics Counters Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5 print-container-expand">
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between print-card-break print-border-clean">
+          <div className="space-y-1">
+            <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase print-text-muted">Under-Invoicing Evaded Risks</span>
+            <span className="text-2xl font-black text-rose-400 font-mono print-text-dark">{counters.underInvoiced} <span className="text-xs text-slate-400 font-normal print-text-muted">Triggers</span></span>
+          </div>
+          <div className="p-3 rounded-lg bg-rose-950/40 border border-rose-900/40 text-rose-400 non-printable">
+            <ShieldAlert size={22} />
+          </div>
         </div>
 
-        {/* Evidentiary Logs Stream */}
-        <div className="lg:col-span-3 space-y-4">
-          {filtered.length > 0 ? (
-            filtered.map((evt, idx) => (
-              <div key={idx} className="p-5 rounded-xl border border-slate-800 bg-[#111827] border-l-4 border-l-amber-500 print-break-avoid">
-                
-                <div className="flex justify-between border-b border-slate-800/60 pb-2 mb-3 font-mono text-xs">
-                  <span className="font-black uppercase tracking-wider text-amber-400 flex items-center gap-1.5">
-                    <ShieldAlert size={13} /> {evt.riskType.replace(/_/g, ' ')}
-                  </span>
-                  <span className="text-slate-400 font-bold">{evt.Date || '2026 Audit Cycle'}</span>
-                </div>
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between print-card-break print-border-clean">
+          <div className="space-y-1">
+            <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase print-text-muted">Market Dumping Indicators</span>
+            <span className="text-2xl font-black text-amber-400 font-mono print-text-dark">{counters.dumping} <span className="text-xs text-slate-400 font-normal print-text-muted">Identified</span></span>
+          </div>
+          <div className="p-3 rounded-lg bg-amber-950/40 border border-amber-900/40 text-amber-400 non-printable">
+            <ArrowDownRight size={22} />
+          </div>
+        </div>
 
-                {/* Audit Narrative block */}
-                <div className="space-y-2 mb-4">
-                  <p className="text-xs font-mono text-slate-200 leading-relaxed">
-                    <span className="text-slate-500 font-black uppercase tracking-tight">Logistical Anomaly:</span> {evt.brief}
-                  </p>
-                </div>
+        <div className="bg-slate-800 p-5 rounded-xl border border-slate-700 flex items-center justify-between print-card-break print-border-clean">
+          <div className="space-y-1">
+            <span className="text-xs font-mono tracking-wider text-slate-400 block uppercase print-text-muted">Abnormal Valuation Variance</span>
+            <span className="text-2xl font-black text-cyan-400 font-mono print-text-dark">{counters.abnormal} <span className="text-xs text-slate-400 font-normal print-text-muted">Deviations</span></span>
+          </div>
+          <div className="p-3 rounded-lg bg-cyan-950/40 border border-cyan-900/40 text-cyan-400 non-printable">
+            <BarChart2 size={22} />
+          </div>
+        </div>
+      </div>
 
-                {/* Granular Supply-Chain Mapping Parameters */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800/40 text-xs font-mono">
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5">Reconstructed Sourcing Route Path</span>
-                    <span className="text-slate-200 font-bold">{evt.routePath}</span>
+      {/* Dynamic Executive AI Briefing & Operational Analysis Box Frame */}
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-card-break">
+        <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3">
+          <div className="p-1.5 bg-emerald-500/10 text-emerald-400 rounded border border-emerald-500/20">
+            <FileText size={16} />
+          </div>
+          <div>
+            <h3 className="text-sm font-black tracking-wider text-white font-mono uppercase print-text-dark">
+              Executive AI Briefing & Operational Analysis
+            </h3>
+            <p className="text-[11px] text-slate-400 font-mono print-text-muted">Dynamic algorithmic threat overview and custom supply chain vulnerability matrix</p>
+          </div>
+        </div>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 text-xs font-mono leading-relaxed print-container-expand">
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2 print-card-break print-border-clean">
+            <span className="text-emerald-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark">
+              Strategic Threat Briefing
+            </span>
+            <p className="text-slate-300 print-text-dark">
+              {aiInsights.executiveBriefing}
+            </p>
+          </div>
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2 print-card-break print-border-clean">
+            <span className="text-cyan-400 font-bold block uppercase tracking-wider text-[11px] border-b border-slate-800 pb-1 mb-2 print-text-dark">
+              Operational Vector Analysis
+            </span>
+            <p className="text-slate-300 print-text-dark">
+              {aiInsights.operationalAnalysis}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Forensic Core Analysis Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start print-container-expand">
+        
+        {/* Navigation Section */}
+        <div className="space-y-3 bg-slate-800 p-4 rounded-xl border border-slate-700 lg:col-span-1 non-printable">
+          <h3 className="text-xs font-bold font-mono uppercase tracking-wider text-slate-300 border-b border-slate-700 pb-2 flex items-center justify-between">
+            <span>Valuation Filters</span>
+            <DollarSign size={12} className="text-slate-400" />
+          </h3>
+          <div className="space-y-2">
+            <button
+              onClick={() => setActivePriceFilter('ALL_ANOMALIES')}
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                activePriceFilter === 'ALL_ANOMALIES' ? 'bg-slate-900 border border-slate-600 text-white font-bold' : 'bg-slate-900/40 border border-transparent text-slate-400 hover:bg-slate-900/70 hover:text-slate-200'
+              }`}
+            >
+              <span>All Valuation Threats</span>
+              <span className="bg-slate-800 px-1.5 py-0.5 rounded text-[10px] text-slate-300 font-bold">
+                {priceAnalysis.filter(e => e.anomalyType !== 'NORMAL_PRICE').length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActivePriceFilter('UNDER_INVOICING')}
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                activePriceFilter === 'UNDER_INVOICING' ? 'bg-rose-950/60 border border-rose-600 text-rose-300 font-bold' : 'bg-rose-950/20 border-transparent text-rose-400 hover:bg-rose-950/40'
+              }`}
+            >
+              <span>Under-Invoicing</span>
+              <span className="bg-rose-900/40 px-1.5 py-0.5 rounded text-[10px] text-rose-200 font-bold">{counters.underInvoiced}</span>
+            </button>
+
+            <button
+              onClick={() => setActivePriceFilter('DUMPING_INDICATOR')}
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                activePriceFilter === 'DUMPING_INDICATOR' ? 'bg-amber-950/60 border border-amber-600 text-amber-300 font-bold' : 'bg-amber-950/20 border-transparent text-amber-400 hover:bg-amber-950/40'
+              }`}
+            >
+              <span>Dumping Indicators</span>
+              <span className="bg-amber-900/40 px-1.5 py-0.5 rounded text-[10px] text-amber-200 font-bold">{counters.dumping}</span>
+            </button>
+
+            <button
+              onClick={() => setActivePriceFilter('ABNORMAL_PRICING')}
+              className={`w-full text-left p-2.5 rounded text-xs font-mono transition flex justify-between items-center cursor-pointer ${
+                activePriceFilter === 'ABNORMAL_PRICING' ? 'bg-cyan-950/60 border border-cyan-600 text-cyan-300 font-bold' : 'bg-cyan-950/20 border-transparent text-cyan-400 hover:bg-cyan-950/40'
+              }`}
+            >
+              <span>Abnormal Pricing</span>
+              <span className="bg-cyan-900/40 px-1.5 py-0.5 rounded text-[10px] text-cyan-200 font-bold">{counters.abnormal}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Pricing Streams Record Dossier List */}
+        <div className="lg:col-span-3 space-y-4 print-container-expand">
+          <div className="bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-xs font-bold font-mono text-slate-300 flex justify-between items-center non-printable">
+            <span>VALUATION ANOMALY LOGS ({filteredEvents.length} RECORDS ISOLATED)</span>
+            <span className="text-[10px] text-slate-500 uppercase">Statistical Peer Analysis Enabled</span>
+          </div>
+
+          {filteredEvents.length > 0 ? (
+            <div className="space-y-4 max-h-[850px] overflow-y-auto pr-2 print-container-expand">
+              {filteredEvents.map((evt, idx) => (
+                <div 
+                  key={evt.id ?? idx} 
+                  className={`p-5 rounded-xl border transition-all print-card-break ${
+                    evt.severity === 'CRITICAL' 
+                      ? 'bg-rose-950/20 border-rose-900/70 hover:border-rose-700' 
+                      : evt.severity === 'HIGH' 
+                        ? 'bg-amber-950/20 border-amber-900/70 hover:border-amber-700' 
+                        : 'bg-slate-800/80 border-slate-700 hover:border-slate-600'
+                  }`}
+                >
+                  {/* Top Header metrics inside record */}
+                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border-b border-slate-800/60 pb-3 mb-3 font-mono text-xs print-border-clean">
+                    <div className="flex items-center gap-2.5">
+                      <span className="px-2 py-0.5 bg-slate-950 rounded text-slate-400 font-bold tracking-tight print-text-dark print-border-clean">
+                        {evt.Date || 'N/A'}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black tracking-wider ${
+                        evt.severity === 'CRITICAL' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' :
+                        evt.severity === 'HIGH' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' :
+                        'bg-cyan-500/20 text-cyan-400 border border-cyan-500/30'
+                      }`}>
+                        {(evt.anomalyType || 'ALERT').replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                    <div className="text-slate-100 font-bold print-text-dark">
+                      Total Invoice: <span className="text-rose-400 font-mono print-text-dark">${evt.Amount ? Number(evt.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5">Commodity Description</span>
-                    <span className="text-slate-300 truncate block max-w-xs">{evt.Product || 'Unclassified Item'}</span>
-                  </div>
-                  <div>
-                    <span className="block text-[10px] text-slate-500 uppercase font-black tracking-wider mb-0.5">Target Consignee (Entity Linkage)</span>
-                    <span className="text-blue-400 font-bold block truncate">{evt.Importer}</span>
+
+                  {/* Sub Grid Split Info Details */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs font-mono print-container-expand">
+                    <div className="md:col-span-2 space-y-2.5">
+                      <p className="text-slate-200 leading-relaxed font-medium print-text-dark">
+                        <span className="text-slate-400 font-bold print-text-muted">Audit Insight:</span> {evt.summary || ''}
+                      </p>
+                      
+                      {/* Metric Comparison Values */}
+                      <div className="grid grid-cols-2 gap-2 bg-slate-950/40 p-2.5 rounded-lg border border-slate-800/80 print-card-break print-border-clean">
+                        <div>
+                          <span className="text-slate-500 text-[10px] uppercase block print-text-muted">Declared Unit Price</span>
+                          <span className="text-slate-100 font-bold text-sm print-text-dark">${Number(evt.unitPrice).toFixed(2)}</span>
+                        </div>
+                        <div>
+                          <span className="text-slate-500 text-[10px] uppercase block print-text-muted">Class Global Baseline Avg</span>
+                          <span className="text-slate-400 font-bold text-sm print-text-muted">${Number(evt.globalAverage).toFixed(2)}</span>
+                        </div>
+                      </div>
+
+                      <div className="text-slate-400 text-[11px] truncate space-y-1 print-container-expand">
+                        <div className="print-text-dark"><span className="font-bold text-slate-300 print-text-muted">Cargo Manifest:</span> {evt.Product || 'UNSPECIFIED'} (HS: {evt.HSCode || 'N/A'})</div>
+                        <div className="print-text-dark"><span className="font-bold text-slate-400 print-text-muted">Quantity Shipped:</span> <span className="text-slate-200 font-bold print-text-dark">{Number(evt.Quantity || 0).toLocaleString()} units</span></div>
+                        <div className="print-text-dark"><span className="font-bold text-slate-400 print-text-muted">Brand Designation:</span> <span className="text-emerald-400 font-black">{evt.Brand || 'UNBRANDED / GRAY'}</span></div>
+                      </div>
+                    </div>
+                    
+                    {/* Counterparty Target Nodes Box Frame */}
+                    <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800 space-y-1.5 text-[11px] print-card-break print-border-clean">
+                      <div className="truncate text-slate-300 print-text-dark">
+                        <span className="text-slate-500 font-bold uppercase text-[9px] block print-text-muted">Exporter node</span>
+                        {evt.Exporter || 'UNKNOWN'}
+                      </div>
+                      <div className="truncate text-slate-300 print-text-dark">
+                        <span className="text-slate-500 font-bold uppercase text-[9px] block print-text-muted">Importer node</span>
+                        {evt.Importer || 'UNKNOWN'}
+                      </div>
+                      <div className="text-emerald-400 font-semibold flex items-center gap-1 mt-1 print-text-dark">
+                        <span>{evt.OriginCountry || 'UNKNOWN'}</span>
+                        <ArrowRight size={10} className="text-slate-500" />
+                        <span>{evt.DestinationCountry || 'UNKNOWN'}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                {/* Defensible Legal Findings Sub-Section */}
-                <div className="mt-4 pt-3 border-t border-slate-800/20 text-[10px] font-mono text-slate-400 flex items-start gap-1.5 bg-[#0f172a]/40 p-2.5 rounded-lg border border-slate-800/40">
-                  <Info size={12} className="text-blue-400 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <strong className="text-slate-300 uppercase tracking-tight block mb-0.5">Possible Litigation Relevance:</strong>
-                    Potentially relevant to importation analysis and damages modeling. Sourcing proprietary assets via known third-country transshipment legs supports commercial scale assessments and indicates potential related-party or gray-market trade activity.
-                  </div>
-                </div>
-
-              </div>
-            ))
+              ))}
+            </div>
           ) : (
-            <div className="text-center py-12 border border-dashed border-slate-800 rounded-xl text-xs font-mono text-slate-500">
-              No anomalies found matching the current analytical routing filter.
+            <div className="bg-slate-800 border border-slate-700 rounded-xl p-16 text-center text-xs font-mono text-slate-500">
+              No valuation threats or irregular pricing entries discovered within the context dataset boundaries.
             </div>
           )}
         </div>
