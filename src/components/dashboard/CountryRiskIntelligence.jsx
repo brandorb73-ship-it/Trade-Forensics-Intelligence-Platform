@@ -1,11 +1,21 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Globe, ShieldAlert, FileText, Server, Info, ArrowRight, Share2, AlertTriangle, CheckCircle2, Layers } from 'lucide-react';
+import { Globe, ShieldAlert, FileText, Server, ArrowRight, Share2, AlertTriangle, CheckCircle2, Layers } from 'lucide-react';
 
-// Comprehensive Global Geolocation Registry Matrix
+// Comprehensive, Corrected Global Geolocation Registry Matrix
 const GEOLOCATION_REGISTRY = {
   'PAKISTAN': [30.3753, 69.3451],
   'PK': [30.3753, 69.3451],
+  'BANGLADESH': [23.6850, 90.3563],
+  'BD': [23.6850, 90.3563],
+  'BULGARIA': [42.7339, 25.4858],
+  'BG': [42.7339, 25.4858],
+  'SPAIN': [40.4637, -3.7492],
+  'ES': [40.4637, -3.7492],
+  'HUNGARY': [47.1625, 19.5033],
+  'HU': [47.1625, 19.5033],
+  'GERMANY': [51.1657, 10.4515],
+  'DE': [51.1657, 10.4515],
   'INDONESIA': [-0.7893, 113.9213],
   'ID': [-0.7893, 113.9213],
   'MALAYSIA': [4.2105, 101.9758],
@@ -30,8 +40,6 @@ const GEOLOCATION_REGISTRY = {
   'TURKEY': [38.9637, 35.2433],
   'TURKIYE': [38.9637, 35.2433],
   'TR': [38.9637, 35.2433],
-  'GERMANY': [51.1657, 10.4515],
-  'DE': [51.1657, 10.4515],
   'UNITED KINGDOM': [55.3781, -3.4360],
   'UK': [55.3781, -3.4360],
   'GB': [55.3781, -3.4360],
@@ -39,8 +47,6 @@ const GEOLOCATION_REGISTRY = {
   'FR': [46.2276, 2.2137],
   'ITALY': [41.8719, 12.5674],
   'IT': [41.8719, 12.5674],
-  'SPAIN': [40.4637, -3.7492],
-  'ES': [40.4637, -3.7492],
   'NETHERLANDS': [52.1326, 5.2913],
   'NL': [52.1326, 5.2913],
   'BELGIUM': [50.5039, 4.4699],
@@ -66,7 +72,6 @@ export default function CountryRiskIntelligence() {
   const [selectedRouteIdx, setSelectedRouteIdx] = useState(0);
   const [leafletReady, setLeafletReady] = useState(false);
   
-  // New Local Workspace Geographic Dropdown Drop States
   const [mapOriginSelect, setMapOriginSelect] = useState('ALL');
   const [mapDestSelect, setMapDestSelect] = useState('ALL');
   
@@ -74,7 +79,6 @@ export default function CountryRiskIntelligence() {
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
 
-  // Runtime asynchronous script injection to prevent Vite compilation errors
   useEffect(() => {
     if (window.L) {
       setLeafletReady(true);
@@ -108,12 +112,15 @@ export default function CountryRiskIntelligence() {
       const importer = (row.Importer || '').toUpperCase().trim();
       const declaredDest = (row.DestinationCountry || '').toUpperCase().trim();
       
-      // Determine explicit geographical destination market name
       let destinationCountry = 'GERMANY';
       if (declaredDest && !declaredDest.includes('FTZ') && declaredDest.length > 2) {
         destinationCountry = declaredDest;
       } else if (importer.includes('GERMANY') || importer.includes('GMBH')) {
         destinationCountry = 'GERMANY';
+      } else if (importer.includes('SPAIN') || importer.includes('SL')) {
+        destinationCountry = 'SPAIN';
+      } else if (importer.includes('HUNGARY') || importer.includes('KFT')) {
+        destinationCountry = 'HUNGARY';
       } else if (importer.includes('UK') || importer.includes('LONDON') || importer.includes('BRITISH')) {
         destinationCountry = 'UNITED KINGDOM';
       } else if (importer.includes('NETHERLANDS') || importer.includes('ROTTERDAM')) {
@@ -129,24 +136,24 @@ export default function CountryRiskIntelligence() {
       let severity = 'LOW';
       let brief = `Direct logistical corridor verified. Supply chain routing falls within normal bilateral thresholds.`;
 
-      const isHub = 
+      const isHubOrFlaggedOrigin = 
         origin.includes('PAKISTAN') || origin.includes('MALAYSIA') || origin.includes('SINGAPORE') || 
-        origin.includes('DUBAI') || origin.includes('UAE') || origin.includes('NETHERLANDS') || origin.includes('TURKEY');
+        origin.includes('DUBAI') || origin.includes('UAE') || origin.includes('NETHERLANDS') || 
+        origin.includes('TURKEY') || origin.includes('BULGARIA') || origin.includes('BANGLADESH');
 
       const isStrategic = 
         product.includes('FILTER') || product.includes('ROD') || product.includes('TOW') || 
         product.includes('ACETATE') || product.includes('TOBACCO') || product.includes('CIG');
 
-      // Forensic Logic Fix: Separate transshipment splits from direct industrial anomalies
-      if (isHub && isStrategic) {
+      if (isHubOrFlaggedOrigin && isStrategic) {
         riskType = 'TIER_1_ELEVATED_DIVERSION';
         severity = 'HIGH';
         if (hasRouteString) {
-          brief = `High-density transshipment hub lane mismatch isolated. Strategic industrial items moving along variable customs handling zones.`;
+          brief = `High-density transshipment hub lane mismatch isolated. Strategic items moving along variable customs zones.`;
         } else {
           brief = `Strategic industrial output capacity variance isolated. Concentrated export volume anomalies flagged via continuous mass-balance audits.`;
         }
-      } else if (hasRouteString || isHub) {
+      } else if (hasRouteString || isHubOrFlaggedOrigin) {
         riskType = 'TIER_2_ROUTE_SPLITS_FTZ_LOOPS';
         severity = 'MEDIUM';
         brief = `Dynamic transit alteration or waypoint splitting detected. Track patterns utilize standard free trade zone exemptions.`;
@@ -166,13 +173,11 @@ export default function CountryRiskIntelligence() {
     }).filter(Boolean);
   }, [tradeData]);
 
-  // General Filter Stream Options
   const filtered = useMemo(() => {
     if (filterType === 'ALL') return riskAnalysis;
     return riskAnalysis.filter(e => e.riskType === filterType);
   }, [riskAnalysis, filterType]);
 
-  // Derived Dropdown Selection Fields for Map-Specific Context Control
   const uniqueOriginsList = useMemo(() => {
     return Array.from(new Set(filtered.map(e => e.cleanOrigin))).sort();
   }, [filtered]);
@@ -181,7 +186,6 @@ export default function CountryRiskIntelligence() {
     return Array.from(new Set(filtered.map(e => e.cleanDestination))).sort();
   }, [filtered]);
 
-  // Core Map Filter Pipeline (Combines Tab Risk Filter with local Dropdown overrides)
   const mapsDisplayedRoutes = useMemo(() => {
     return filtered.filter(item => {
       const matchOrig = mapOriginSelect === 'ALL' || item.cleanOrigin === mapOriginSelect;
@@ -192,22 +196,20 @@ export default function CountryRiskIntelligence() {
 
   const activeRouteForHighlight = mapsDisplayedRoutes[selectedRouteIdx] || mapsDisplayedRoutes[0] || null;
 
-  // Real-Time Simultaneous Multi-Route Leaflet Layer Coordinator (Light Canvas Variant)
+  // Real-Time Simultaneous Multi-Route Leaflet Layer Coordinator
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current) return;
 
     const L = window.L;
 
-    // Initialize standalone bright/clean map layout canvas if not yet constructed
     if (!mapInstanceRef.current) {
       mapInstanceRef.current = L.map(mapContainerRef.current, {
-        center: [25, 30],
-        zoom: 2,
+        center: [35, 25],
+        zoom: 3,
         zoomControl: true,
         attributionControl: false
       });
 
-      // Switched map layout configuration to high-contrast clear corporate light style
       L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
         maxZoom: 18,
         bgBuffer: 2
@@ -224,17 +226,15 @@ export default function CountryRiskIntelligence() {
     const parseCoords = (locString, visualOffsetIdx = 0) => {
       const normal = (locString || '').toUpperCase().trim();
       for (const [key, coords] of Object.entries(GEOLOCATION_REGISTRY)) {
-        if (normal.includes(key)) {
-          // Micro visual offset adjustments to separate stacked parallel shipping vectors cleanly
-          return [coords[0] + (visualOffsetIdx * 0.25), coords[1] + (visualOffsetIdx * 0.25)];
+        if (normal === key || normal.includes(key)) {
+          return [coords[0] + (visualOffsetIdx * 0.15), coords[1] + (visualOffsetIdx * 0.15)];
         }
       }
-      return [48.1351 + (visualOffsetIdx * 0.3), 11.5820 + (visualOffsetIdx * 0.3)]; 
+      return [48.1351 + (visualOffsetIdx * 0.2), 11.5820 + (visualOffsetIdx * 0.2)]; 
     };
 
     const boundsLatLngs = [];
 
-    // Loop and simultaneously plot filtered elements onto light map matrix
     mapsDisplayedRoutes.forEach((item, idx) => {
       const originCoords = parseCoords(item.cleanOrigin, idx);
       const destCoords = parseCoords(item.cleanDestination, idx + 1);
@@ -245,9 +245,8 @@ export default function CountryRiskIntelligence() {
       const isSelected = activeRouteForHighlight && activeRouteForHighlight.id === item.id;
       const baseColor = item.severity === 'HIGH' ? '#d97706' : item.severity === 'MEDIUM' ? '#2563eb' : '#059669';
       
-      // Plot Sourcing Origins
       const originMarker = L.circleMarker(originCoords, {
-        radius: isSelected ? 10 : 6,
+        radius: isSelected ? 9 : 5.5,
         fillColor: '#2563eb',
         color: isSelected ? '#000000' : '#ffffff',
         weight: isSelected ? 3 : 1.5,
@@ -259,9 +258,8 @@ export default function CountryRiskIntelligence() {
         </div>
       `);
 
-      // Plot Named Target Destinations
       const destMarker = L.circleMarker(destCoords, {
-        radius: isSelected ? 10 : 6,
+        radius: isSelected ? 9 : 5.5,
         fillColor: '#10b981',
         color: isSelected ? '#000000' : '#ffffff',
         weight: isSelected ? 3 : 1.5,
@@ -273,12 +271,11 @@ export default function CountryRiskIntelligence() {
         </div>
       `);
 
-      // Draw Connection Trajectory Lines
       const connectionLine = L.polyline([originCoords, destCoords], {
         color: baseColor,
-        weight: isSelected ? 5 : 2.5,
-        dashArray: isSelected ? '10, 5' : '6, 4',
-        opacity: isSelected ? 1.0 : 0.65
+        weight: isSelected ? 4.5 : 2,
+        dashArray: isSelected ? '10, 5' : '5, 4',
+        opacity: isSelected ? 1.0 : 0.7
       });
 
       layerGroup.addLayer(originMarker);
@@ -292,15 +289,13 @@ export default function CountryRiskIntelligence() {
       }
     });
 
-    // Auto-fit view bounds smoothly to frame all active mapped paths perfectly
     if (boundsLatLngs.length > 0 && mapInstanceRef.current) {
       const bounds = L.latLngBounds(boundsLatLngs);
-      mapInstanceRef.current.fitBounds(bounds, { padding: [40, 40], maxZoom: 5 });
+      mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50], maxZoom: 5 });
     }
 
   }, [leafletReady, mapsDisplayedRoutes, activeRouteForHighlight]);
 
-  // Dynamic Executive Summary Insights Pipeline
   const structuralInsights = useMemo(() => {
     const totalVolume = filtered.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
     const uniqueTargets = new Set(filtered.map(e => e.cleanDestination)).size;
@@ -357,7 +352,7 @@ export default function CountryRiskIntelligence() {
         </button>
       </div>
 
-      {/* Risk Tier Index Reference Bar */}
+      {/* Risk Tier Index Reference Bar - Explicitly Corrected Context Definitions */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 print-break-avoid print-border-clean">
         <h3 className="text-xs font-mono font-black text-slate-200 uppercase tracking-wider flex items-center gap-2 mb-3 print-text-dark">
           <Layers size={14} className="text-blue-500" /> Global Risk Tier Index Reference Matrix
@@ -365,7 +360,7 @@ export default function CountryRiskIntelligence() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-[11px]">
           <div className="p-3 bg-slate-950/40 border-l-4 border-amber-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-amber-400 mb-1 print-text-dark">Tier 1: Elevated Diversion</div>
-            <p className="text-slate-200 leading-tight print-text-muted">Strategic, restricted, or dual-use commodities routed through verified transshipment hubs or showing capacity variances.</p>
+            <p className="text-slate-200 leading-tight print-text-muted">Strategic or restricted commodities routed via grey-market transshipment hubs OR demonstrating major production/export mass-balance output capacity variances.</p>
           </div>
           <div className="p-3 bg-slate-950/40 border-l-4 border-blue-500 rounded-r border-y border-r border-slate-900 print-border-clean">
             <div className="font-bold text-blue-400 mb-1 print-text-dark">Tier 2: Route Splits / FTZ Loops</div>
@@ -404,7 +399,7 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* Dynamic Visual Component: Upgraded Light Cartographic Engine with Side Context Selectors */}
+      {/* Map Frame Component */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-break-avoid print-border-clean">
         <div className="flex justify-between items-center border-b border-slate-800 pb-2 print-border-clean">
           <div className="flex items-center gap-2">
@@ -430,7 +425,7 @@ export default function CountryRiskIntelligence() {
             <div ref={mapContainerRef} className="w-full h-full" />
           </div>
 
-          {/* Upgraded Sidebar Controller: Dropdowns placed here to prevent unnecessary scrolling */}
+          {/* Sidebar Filters Container */}
           <div className="bg-slate-950/60 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-4 print-border-clean">
             
             <div className="space-y-3">
@@ -473,7 +468,7 @@ export default function CountryRiskIntelligence() {
               </div>
             </div>
 
-            {/* Quick-Jump Index for Current Mapped Subset */}
+            {/* Clean Unicode Route Index Display */}
             <div className="pt-3 border-t border-slate-800/80 flex-1 flex flex-col justify-end">
               <span className="text-[10px] font-mono font-black text-slate-300 uppercase tracking-wider block mb-1">Active View Subset Index</span>
               {mapsDisplayedRoutes.length > 0 ? (
@@ -488,7 +483,7 @@ export default function CountryRiskIntelligence() {
                           : 'text-slate-300 hover:bg-slate-800'
                       }`}
                     >
-                      {rIdx + 1}. {route.cleanOrigin} $\rightarrow$ {route.cleanDestination}
+                      {rIdx + 1}. {route.cleanOrigin} → {route.cleanDestination}
                     </button>
                   ))}
                 </div>
@@ -501,7 +496,7 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* Executive AI Briefing & Operational Analysis Frame */}
+      {/* Briefing Frame */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-5 shadow-lg space-y-4 print-break-avoid print-border-clean">
         <div className="flex items-center gap-2.5 border-b border-slate-800 pb-3 print-border-clean">
           <div className="p-1.5 bg-blue-500/10 text-blue-400 rounded border border-blue-500/20 non-printable">
@@ -569,7 +564,7 @@ export default function CountryRiskIntelligence() {
         {/* Evidentiary Logs Stream */}
         <div className="lg:col-span-3 space-y-4">
           {filtered.length > 0 ? (
-            filtered.map((evt, idx) => {
+            filtered.map((evt) => {
               const isCurrentlySelectedInMap = activeRouteForHighlight && activeRouteForHighlight.id === evt.id;
               return (
                 <div 
@@ -599,7 +594,7 @@ export default function CountryRiskIntelligence() {
                     </p>
                   </div>
 
-                  {/* Reconstructed data parameters */}
+                  {/* Reconstructed Parameters */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-3 border-t border-slate-800 text-xs font-mono print-border-clean">
                     <div>
                       <span className="block text-[10px] text-slate-300 uppercase font-black tracking-wider mb-0.5">Reconstructed Sourcing Route Path</span>
