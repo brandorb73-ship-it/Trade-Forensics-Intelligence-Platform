@@ -179,7 +179,7 @@ export default function HSIntelligence() {
       industryThesis = "Analysis monitors components, balance mechanisms, and high-tariff design items susceptible to gray-market parallel routing patterns.";
     }
 
-    // Dynamic database mapping of chapters detected inside the specific file array
+  // Dynamic database mapping of chapters detected inside the specific file array
     const masterDefinitions = {
       '56': { nomenclature: "Wadding, Felt, Nonwovens & Special Yarns", context: "Typically denotes primary filters, industrial structural processing layers, or fiber tow bundles." },
       '48': { nomenclature: "Paper, Paperboard & Cellulose Packaging", context: "Corresponds to downstream packaging wraps, specialized composite boxes, or physical booklets." },
@@ -206,75 +206,131 @@ export default function HSIntelligence() {
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto id-print-section">
       
-      {/* Explicit Print Target Style Injector - FORCING WHITE MODE LAYOUT */}
+      {/* Explicit Print Target Style Injector - FORCING WHITE BOX MODE LAYOUT */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          @page {
+            size: auto;
+            margin: 15mm 12mm 15mm 12mm;
+          }
+          html, body {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #111827 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+          }
           body * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
           .id-print-section {
-            background-color: white !important;
-            color: #1f2937 !important; /* bg-slate-800 */
+            background-color: #ffffff !important;
+            color: #111827 !important;
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
-            max-width: none !important;
+            max-width: 100% !important;
           }
           .non-printable {
             display: none !important;
           }
-          /* Ensure the containers expand, removing horizontal scrollbars */
+          /* Grid container layout fix for page flow */
+          .grid {
+            display: grid !important;
+            gap: 1.25rem !important;
+          }
+          /* Prevent cut-off at page boundaries */
+          tr, .bg-slate-900, .bg-slate-800, .bg-slate-950, .grid > div {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          /* Turn panels into white crisp boxes with light borders */
+          .bg-slate-900, .bg-slate-800, .bg-slate-950, .bg-slate-900\\/60 {
+            background-color: #ffffff !important;
+            border: 1px solid #e5e7eb !important;
+            border-radius: 0.75rem !important;
+            color: #111827 !important;
+            box-shadow: none !important;
+          }
+          /* Slight light gray shading inside inner dashboard panels */
+          .bg-slate-950, .bg-slate-900\\/60 {
+            background-color: #f9fafb !important;
+            border: 1px solid #e5e7eb !important;
+          }
+          /* Normalize text colors to ensure visibility on light canvas */
+          .text-white, .text-slate-100, .text-slate-200, .text-slate-300 {
+            color: #111827 !important;
+          }
+          .text-slate-400 {
+            color: #4b5563 !important;
+          }
+          .border-slate-800, .border-slate-700, .border-slate-850 {
+            border-color: #e5e7eb !important;
+          }
+          /* Retain diagnostic colors accurately */
+          .text-rose-400, .text-rose-300 {
+            color: #dc2626 !important;
+          }
+          .text-amber-400, .text-amber-300 {
+            color: #b45309 !important;
+          }
+          .text-emerald-400 {
+            color: #047857 !important;
+          }
+          .text-cyan-400 {
+            color: #1d4ed8 !important;
+          }
+          /* Retain solid bar fills inside print execution framework */
+          .bg-rose-500 {
+            background-color: #ef4444 !important;
+          }
+          .bg-gradient-to-r {
+            background: #f59e0b !important;
+          }
+          /* Table Formatting - Fix cut vertical columns */
           .overflow-x-auto {
             overflow: visible !important;
-            width: auto !important;
+            width: 100% !important;
+            max-width: 100% !important;
           }
           table {
             width: 100% !important;
-            table-layout: auto !important; /* Let columns adjust width */
+            table-layout: fixed !important;
+            border-collapse: collapse !important;
           }
-          /* Specific column wrapping for print */
-          table td.col-brand,
-          table td.col-product {
-            white-space: normal !important; /* Allow wrapping */
+          th {
+            background-color: #f3f4f6 !important;
+            color: #1f2937 !important;
+            border: 1px solid #e5e7eb !important;
+          }
+          td {
+            border: 1px solid #e5e7eb !important;
+            color: #374151 !important;
+          }
+          th, td {
+            white-space: normal !important;
             word-wrap: break-word !important;
-            max-width: none !important; /* Remove screen-specific max-width */
-            text-overflow: clip !important; /* Disable truncation */
+            word-break: break-word !important;
+            max-width: none !important;
+            text-overflow: unset !important;
+            overflow: visible !important;
           }
-          /* Invert color scheme of dark background panels to light for print */
-          .bg-slate-900, .bg-slate-800, .bg-slate-950, .bg-slate-900\\/60 {
-            background-color: #f3f4f6 !important; /* bg-slate-100 */
-            border-color: #e5e7eb !important; /* border-slate-200 */
-            color: #1f2937 !important;
+          /* Perfect column sizing allocations to maintain dynamic alignment lines */
+          th:nth-child(1), td:nth-child(1) { width: 11% !important; }
+          th:nth-child(2), td:nth-child(2) { width: 13% !important; }
+          th:nth-child(3), td:nth-child(3) { width: 14% !important; }
+          th:nth-child(4), td:nth-child(4) { width: 23% !important; }
+          th:nth-child(5), td:nth-child(5) { width: 12% !important; }
+          th:nth-child(6), td:nth-child(6) { width: 15% !important; }
+          th:nth-child(7), td:nth-child(7) { width: 11% !important; }
+          
+          /* Distinct tint highlight pattern for risk rows on print */
+          tr.bg-rose-950\\/20 {
+            background-color: #fef2f2 !important;
           }
-          .border-slate-800, .border-slate-700 {
-            border-color: #e5e7eb !important;
-          }
-          /* Override specific text colors that might look bad on white */
-          .text-white, .text-slate-300, .text-slate-200 {
-            color: #1f2937 !important;
-          }
-          .text-slate-400 {
-            color: #6b7280 !important; /* bg-slate-500 */
-          }
-          /* Ensure dynamic interpreter descriptions look good on white in print */
-          .bg-slate-950 p.text-slate-400,
-          .bg-slate-950 div.text-slate-400,
-          .bg-slate-950 div.text-slate-200 {
-             color: #1f2937 !important;
-          }
-          /* Adjust Discrepancy Matrix panel background in print */
-          .DiscrepancyMatrixCard {
-             background-color: #f9fafb !important; /* bg-gray-50 */
-             border: 1px solid #e5e7eb !important;
-          }
-          /* Red alert text should stay red, maybe adjust color slightly */
-          .text-rose-400 {
-            color: #b91c1c !important; /* text-red-700 */
-          }
-          /* Ensure Icons print in dark color */
           svg {
-            stroke: #1f2937 !important;
+            stroke: #374151 !important;
           }
         }
       `}} />
@@ -300,6 +356,27 @@ export default function HSIntelligence() {
             <span>Export Briefing PDF</span>
           </button>
         )}
+      </div>
+
+      {/* Dynamic Executive AI Briefing & Operational Analysis Panel */}
+      <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl shadow-md space-y-4">
+        <h2 className="text-xs font-black tracking-wider text-amber-400 font-mono uppercase flex items-center gap-2">
+          <FileText size={16} className="text-amber-500" /> Dynamic Executive AI Briefing & Operational Analysis
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5 font-mono text-xs text-slate-300 leading-relaxed">
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-850 space-y-2">
+            <span className="text-[11px] tracking-wide text-slate-400 uppercase font-bold block border-b border-slate-800 pb-1">Executive Strategic Summary</span>
+            <p className="text-slate-200">
+              Automated auditing across the <span className="text-amber-400 font-bold">{dynamicIndustryGlossary.industryDomain}</span> ecosystem has identified a highly concentrated structural nomenclature deviation pattern. Out of total analyzed manifests, <span className="text-amber-400 font-bold">{hsAnalysis.highRiskIncidentCount}</span> shipments exhibit classification conflicts representing an exposed risk valuation of <span className="text-rose-400 font-bold">${hsAnalysis.globalMismatchedValue.toLocaleString(undefined, { minimumFractionDigits: 2 })} USD</span>. The system indicates that operations surrounding <span className="text-amber-400 font-bold">{hsAnalysis.topProduct}</span> are shifting away from traditional tariff headings to circumvent security screening matrices or variable regulatory thresholds.
+            </p>
+          </div>
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-850 space-y-2">
+            <span className="text-[11px] tracking-wide text-rose-400 uppercase font-bold block border-b border-slate-800 pb-1">Forensic Risk Vulnerability</span>
+            <p className="text-slate-200">
+              The primary tactical vulnerability is centered along the <span className="text-amber-400 font-bold">[ {hsAnalysis.topCorridors[0]?.name || 'GLOBAL CORRIDOR'} ]</span> transit channel, which commands the largest volume of structural friction. By routing cargo under variable classifications like <span className="text-cyan-400 font-bold">{hsAnalysis.chapterListStr}</span>, entities dilute the visibility of supply lines. This prevents standard rule engines from triggering mass-balance audits or matching raw precursor input values against finished product output volumes.
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* Forensic Intelligence Briefing Notice - Fully Adaptive Assessment Panels */}
