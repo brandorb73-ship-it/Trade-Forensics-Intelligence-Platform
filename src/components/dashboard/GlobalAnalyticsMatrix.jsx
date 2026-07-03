@@ -54,12 +54,10 @@ export default function GlobalAnalyticsVisualHub() {
       const parts = rawOrigin.split('→').map(p => p.trim().toUpperCase());
       const origin = parts[0] || 'UNKNOWN';
       
-      // If a transshipment routing leg exists in the data text, capture it dynamically
       if (parts.length > 1) {
         parts.slice(1).forEach(p => intermediateNodes.add(p));
       }
       
-      // Extract transit hubs from explicit routing fields if present
       if (row.TransitHub || row.TransshipmentPort) {
         intermediateNodes.add(row.TransitHub?.toUpperCase() || row.TransshipmentPort?.toUpperCase());
       }
@@ -118,11 +116,9 @@ export default function GlobalAnalyticsVisualHub() {
       }
     });
 
-    // Synthesize Dynamic Insights Narratives Based on Payload Characteristics
     const sortedBrands = Object.entries(brands).sort((a, b) => b[1].val - a[1].val);
     const topBrandName = sortedBrands[0]?.[0] || 'NONE';
     
-    // Evaluate unit variance counts dynamically
     Object.keys(brands).forEach(b => {
       const unitCost = brands[b].qty > 0 ? (brands[b].val / brands[b].qty) : 0;
       if (unitCost > 0 && unitCost < 15) priceVarianceAlerts++;
@@ -188,36 +184,46 @@ export default function GlobalAnalyticsVisualHub() {
         </div>
       </div>
 
-      {/* Overview Analytics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 print:grid-cols-4">
-        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Total Tracked Asset Value</span>
-            <div className="text-xl font-black text-emerald-400 font-mono">${advancedMetrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+      {/* Overview Analytics Cards - Redesigned to prevent textual print clipping overflows */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4">
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col justify-between min-h-[105px]">
+          <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Total Tracked Asset Value</span>
+          <div className="flex items-end justify-between gap-1 mt-2">
+            <div className="text-lg font-black text-emerald-400 font-mono tracking-tight leading-none overflow-x-auto whitespace-nowrap max-w-full pb-0.5">
+              ${advancedMetrics.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            </div>
+            <TrendingUp className="text-emerald-500/20 shrink-0 mb-0.5" size={24} />
           </div>
-          <TrendingUp className="text-emerald-500/30" size={32} />
         </div>
-        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Gross Diversion Quantity</span>
-            <div className="text-xl font-black text-white font-mono">{advancedMetrics.totalQuantity.toLocaleString()} Units</div>
+        
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col justify-between min-h-[105px]">
+          <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Gross Diversion Quantity</span>
+          <div className="flex items-end justify-between gap-1 mt-2">
+            <div className="text-lg font-black text-white font-mono tracking-tight leading-none overflow-x-auto whitespace-nowrap max-w-full pb-0.5">
+              {advancedMetrics.totalQuantity.toLocaleString()} Units
+            </div>
+            <Layers className="text-blue-500/20 shrink-0 mb-0.5" size={24} />
           </div>
-          <Layers className="text-blue-500/30" size={32} />
         </div>
-        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Geographic Lane Intersects</span>
-            <div className="text-xl font-black text-amber-400 font-mono">{advancedMetrics.origins.length} Org × {advancedMetrics.destinations.length} Dest</div>
+
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col justify-between min-h-[105px]">
+          <span className="text-[10px] font-mono font-black text-slate-400 uppercase tracking-wider block">Geographic Lane Intersects</span>
+          <div className="flex items-end justify-between gap-1 mt-2">
+            <div className="text-lg font-black text-amber-400 font-mono tracking-tight leading-none">
+              {advancedMetrics.origins.length} Org × {advancedMetrics.destinations.length} Dest
+            </div>
+            <Globe className="text-amber-500/20 shrink-0 mb-0.5" size={24} />
           </div>
-          <Globe className="text-amber-500/30" size={32} />
         </div>
-        {/* Suggested New Feature Card: Structural Diversion Velocity Index */}
-        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex items-center justify-between border-l-4 border-l-purple-500">
-          <div className="space-y-1">
-            <span className="text-[10px] font-mono font-black text-purple-400 uppercase tracking-wider block">Shipment Timeline Velocity</span>
-            <div className="text-xl font-black text-purple-300 font-mono">{advancedMetrics.timelineEvents.length} Batches</div>
+
+        <div className="bg-[#111827] border border-slate-800 rounded-xl p-4 flex flex-col justify-between min-h-[105px] border-l-4 border-l-purple-500">
+          <span className="text-[10px] font-mono font-black text-purple-400 uppercase tracking-wider block">Shipment Timeline Velocity</span>
+          <div className="flex items-end justify-between gap-1 mt-2">
+            <div className="text-lg font-black text-purple-300 font-mono tracking-tight leading-none">
+              {advancedMetrics.timelineEvents.length} Batches
+            </div>
+            <Zap className="text-purple-500/20 shrink-0 mb-0.5" size={24} />
           </div>
-          <Zap className="text-purple-500/30" size={32} />
         </div>
       </div>
 
@@ -430,7 +436,7 @@ export default function GlobalAnalyticsVisualHub() {
 
       </div>
 
-      {/* 5. Geographic Cross-Tabulation Risk Grid (Forced Print Margins & Exploded Ledgers) */}
+      {/* 5. Geographic Cross-Tabulation Risk Grid (With Print Margins & Briefing Sections Included) */}
       <div className="bg-[#111827] border border-slate-800 rounded-xl p-6 print:bg-white print:border-slate-300 print:p-0 print:m-0 page-break-inside-avoid break-inside-avoid">
         
         {/* CRITICAL PRINT REPAIR */}
@@ -529,11 +535,11 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
           <div className="flex items-center gap-2">
             <div className="w-2.5 h-2.5 bg-red-900/70 border border-red-800/60 rounded print:bg-red-100 print:border-red-300"></div>
-            <span className="text-red-200 font-black print:text-red-700">Critical Volatility (&gt;$3k)</span>
+            <span className="text-red-200 font-black print:text-amber-700">Critical Volatility (&gt;$3k)</span>
           </div>
         </div>
 
-        {/* Shrunken Grid Layout Container */}
+        {/* Grid Layout Container */}
         <div className="overflow-x-auto bg-[#0b0f19] p-5 rounded-xl border border-slate-900 print-matrix-container print:p-0 print:border-none">
           <table className="w-full text-left font-mono text-[11px] border-collapse min-w-[750px] print:min-w-0 print-matrix-force">
             <thead>
@@ -598,7 +604,35 @@ export default function GlobalAnalyticsVisualHub() {
           </table>
         </div>
 
-        {/* Restored and Fully Formatted Operational Ledger Wrapper Section */}
+        {/* Cross-Tabulation Forensic Briefing Content Footer Block */}
+        <div className="mt-4 p-5 bg-[#0f172a] rounded-xl border border-slate-800 font-mono text-xs text-slate-200 print:bg-slate-50 print:border-slate-300 print:text-slate-800 break-inside-avoid page-break-inside-avoid">
+          <h4 className="text-white font-black text-xs uppercase tracking-wider mb-2 print:text-slate-900">
+            Cross-Tabulation Forensic Briefing:
+          </h4>
+          <p className="text-slate-300 leading-relaxed mb-4 print:text-slate-700">
+            This operational grid isolates multi-directional trade anomalies by correlating supply origins against declaration targets. 
+            Rather than tracking isolated transactions, it highlights structural lane diversions where commercial assets break away from traditional authorized trade routes.
+          </p>
+          <h5 className="text-white font-black text-[11px] uppercase tracking-wide mb-2 print:text-slate-900">
+            Strategic Lane Interpretation:
+          </h5>
+          <ul className="space-y-2 text-[11px] text-slate-300 print:text-slate-700">
+            <li className="flex items-start gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-red-500 shrink-0 mt-1" />
+              <div>
+                <strong className="text-red-400 print:text-red-700">High Density Outliers (Red Nodes):</strong> High-risk anomalies indicating deep value diversion, unexpected volume accumulation, or circular channel loading back into traditional production hubs.
+              </div>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-amber-500 shrink-0 mt-1" />
+              <div>
+                <strong className="text-amber-400 print:text-amber-700">Transshipment Bypass Clusters (Amber Nodes):</strong> Classical bypass behavior where cargo swaps custom identifiers or documentation records inside intermediate Free Trade Zones.
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        {/* Operational Shipment Ledger Section */}
         <div className={`forced-print-ledger-wrapper ${selectedCell ? 'block' : 'hidden print:block'}`}>
           {(() => {
             const printRecords = selectedCell 
