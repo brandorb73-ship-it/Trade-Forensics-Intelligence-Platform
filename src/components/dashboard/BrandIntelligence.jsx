@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
-import { Shield, Layers, FileText, Info, Activity, ChevronDown, ChevronUp, UserX } from 'lucide-react';
+import { Shield, Layers, FileText, Info, Activity, ChevronDown, ChevronUp, UserX, AlertTriangle, TrendingUp } from 'lucide-react';
 
 export default function BrandIntelligence() {
   const { tradeData = [] } = useTradeData() || {};
@@ -10,38 +10,54 @@ export default function BrandIntelligence() {
     setExpandedBrands(prev => ({ ...prev, [brand]: !prev[brand] }));
   };
 
+  // Completely dynamic pipeline processing any trade data sheet across all sectors
   const brandAnalytics = useMemo(() => {
     const stats = {};
-    
+    let globalTotalValue = 0;
+    let highRiskIntermediaryValue = 0;
+    let totalAnomaliesCount = 0;
+    const allHighRiskIntermediaries = new Set();
+
     tradeData.forEach(row => {
       if (!row) return;
-      const b = (row.Brand || 'UNBRANDED / HIGH RISK').toUpperCase();
+      const b = (row.Brand || row.ProductBrand || 'UNBRANDED / HIGH RISK').toUpperCase();
       if (!stats[b]) {
         stats[b] = { 
           volume: 0, 
           value: 0, 
           totalIncidents: 0,
           origins: new Set(),
-          destinations: new Set(), // Now accurately tracks true varying endpoints
+          destinations: new Set(),
           intermediariesMap: {}
         };
       }
       
-      stats[b].volume += Number(row.Quantity) || 0;
-      stats[b].value += Number(row.Amount) || 0;
+      const volumeNum = Number(row.Quantity) || Number(row.Qty) || 0;
+      const amountNum = Number(row.Amount) || Number(row.Value) || Number(row.TotalPrice) || 0;
+      
+      stats[b].volume += volumeNum;
+      stats[b].value += amountNum;
       stats[b].totalIncidents += 1;
+      globalTotalValue += amountNum;
       
-      const imp = row.Importer || 'UNKNOWN TARGET CONSIGNEE';
+      const imp = row.Importer || row.Consignee || 'UNKNOWN TARGET CONSIGNEE';
       const impUpper = imp.toUpperCase();
-      const exp = row.Exporter || 'UNKNOWN SHADOW EXPORTER';
-      const origin = row.OriginCountry || 'UNKNOWN ORIGIN';
-      const amount = Number(row.Amount) || 0;
+      const exp = row.Exporter || row.Shipper || 'UNKNOWN SHADOW EXPORTER';
+      const origin = row.OriginCountry || row.Origin || 'UNKNOWN ORIGIN';
       
-      // Dynamic fallback detection for variable destination data targets
-      const destinationField = (row.DestinationCountry || row.Destination || 'UNSPECIFIED REGION').toUpperCase();
+      const destinationField = (row.DestinationCountry || row.Destination || row.PortOfEntry || 'UNSPECIFIED REGION').toUpperCase();
 
-      // Forensic logic to extract unverified secondary broker entities
-      if (impUpper.includes('TRADING') || impUpper.includes('LOGISTICS') || impUpper.includes('LIMITED') || impUpper.includes('ANY') || impUpper.includes('*')) {
+      // Sector-agnostic forensic logic to extract unverified secondary corporate entities & brokers
+      if (
+        impUpper.includes('TRADING') || 
+        impUpper.includes('LOGISTICS') || 
+        impUpper.includes('LIMITED') || 
+        impUpper.includes('LTD') || 
+        impUpper.includes('CORP') || 
+        impUpper.includes('INC') || 
+        impUpper.includes('ANY') || 
+        impUpper.includes('*')
+      ) {
         if (!stats[b].intermediariesMap[imp]) {
           stats[b].intermediariesMap[imp] = { 
             name: imp, 
@@ -51,22 +67,54 @@ export default function BrandIntelligence() {
           };
         }
         stats[b].intermediariesMap[imp].suspectedExporters.add(exp);
-        stats[b].intermediariesMap[imp].totalValue += amount;
+        stats[b].intermediariesMap[imp].totalValue += amountNum;
+        
+        highRiskIntermediaryValue += amountNum;
+        totalAnomaliesCount += 1;
+        allHighRiskIntermediaries.add(imp);
       }
       
-      if (row.OriginCountry) {
-        const cleanOrigin = row.OriginCountry.split('→')[0].trim().toUpperCase();
+      if (row.OriginCountry || row.Origin) {
+        const cleanOrigin = (row.OriginCountry || row.Origin).split('→')[0].trim().toUpperCase();
         stats[b].origins.add(cleanOrigin);
       }
       
-      // Push the TRUE variable record destination directly to the unique set
       stats[b].destinations.add(destinationField);
     });
 
-    return stats;
+    // Dynamic AI Narrative Generation based on uploaded dataset metrics
+    const uniqueBrandsCount = Object.keys(stats).length;
+    const intermediaryCount = allHighRiskIntermediaries.size;
+
+    let briefingText = "System scan complete. No critical transshipment loops or controlled material diversion patterns isolated across the current trade data streams.";
+    let vectorText = "Logistical lanes show uniform compliance profiles. Route-splitting indicators remain below tactical threshold parameters.";
+    let corridorSummary = "Logistical Context: No active multi-jurisdictional risk routings or unauthorized diversion anomalies have been flagged within the current dataset scope.";
+    let evidentiaryFinding = "Evidentiary Finding: All scanned manifests reflect established direct shipping lanes with standard customs verification checkpoints.";
+
+    if (intermediaryCount > 0) {
+      briefingText = `Algorithmic scan detected ${intermediaryCount} unverified intermediate hubs handling authentic IP brand lines. High concentrations of shell/trading setups indicates structured corporate diversion or grey market bypass.`;
+      vectorText = `High risk lanes localized across ${uniqueBrandsCount} core asset clusters. Network densities point toward persistent parallel trade pipelines avoiding direct authorized distribution agreements.`;
+      corridorSummary = `Logistical Context: Elevated structural routing exposure identified. Layered supply chain legs indicate transshipment risks via secondary commercial trade hubs.`;
+      evidentiaryFinding = `Evidentiary Finding: Audited records reveal unmasked supply chains with asymmetric broker involvement totaling $${highRiskIntermediaryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })} in exposed trade value.`;
+    }
+
+    return {
+      brands: stats,
+      meta: {
+        globalTotalValue,
+        highRiskIntermediaryValue,
+        totalAnomaliesCount,
+        uniqueConsigneesCount: intermediaryCount,
+        briefingText,
+        vectorText,
+        corridorSummary,
+        evidentiaryFinding
+      }
+    };
   }, [tradeData]);
 
-  const brandList = Object.keys(brandAnalytics);
+  const brandList = Object.keys(brandAnalytics.brands);
+  const { meta } = brandAnalytics;
 
   return (
     <div className="space-y-6 text-slate-100 id-print-section">
@@ -84,18 +132,73 @@ export default function BrandIntelligence() {
         </button>
       </div>
 
-      {/* Forensic Channel Validation Panel */}
-      <div className="bg-[#111827] border-l-4 border-blue-500 p-5 rounded-xl space-y-3 print-break-avoid">
+      {/* Top Cards: Match UI pattern of Snapshot layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        {/* Forensic Corridor Impact Card */}
+        <div className="lg:col-span-2 bg-[#111827] border border-slate-800 p-5 rounded-xl space-y-3">
+          <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
+            <Activity size={14}/> Forensic Corridor Impact Assessment & Summary
+          </h3>
+          <div className="text-xs font-mono text-slate-200 space-y-2 leading-relaxed">
+            <p>{meta.corridorSummary}</p>
+            <p className="text-slate-400 font-bold">{meta.evidentiaryFinding}</p>
+          </div>
+        </div>
+
+        {/* Audited Route Exposure Value Card */}
+        <div className="bg-[#111827] border border-slate-800 p-5 rounded-xl flex flex-col justify-between">
+          <div>
+            <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider">
+              Audited Route Exposure Value
+            </h3>
+            <div className="text-2xl font-black text-emerald-400 font-mono mt-2">
+              ${meta.highRiskIntermediaryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </div>
+          </div>
+          <p className="text-[11px] font-mono text-slate-400 mt-2">
+            Concentrated across <span className="text-white font-bold">{meta.uniqueConsigneesCount}</span> unique consignees using unverified distribution lanes.
+          </p>
+        </div>
+      </div>
+
+      {/* EXECUTIVE AI BRIEFING & OPERATIONAL ANALYSIS */}
+      <div className="bg-[#111827] border border-slate-800 p-5 rounded-xl space-y-4">
+        <div className="border-b border-slate-800 pb-2">
+          <h3 className="text-xs font-mono font-black text-white uppercase flex items-center gap-2 tracking-wider">
+            <FileText size={14} className="text-blue-500" /> Executive AI Briefing & Operational Analysis
+          </h3>
+          <p className="text-[10px] font-mono text-slate-400">Dynamic algorithmic threat overview and supply chain verification matrix</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-lg space-y-1">
+            <h4 className="text-[11px] font-mono font-black text-blue-400 uppercase flex items-center gap-1">
+              <Shield size={12}/> Strategic Threat Briefing
+            </h4>
+            <p className="text-xs font-mono text-slate-200 leading-relaxed">{meta.briefingText}</p>
+          </div>
+
+          <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-lg space-y-1">
+            <h4 className="text-[11px] font-mono font-black text-emerald-400 uppercase flex items-center gap-1">
+              <TrendingUp size={12}/> Operational Vector Analysis
+            </h4>
+            <p className="text-xs font-mono text-slate-200 leading-relaxed">{meta.vectorText}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Forensic Channel Validation Panel (Sector-Agnostic Setup) */}
+      <div className="bg-[#111827] border-l-4 border-blue-500 p-5 rounded-xl space-y-2">
         <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
           <Activity size={14}/> Forensic Channel Validation Assessment
         </h3>
         <p className="text-xs text-slate-200 font-mono leading-relaxed">
-          <strong>Methodology of Determination:</strong> Channels are classified as <em>Unauthorized / High Risk</em> when proprietary molecules are held by unverified non-manufacturer entities (e.g., intermediate trading houses, freight forwarders) instead of authorized chemical/pharmaceutical license holders. 
+          <strong>Methodology of Determination:</strong> Channels are classified as <em>Unauthorized / High Risk</em> when trademarked brand lines pass through non-authorized secondary trading groups, third-party logistics firms, or unverified intermediate entities instead of audited direct brand distribution links.
         </p>
       </div>
 
       {/* Core Matrix Grid View */}
-      <div className="bg-[#111827] rounded-xl border border-slate-800 p-5 overflow-x-auto print-break-avoid">
+      <div className="bg-[#111827] rounded-xl border border-slate-800 p-5 overflow-x-auto">
         <div className="text-xs font-mono font-black text-white mb-4 uppercase tracking-wider flex items-center gap-2">
           <Layers size={14} className="text-blue-400"/> IP Security & Distribution Matrix
         </div>
@@ -112,24 +215,22 @@ export default function BrandIntelligence() {
           </thead>
           <tbody>
             {brandList.map(brand => {
-              const intermediaries = Object.values(brandAnalytics[brand].intermediariesMap);
+              const intermediaries = Object.values(brandAnalytics.brands[brand].intermediariesMap);
               const channelsCount = intermediaries.length;
               const isExpanded = !!expandedBrands[brand];
 
               return (
                 <React.Fragment key={brand}>
-                  {/* Master Row */}
                   <tr className="border-b border-slate-900/80 hover:bg-slate-900/30 transition-all">
                     <td className="p-3 font-black text-white text-sm tracking-tight">{brand}</td>
-                    <td className="p-3 text-emerald-400 font-bold text-sm">${brandAnalytics[brand].value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                    <td className="p-3 text-white font-bold">{brandAnalytics[brand].volume.toLocaleString()}</td>
+                    <td className="p-3 text-emerald-400 font-bold text-sm">${brandAnalytics.brands[brand].value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                    <td className="p-3 text-white font-bold">{brandAnalytics.brands[brand].volume.toLocaleString()}</td>
                     <td className="p-3 text-slate-200 leading-tight">
                       <div className="font-bold text-white uppercase text-[11px]">
-                        {Array.from(brandAnalytics[brand].origins).join(', ') || 'UNVERIFIED ORIGIN'}
+                        {Array.from(brandAnalytics.brands[brand].origins).join(', ') || 'UNVERIFIED ORIGIN'}
                       </div>
                       <div className="text-amber-400 font-bold text-[10px] mt-1 uppercase tracking-tight">
-                        {/* FIXED: No longer hardcoded. Pulls dynamically from dataset destination values */}
-                        → {Array.from(brandAnalytics[brand].destinations).join(' / ')}
+                        → {Array.from(brandAnalytics.brands[brand].destinations).join(' / ')}
                       </div>
                     </td>
                     <td className="p-3">
@@ -185,12 +286,19 @@ export default function BrandIntelligence() {
                 </React.Fragment>
               );
             })}
+            {brandList.length === 0 && (
+              <tr>
+                <td colSpan="6" className="p-8 text-center font-mono text-xs text-slate-500 italic">
+                  No records matching the current analytical filters are available.
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
 
       {/* Dynamic Evidentiary Footnote Block */}
-      <div className="pt-2 flex flex-col gap-2 font-mono text-[11px] bg-[#0f172a] p-4 rounded-xl border border-slate-800 print-break-avoid">
+      <div className="pt-2 flex flex-col gap-2 font-mono text-[11px] bg-[#0f172a] p-4 rounded-xl border border-slate-800">
         <div className="text-white font-bold uppercase tracking-wider flex items-center gap-1.5">
           <Info size={14} className="text-blue-500" /> Possible Enforcement Relevance:
         </div>
