@@ -32,7 +32,6 @@ export default function BrandIntelligence() {
       const amt = Number(row.Amount) || Number(row.Value) || Number(row.TotalPrice) || 0;
 
       if (imp) {
-        // Tokenize entity names to locate recurring intermediaries without rigid matching lists
         const tokens = imp.split(/[\s,.\-\/()]+/).filter(t => t.length > 2);
         tokens.forEach(token => {
           wordFrequencies[token] = (wordFrequencies[token] || 0) + 1;
@@ -46,7 +45,6 @@ export default function BrandIntelligence() {
       totalRowsProcessed++;
     });
 
-    // Calculate baseline medians for brand unit pricing to measure deviation asymmetries
     const brandPriceMedians = {};
     Object.keys(globalBrandPrices).forEach(brand => {
       const sortedPrices = globalBrandPrices[brand].sort((a, b) => a - b);
@@ -85,23 +83,21 @@ export default function BrandIntelligence() {
       const origin = row.OriginCountry || row.Origin || 'UNKNOWN ORIGIN';
       const destinationField = (row.DestinationCountry || row.Destination || row.PortOfEntry || 'UNSPECIFIED REGION').toUpperCase();
 
-      // Dynamic Intermediary Target Rules (Combines frequency markers with classical corporate structures)
       const hasStructuralToken = impUpper.split(/[\s,.\-\/()]+/).some(token => 
         ['TRADING', 'LOGISTICS', 'LIMITED', 'LTD', 'CORP', 'INC', 'BROKER', 'INTL', 'HOLDINGS', 'GLOBAL', 'FORWARDING'].includes(token) || 
-        (wordFrequencies[token] > (totalRowsProcessed * 0.15)) // Flags words appearing in >15% of manifests
+        (wordFrequencies[token] > (totalRowsProcessed * 0.15))
       );
 
       const isAnomalousPlaceholder = impUpper.includes('ANY') || impUpper.includes('*') || impUpper.length < 3;
 
       if (hasStructuralToken || isAnomalousPlaceholder) {
-        // Calculate price discrepancy on this specific transaction
         const medianBrandPrice = brandPriceMedians[b] || 0;
         let finalVariancePercent = 0;
         if (medianBrandPrice > 0 && currentUnitPrice > 0) {
           finalVariancePercent = ((currentUnitPrice - medianBrandPrice) / medianBrandPrice) * 100;
         }
 
-        const isPriceAnomaly = Math.abs(finalVariancePercent) > 35; // Flag variances exceeding +/- 35%
+        const isPriceAnomaly = Math.abs(finalVariancePercent) > 35;
         if (isPriceAnomaly) {
           stats[b].varianceAlertsCount += 1;
         }
@@ -132,7 +128,7 @@ export default function BrandIntelligence() {
       stats[b].destinations.add(destinationField);
     });
 
-    // PHASE 3: Calculate dynamic HHI Concentrative Scores and capture peak threat clusters
+    // PHASE 3: Calculate dynamic HHI Concentrative Scores
     let maxHhiBrand = '';
     let maxHhiScore = 0;
     let highHhiCount = 0;
@@ -162,7 +158,7 @@ export default function BrandIntelligence() {
       }
     });
 
-    // PHASE 4: Dynamic AI Narrative Generation utilizing calculated HHI & Variance logic
+    // PHASE 4: Dynamic AI Narrative Generation (Now optimizing Corridor Assessment)
     const uniqueBrandsCount = Object.keys(stats).length;
     const intermediaryCount = allHighRiskIntermediaries.size;
 
@@ -176,9 +172,10 @@ export default function BrandIntelligence() {
       
       vectorText = `Dynamic price profiling identified ${totalPriceAlertsAcrossBrands} severe unit price anomalies exceeding the ±35% baseline threshold. ${maxHhiScore >= 2500 ? `Peak supply risk is localized within the "${maxHhiBrand}" cluster, displaying a severe concentration index of ${maxHhiScore} HHI, indicating an absolute monopoly over the contract diversion pipeline.` : `Supply chain exposure is distributed across ${uniqueBrandsCount} asset vectors, displaying low-to-moderate logistical convergence thresholds.`}`;
       
-      corridorSummary = `Logistical Context: Elevated structural routing exposure identified. Layered supply chain legs indicate systemic transshipment manipulation and unauthorized broker insertion via unverified secondary trade hubs.`;
+      // Fully dynamic AI Corridor summary integration
+      corridorSummary = `Logistical Context: Elevated structural routing exposure identified across ${uniqueBrandsCount} segments. Layered supply legs reveal systemic transshipment manipulation via ${intermediaryCount} unverified secondary hubs, with maximum channel monopolization verified at ${maxHhiScore || 0} HHI within peak threat targets.`;
       
-      evidentiaryFinding = `Evidentiary Finding: Audited records reveal unmasked supply chains with asymmetric broker involvement totaling $${highRiskIntermediaryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })} in exposed, high-concentration parallel trade value.`;
+      evidentiaryFinding = `Evidentiary Finding: Audited data streams confirm highly concentrated parallel channels accounting for $${highRiskIntermediaryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })} in high-risk diversion exposure.`;
     }
 
     return {
@@ -199,12 +196,11 @@ export default function BrandIntelligence() {
   const brandList = Object.keys(brandAnalytics.brands);
   const { meta } = brandAnalytics;
 
-  // Helper utility to style dynamic HHI Risk Tiers based on classical economic & forensic thresholds
   const getHhiBadgeDetails = (score) => {
-    if (score === 0) return { label: 'CLEAN PIPELINE', style: 'text-slate-400 border-slate-800 bg-slate-900/40' };
-    if (score < 1500) return { label: 'LOW CONCENTRATION (FRAGMENTED DIVERSION)', style: 'text-emerald-400 border-emerald-950 bg-emerald-950/20' };
-    if (score < 2500) return { label: 'MODERATE CONCENTRATION (TARGETED LEAKS)', style: 'text-amber-400 border-amber-950 bg-amber-950/20' };
-    return { label: 'HIGH CONCENTRATION (MONOPOLIZED PIPELINE)', style: 'text-rose-400 border-rose-950 bg-rose-950/20' };
+    if (score === 0) return { label: 'CLEAN PIPELINE', style: 'text-slate-300 border-slate-700 bg-slate-900/40' };
+    if (score < 1500) return { label: 'LOW CONCENTRATION (FRAGMENTED DIVERSION)', style: 'text-emerald-300 border-emerald-900 bg-emerald-950/40' };
+    if (score < 2500) return { label: 'MODERATE CONCENTRATION (TARGETED LEAKS)', style: 'text-amber-300 border-amber-900 bg-amber-950/40' };
+    return { label: 'HIGH CONCENTRATION (MONOPOLIZED BREAKUP)', style: 'text-rose-300 border-rose-900 bg-rose-950/40' };
   };
 
   return (
@@ -216,38 +212,38 @@ export default function BrandIntelligence() {
           <h1 className="text-2xl font-black text-white tracking-tight flex items-center gap-2">
             <Shield className="text-blue-500" size={24} /> Brand Protection & Gray Market Intelligence
           </h1>
-          <p className="text-sm text-slate-300 mt-1">Examine distribution networks, track unverified corporate entities, and uncover trademark erosion.</p>
+          <p className="text-sm text-slate-200 mt-1">Examine distribution networks, track unverified corporate entities, and uncover trademark erosion.</p>
         </div>
         <button onClick={() => window.print()} className="flex items-center gap-2 px-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-mono font-bold hover:bg-slate-700 cursor-pointer text-slate-200">
           <FileText size={14} className="text-blue-400" /> Export Brand Security Log
         </button>
       </div>
 
-      {/* Top Cards */}
+      {/* Top Cards with Enhanced Visibility Typography */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Forensic Corridor Impact Card */}
+        {/* Dynamic AI Corridor Impact Card */}
         <div className="lg:col-span-2 bg-[#111827] border border-slate-800 p-5 rounded-xl space-y-3">
           <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
-            <Activity size={14}/> Forensic Corridor Impact Assessment & Summary
+            <Activity size={14}/> Dynamic AI Corridor Impact Assessment & Summary
           </h3>
-          <div className="text-xs font-mono text-slate-200 space-y-2 leading-relaxed">
-            <p>{meta.corridorSummary}</p>
-            <p className="text-slate-400 font-bold">{meta.evidentiaryFinding}</p>
+          <div className="text-xs font-mono text-slate-100 space-y-2 leading-relaxed">
+            <p className="text-slate-100 font-medium">{meta.corridorSummary}</p>
+            <p className="text-emerald-400 font-bold">{meta.evidentiaryFinding}</p>
           </div>
         </div>
 
         {/* Audited Route Exposure Value Card */}
         <div className="bg-[#111827] border border-slate-800 p-5 rounded-xl flex flex-col justify-between">
           <div>
-            <h3 className="text-xs font-mono font-black text-slate-400 uppercase tracking-wider">
+            <h3 className="text-xs font-mono font-black text-slate-200 uppercase tracking-wider">
               Audited Route Exposure Value
             </h3>
             <div className="text-2xl font-black text-emerald-400 font-mono mt-2">
               ${meta.highRiskIntermediaryValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </div>
           </div>
-          <p className="text-[11px] font-mono text-slate-400 mt-2">
-            Concentrated across <span className="text-white font-bold">{meta.uniqueConsigneesCount}</span> unique consignees using unverified distribution lanes.
+          <p className="text-[11px] font-mono text-slate-200 mt-2">
+            Concentrated across <span className="text-white font-black">{meta.uniqueConsigneesCount}</span> unique consignees using unverified distribution lanes.
           </p>
         </div>
       </div>
@@ -259,25 +255,25 @@ export default function BrandIntelligence() {
             <h3 className="text-xs font-mono font-black text-white uppercase flex items-center gap-2 tracking-wider">
               <FileText size={14} className="text-blue-500" /> Executive AI Briefing & Operational Analysis
             </h3>
-            <p className="text-[10px] font-mono text-slate-400">Dynamic algorithmic threat overview and supply chain verification matrix</p>
+            <p className="text-[10px] font-mono text-slate-200">Dynamic algorithmic threat overview and supply chain verification matrix</p>
           </div>
           <div className="relative">
             <button 
               onMouseEnter={() => setShowFormulaTooltip(true)}
               onMouseLeave={() => setShowFormulaTooltip(false)}
-              className="text-slate-400 hover:text-white cursor-help p-1"
+              className="text-slate-200 hover:text-white cursor-help p-1"
             >
               <HelpCircle size={14} />
             </button>
             {showFormulaTooltip && (
-              <div className="absolute right-0 bottom-6 z-50 bg-[#0f172a] border border-slate-700 p-4 rounded-xl w-96 text-[11px] font-mono shadow-2xl space-y-3 text-slate-200">
+              <div className="absolute right-0 bottom-6 z-50 bg-[#0f172a] border border-slate-700 p-4 rounded-xl w-96 text-[11px] font-mono shadow-2xl space-y-3 text-slate-100">
                 <div>
                   <span className="text-blue-400 font-bold uppercase block mb-1">Herfindahl-Hirschman Index (HHI)</span>
-                  Calculated as HHI = ∑(S_i)², where S_i is the local market value percentage share of each unmasked proxy node. Max score is 10,000. Scores exceeding 2,500 indicate an absolute, highly consolidated structural monopoly over parallel supply lines, proving deliberate contractual breach.
+                  Calculated as HHI = ∑(S_i)², where S_i is the local market value percentage share of each unmasked proxy node. Max score is 10,000. Scores exceeding 2,500 indicate an absolute corporate monopoly.
                 </div>
                 <div>
                   <span className="text-emerald-400 font-bold uppercase block mb-1">Dynamic Pricing Baselines</span>
-                  Establishes the median unit price across all transactions for each brand. Row entries with pricing anomalies exceeding a ±35% variance drop indicate severe under-invoicing or gray transfer-pricing manipulation.
+                  Establishes the median unit price across all transactions for each brand. Row entries with pricing anomalies exceeding a ±35% variance drop indicate severe under-invoicing.
                 </div>
               </div>
             )}
@@ -289,14 +285,14 @@ export default function BrandIntelligence() {
             <h4 className="text-[11px] font-mono font-black text-blue-400 uppercase flex items-center gap-1">
               <Shield size={12}/> Strategic Threat Briefing
             </h4>
-            <p className="text-xs font-mono text-slate-200 leading-relaxed">{meta.briefingText}</p>
+            <p className="text-xs font-mono text-slate-100 leading-relaxed">{meta.briefingText}</p>
           </div>
 
           <div className="bg-slate-900/40 border border-slate-800/60 p-4 rounded-lg space-y-1">
             <h4 className="text-[11px] font-mono font-black text-emerald-400 uppercase flex items-center gap-1">
               <TrendingUp size={12}/> Operational Vector Analysis
             </h4>
-            <p className="text-xs font-mono text-slate-200 leading-relaxed">{meta.vectorText}</p>
+            <p className="text-xs font-mono text-slate-100 leading-relaxed">{meta.vectorText}</p>
           </div>
         </div>
       </div>
@@ -306,7 +302,7 @@ export default function BrandIntelligence() {
         <h3 className="text-xs font-mono font-black text-blue-400 uppercase flex items-center gap-2">
           <Activity size={14}/> Forensic Channel Validation Assessment
         </h3>
-        <p className="text-xs text-slate-200 font-mono leading-relaxed">
+        <p className="text-xs text-slate-100 font-mono leading-relaxed">
           <strong>Methodology of Determination:</strong> Channels are classified as <em>Unauthorized / High Risk</em> when trademarked brand lines pass through non-authorized secondary trading groups, third-party logistics firms, or unverified intermediate entities instead of audited direct brand distribution links.
         </p>
       </div>
@@ -341,8 +337,8 @@ export default function BrandIntelligence() {
                     <td className="p-3 font-black text-white text-sm tracking-tight">{brand}</td>
                     <td className="p-3 text-emerald-400 font-bold text-sm">${currentBrandData.value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                     <td className="p-3 text-white font-bold">{currentBrandData.volume.toLocaleString()}</td>
-                    <td className="p-3 text-slate-200 leading-tight">
-                      <div className="font-bold text-white uppercase text-[11px]">
+                    <td className="p-3 text-slate-100 leading-tight">
+                      <div className="font-black text-white uppercase text-[11px]">
                         {Array.from(currentBrandData.origins).join(', ') || 'UNVERIFIED ORIGIN'}
                       </div>
                       <div className="text-amber-400 font-bold text-[10px] mt-1 uppercase tracking-tight">
@@ -351,7 +347,7 @@ export default function BrandIntelligence() {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-col gap-1">
-                        <span className="text-white font-bold text-[12px]">{currentBrandData.hhiScore} HHI</span>
+                        <span className="text-white font-black text-[12px]">{currentBrandData.hhiScore} HHI</span>
                         <span className={`text-[9px] px-1.5 py-0.5 border rounded-sm w-max font-black tracking-tighter ${hhiDetails.style}`}>
                           {hhiDetails.label}
                         </span>
@@ -359,8 +355,8 @@ export default function BrandIntelligence() {
                     </td>
                     <td className="p-3 text-right">
                       <button 
-                        onClick={() => toggleBrandExpand(brand)}
-                        className={`ml-auto px-2.5 py-1 border rounded font-black text-[11px] flex items-center gap-1.5 cursor-pointer transition-all ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400 hover:bg-amber-900/40' : 'bg-[#111827] border-slate-800 text-slate-400'}`}
+                        onClick={() => toggleToggleBrandExpand(brand)}
+                        className={`ml-auto px-2.5 py-1 border rounded font-black text-[11px] flex items-center gap-1.5 cursor-pointer transition-all ${channelsCount > 0 ? 'bg-amber-950/50 border-amber-500 text-amber-400 hover:bg-amber-900/40' : 'bg-[#111827] border-slate-800 text-slate-200'}`}
                       >
                         {channelsCount} Nodes Unmasked
                         {currentBrandData.varianceAlertsCount > 0 && (
@@ -378,7 +374,7 @@ export default function BrandIntelligence() {
                     <tr>
                       <td colSpan="6" className="bg-[#0f172a] p-4 border-b border-slate-800">
                         <div className="space-y-3">
-                          <div className="text-[11px] font-mono font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
+                          <div className="text-[11px] font-mono font-black text-slate-200 uppercase tracking-widest flex items-center gap-1.5 border-b border-slate-800 pb-1.5">
                             <UserX size={14} className="text-amber-400" /> Unmasked High-Risk Intermediary Network for {brand}
                           </div>
                           
@@ -397,18 +393,18 @@ export default function BrandIntelligence() {
                                     </div>
                                     <div className="text-xs font-mono font-bold text-emerald-400">${inter.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
                                   </div>
-                                  <div className="text-[11px] font-mono text-slate-300 space-y-1 pt-1 border-t border-slate-800/60">
-                                    <div><span className="text-slate-500 font-bold uppercase text-[10px]">Real Dynamic Flow Leg:</span> {inter.routeTouched}</div>
+                                  <div className="text-[11px] font-mono text-slate-100 space-y-1 pt-1 border-t border-slate-800/60">
+                                    <div><span className="text-slate-300 font-black uppercase text-[10px]">Real Dynamic Flow Leg:</span> {inter.routeTouched}</div>
                                     <div>
-                                      <span className="text-slate-500 font-bold uppercase text-[10px]">Associated Exporter:</span>{' '}
-                                      <span className="text-slate-200 break-all">{Array.from(inter.suspectedExporters).join(', ') || 'Concealed Node'}</span>
+                                      <span className="text-slate-300 font-black uppercase text-[10px]">Associated Exporter:</span>{' '}
+                                      <span className="text-slate-100 break-all">{Array.from(inter.suspectedExporters).join(', ') || 'Concealed Node'}</span>
                                     </div>
                                   </div>
                                 </div>
                               ))}
                             </div>
                           ) : (
-                            <div className="text-xs font-mono text-slate-500 italic py-2">
+                            <div className="text-xs font-mono text-slate-300 italic py-2">
                               No secondary broker keywords or algorithmic token deviations detected inside the proxy strings for this dataset.
                             </div>
                           )}
@@ -421,7 +417,7 @@ export default function BrandIntelligence() {
             })}
             {brandList.length === 0 && (
               <tr>
-                <td colSpan="6" className="p-8 text-center font-mono text-xs text-slate-500 italic">
+                <td colSpan="6" className="p-8 text-center font-mono text-xs text-slate-400 italic">
                   No records matching the current analytical filters are available.
                 </td>
               </tr>
@@ -430,31 +426,31 @@ export default function BrandIntelligence() {
         </table>
       </div>
 
-      {/* Dynamic Evidentiary Footnote Block & Index Glossary */}
+      {/* Dynamic Evidentiary Footnote Block & Index Glossary with Enhanced Text Colors */}
       <div className="pt-3 flex flex-col gap-4 bg-[#0f172a] p-5 rounded-xl border border-slate-800 font-mono text-[11px]">
         <div>
           <div className="text-white font-black uppercase tracking-wider flex items-center gap-1.5 mb-2 border-b border-slate-800 pb-1">
             <Info size={14} className="text-blue-500" /> Analytical Index Definitions & Forensic Relevance
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-300">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-100">
             <div className="space-y-1">
               <span className="text-blue-400 font-black uppercase block text-[10px]">1. Automated Intermediary Engine</span>
-              <p className="text-[11px] text-slate-400 leading-normal">Tokenizes entity titles dynamically to trace recurring linguistic networks against shell indicators. Isolates unverified third-party nodes intercepting cargo assets prior to legitimate market entry.</p>
+              <p className="text-[11px] text-slate-100 leading-normal font-medium">Tokenizes entity titles dynamically to trace recurring linguistic networks against shell indicators. Isolates unverified third-party nodes intercepting cargo assets prior to legitimate market entry.</p>
             </div>
             <div className="space-y-1">
               <span className="text-emerald-400 font-black uppercase block text-[10px]">2. Price Variance Index</span>
-              <p className="text-[11px] text-slate-400 leading-normal">Flags shipping corridors deviating over ±35% from a brand's global median unit price. Drops indicate under-invoicing or gray transfer-pricing; spikes indicate aggressive broker skimming spikes.</p>
+              <p className="text-[11px] text-slate-100 leading-normal font-medium">Flags shipping corridors deviating over ±35% from a brand's global median unit price. Drops indicate under-invoicing or gray transfer-pricing; spikes indicate aggressive broker skimming spikes.</p>
             </div>
             <div className="space-y-1">
               <span className="text-rose-400 font-black uppercase block text-[10px]">3. Herfindahl-Hirschman Index (HHI)</span>
-              <p className="text-[11px] text-slate-400 leading-normal">Sums the squared market shares of unmasked entities ($HHI = \sum S_i^2$). Scores over 2,500 prove a highly consolidated monopoly over the gray pipeline, demonstrating clear intent of systemic contractual bypass.</p>
+              <p className="text-[11px] text-slate-100 leading-normal font-medium">Sums the squared value-market shares of unmasked entities, written as $HHI = \sum S_i^2$. Scores over 2,500 prove a highly consolidated monopoly over the gray pipeline, demonstrating clear intent of systemic contractual bypass.</p>
             </div>
           </div>
         </div>
 
         <div className="pt-2 border-t border-slate-800/60">
-          <div className="text-slate-400 font-bold uppercase tracking-tight text-[10px]">Enforcement Applications:</div>
-          <ul className="text-slate-300 space-y-0.5 mt-1 list-disc list-inside pl-1 text-[11px]">
+          <div className="text-slate-200 font-black uppercase tracking-tight text-[10px]">Enforcement Applications:</div>
+          <ul className="text-slate-100 space-y-0.5 mt-1 list-disc list-inside pl-1 text-[11px] font-medium">
             <li>Establishes explicit intent matrices supporting unauthorized parallel importation and gray market claims.</li>
             <li>Enables strategic risk isolation for target audits and commercial contract revision actions.</li>
           </ul>
