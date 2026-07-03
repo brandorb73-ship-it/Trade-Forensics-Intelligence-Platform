@@ -29,6 +29,7 @@ const JURISDICTION_COORDINATES = {
   'SWITZERLAND': [46.8182, 8.2275], 'CH': [46.8182, 8.2275],
   'SLOVENIA': [46.1512, 14.9955], 'SI': [46.1512, 14.9955],
   'HUNGARY': [47.1625, 19.5033], 'HU': [47.1625, 19.5033],
+  'BULGARIA': [42.7339, 25.4858], 'BG': [42.7339, 25.4858],
 
   // Global Transshipment Hubs & Gateways
   'DUBAI': [25.2048, 55.2708], 'UAE': [25.2048, 55.2708], 'AE': [25.2048, 55.2708],
@@ -91,12 +92,12 @@ export default function CountryRiskTab() {
   const parsedRecords = useMemo(() => {
     if (!tradeData || tradeData.length === 0) return [];
 
-    // PHASE 1: Statistical Analysis Pre-Pass of Ingested Dataset (Industry Agnostic)
+    // PHASE 1: Statistical Baseline Analysis Pre-Pass (Industry Agnostic)
     const valuesArray = tradeData.map(r => Number(r?.Amount) || 50000);
     const globalSum = valuesArray.reduce((a, b) => a + b, 0);
     const globalMean = globalSum / (valuesArray.length || 1);
     
-    // Compute Dynamic Standard Deviation to calculate value variance spikes dynamically
+    // Compute Dynamic Standard Deviation to isolate systemic valuation spikes
     const variance = valuesArray.reduce((a, b) => a + Math.pow(b - globalMean, 2), 0) / (valuesArray.length || 1);
     const globalStdDev = Math.sqrt(variance) || 1;
 
@@ -165,16 +166,16 @@ export default function CountryRiskTab() {
         cleanDestination = rawDest;
       }
 
-      // 3. FULLY DYNAMIC AI SCORING MATRIX (Industry Agnostic Context Heuristics)
+      // 3. FULLY DYNAMIC AI SCORING MATRIX WITH MATH BRIEF REASONING
       let intrinsicRiskWeight = 20; 
-      if (rawProduct.length > 40) intrinsicRiskWeight += 15; // Flag highly complex descriptions
-      if (/[^A-Z0-9\s]/i.test(rawProduct)) intrinsicRiskWeight += 10; // Flag cryptic formatting symbols
+      if (rawProduct.length > 40) intrinsicRiskWeight += 15; // Complexity penalty
+      if (/[^A-Z0-9\s]/i.test(rawProduct)) intrinsicRiskWeight += 10; // Cryptic formatting flag
 
-      // Anomaly Modifier A: Outlier Valuation Metric
+      // Dynamic Valuation Evaluation Engine (Tripwire calculation)
       const deviationZScore = (valAmount - globalMean) / globalStdDev;
       const valueAnomalyBonus = deviationZScore > 1.5 ? 20 : 0;
 
-      // Anomaly Modifier B: Circuitous Routing Detection
+      // Logistics Routing Anomaly Engine
       const routingCorridorContainsHub = DYNAMIC_HUB_REGISTRY.some(hub => 
         rawOrigin.includes(hub) || rawDest.includes(hub) || rawImporter.includes(hub)
       );
@@ -189,17 +190,22 @@ export default function CountryRiskTab() {
         dynamicCalculatedRisk += 45;
         riskTier = 'TIER_1_ELEVATED';
         severity = 'HIGH';
-        diagnosticBrief = `Dynamic System Flag: Compound anomalies discovered. Visual and manifest audit signatures show an irregular structural pathway loop traversing intermediate trading free zones, compounded by asymmetric trade volume weights.`;
+        diagnosticBrief = `Dynamic System Flag: Compound routing and financial anomalies discovered. Cargo trajectory traverses an unaligned circuitous pathway using complex waybills inside specialized trading free zones${valueAnomalyBonus > 0 ? `, critically compounded by a severe statistical valuation outlier threshold breach (Z-Score: +${deviationZScore.toFixed(2)}) relative to global trends.` : '.'}`;
       } else if (routingCorridorContainsHub || containsComplexWaybills || valueAnomalyBonus > 0) {
         dynamicCalculatedRisk += 25;
         riskTier = 'TIER_2_SPLIT_ROUTE';
         severity = 'MEDIUM';
-        diagnosticBrief = `Notice: Isolated variance identified. Cargo manifest presents an elevated standard deviation metric relative to discovered sector patterns, or outlines entry sequencing into a geographic transshipment gateway.`;
+        
+        if (valueAnomalyBonus > 0) {
+          diagnosticBrief = `Statistical Threshold Breach: Ingested valuation amount ($${valAmount.toLocaleString(undefined, {minimumFractionDigits: 2})}) triggers a dynamic variance alert. This specific node presents a high statistical deviation threshold anomaly with an extreme Z-Score of +${deviationZScore.toFixed(2)} relative to the global data baseline mean ($${globalMean.toLocaleString(undefined, {maximumFractionDigits: 0})}).`;
+        } else {
+          diagnosticBrief = `Notice: Isolated logistics variance identified. Cargo manifest points to transit routing configuration balancing within active global gateway hubs, or displays anomalous structural character tokens.`;
+        }
       } else {
-        // Point-to-Point Direct Pipelines
+        // Clear point-to-point pathing
         riskTier = 'TIER_3_MONITORED';
         severity = 'LOW';
-        diagnosticBrief = `Direct Pipeline Corridors Confirmed. Supply vector between ${cleanOrigin} and ${cleanDestination} balances perfectly with standard background distributions with zero transshipment interference.`;
+        diagnosticBrief = `Direct Pipeline Corridors Confirmed. Supply vector between ${cleanOrigin} and ${cleanDestination} balances normally within background distributions (Value Z-Score: ${deviationZScore.toFixed(2)}) with zero anomalous transshipment interface.`;
       }
 
       return {
@@ -221,7 +227,7 @@ export default function CountryRiskTab() {
     }).filter(Boolean);
   }, [tradeData]);
 
-  // Filtering Logic Pipelines
+  // Filtering Operations Pipeline
   const filteredRecords = useMemo(() => {
     return parsedRecords.filter(rec => {
       const matchRisk = filterType === 'ALL' || rec.riskType === filterType;
@@ -244,7 +250,7 @@ export default function CountryRiskTab() {
 
   const activeHighlightedRoute = mapRoutesToRender[selectedRouteIdx] || mapRoutesToRender[0] || null;
 
-  // Real-time Summary Box Synthesis
+  // Global Context Engine Summary
   const dynamicSummaryParagraph = useMemo(() => {
     if (filteredRecords.length === 0) return "No active logistics vectors correspond to chosen analytical configurations.";
     const total = filteredRecords.length;
@@ -267,7 +273,7 @@ export default function CountryRiskTab() {
     };
   }, [parsedRecords]);
 
-  // Spatial Mapping Hook
+  // Spatial Mapping Rendering Engine
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current) return;
     const L = window.L;
