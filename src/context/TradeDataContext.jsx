@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from 'react';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import Papa from 'papaparse';
 
 const TradeDataContext = createContext();
@@ -6,6 +6,17 @@ const TradeDataContext = createContext();
 export const TradeDataProvider = ({ children }) => {
   const [tradeData, setTradeData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // NEW: Central registry to store pre-calculated Intelligence Objects from all modules
+  const [intelligenceRegistry, setIntelligenceRegistry] = useState({});
+
+  // NEW: Stable function for modules to register their Intelligence Objects
+  const registerIntelligence = useCallback((moduleId, intelligenceData) => {
+    setIntelligenceRegistry((prevRegistry) => ({
+      ...prevRegistry,
+      [moduleId]: intelligenceData
+    }));
+  }, []);
 
   const processRawData = (csvString) => {
     setIsLoading(true);
@@ -78,7 +89,18 @@ export const TradeDataProvider = ({ children }) => {
   };
 
   return (
-    <TradeDataContext.Provider value={{ tradeData, setTradeData, uploadFile, isLoading, processRawData }}>
+    <TradeDataContext.Provider 
+      value={{ 
+        tradeData, 
+        setTradeData, 
+        uploadFile, 
+        isLoading, 
+        processRawData,
+        // NEW values exposed to the application
+        intelligenceRegistry,
+        registerIntelligence 
+      }}
+    >
       {children}
     </TradeDataContext.Provider>
   );
