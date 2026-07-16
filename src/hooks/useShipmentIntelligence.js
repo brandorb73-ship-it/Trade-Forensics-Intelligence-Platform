@@ -17,8 +17,10 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
     const destinations = new Set();
     const routes = new Map();
 
-    // Pass 1: Establish Baselines for Analytics
-    const productPriceMap = new Map();
+    // Map to identify HS Code Variance (same product, multiple HS Codes)
+    const productToHsCodes = new Map();
+
+    // Pass 1: Baseline Analysis
     tradeData.forEach((row) => {
       totalValue += row.Amount || 0;
       totalQty += row.Quantity || 0;
@@ -30,57 +32,58 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
       origins.add(row.OriginCountry);
       destinations.add(row.DestinationCountry);
 
-      const routeKey = `${row.OriginCountry} -> ${row.DestinationCountry}`;
+      const routeKey = `${row.OriginCountry} ➔ ${row.DestinationCountry}`;
       routes.set(routeKey, (routes.get(routeKey) || 0) + 1);
 
-      if (!productPriceMap.has(row.Product)) {
-        productPriceMap.set(row.Product, { sum: 0, count: 0 });
+      if (row.Product) {
+        if (!productToHsCodes.has(row.Product)) {
+          productToHsCodes.set(row.Product, new Set());
+        }
+        productToHsCodes.get(row.Product).add(row.HSCode);
       }
-      const pp = productPriceMap.get(row.Product);
-      pp.sum += row.UnitPrice || 0;
-      pp.count += 1;
     });
 
-    const productAvgPrice = new Map();
-    productPriceMap.forEach((val, key) => {
-      productAvgPrice.set(key, val.sum / val.count);
+    // Detect products with multi-HS variance
+    const productsWithVariance = new Set();
+    productToHsCodes.forEach((codes, prod) => {
+      if (codes.size > 1) {
+        productsWithVariance.add(prod);
+      }
     });
 
-    // Pass 2: Calculate Risk, Flags, and Generate Evidence
+    const averageValue = totalValue / tradeData.length;
+    let totalRiskPoints = 0;
     const evidenceList = [];
     let criticalCount = 0;
     let highCount = 0;
+    let mediumCount = 0;
 
+    // Pass 2: Risk Flagging and Enrichment
     const augmented = tradeData.map((row) => {
       const flags = [];
       let riskScore = 'Low';
       let riskWeight = 0;
 
-      // Rule: HS Disguise
+      // Rule: HS Code Variance Detected
+      const hasHsVariance = productsWithVariance.has(row.Product);
+      if (hasHsVariance) {
+        flags.push('HS Code Variance Detected');
+        riskWeight += 2;
+      }
+
+      // Rule: Semaglutide Customs Check / Origin Mismatch
       if (row.hsRisk === 'high') {
         flags.push('Potential Origin Manipulation', 'HS Disguise');
         riskWeight += 3;
       }
 
-      // Rule: Price Outlier
-      const avgPrice = productAvgPrice.get(row.Product);
-      if (avgPrice > 0) {
-        if (row.UnitPrice > avgPrice * 2) {
-          flags.push('Price Outlier (High)');
-          riskWeight += 2;
-        } else if (row.UnitPrice < avgPrice * 0.5) {
-          flags.push('Price Outlier (Low)', 'Potential Grey Market');
-          riskWeight += 2;
-        }
-      }
-
-      // Rule: High Value
+      // Rule: High Value Threshold
       if (row.Amount > 500000) {
-        flags.push('High Value Shipment');
+        flags.push('High Value Transaction');
         riskWeight += 1;
       }
 
-      // Determine Final Risk Level
+      // Determine Risk Grade
       if (riskWeight >= 4) {
         riskScore = 'Critical';
         criticalCount++;
@@ -89,11 +92,18 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
         highCount++;
       } else if (riskWeight === 1) {
         riskScore = 'Medium';
+        mediumCount++;
       }
 
-      const augmentedRow = { ...row, riskScore, flags };
+      totalRiskPoints += riskWeight;
 
-      // Generate Evidence Object for High/Critical
+      const augmentedRow = { 
+        ...row, 
+        riskScore, 
+        flags,
+        hasHsVariance 
+      };
+
       if (riskWeight >= 2) {
         evidenceList.push({
           shipmentID: row.id,
@@ -109,64 +119,58 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
           unitPrice: row.UnitPrice,
           riskScore,
           triggeredRules: flags,
-          explanation: `Automated detection triggered due to ${flags.join(' and ')}.`
+          explanation: `Transaction flagged containing anomalies: ${flags.join(', ')}.`
         });
       }
 
       return augmentedRow;
     });
 
-    // Compile Top Metrics
-    const topRoutes = Array.from(routes.entries())
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([route, count]) => ({ route, count }));
+    // Score from 0 to 100 representing manifest risk severity
+    const maxPossiblePoints = tradeData.length * 4;
+    const forensicIndex = Math.min(100, Math.round((totalRiskPoints / (maxPossiblePoints || 1)) * 1000) / 10);
 
     const metrics = {
       totalShipments: tradeData.length,
       totalValue,
       totalQty,
-      avgValue: totalValue / tradeData.length,
-      avgUnitPrice: totalValue / totalQty,
+      avgValue: averageValue,
       distinctExporters: exporters.size,
       distinctImporters: importers.size,
       distinctBrands: brands.size,
       distinctProducts: products.size,
       distinctHSCodes: hsCodes.size,
       distinctOrigins: origins.size,
-      distinctDestinations: destinations.size
+      distinctDestinations: destinations.size,
+      hsVarianceCount: productsWithVariance.size,
+      forensicIndex
     };
 
-    // Generate Dynamic Executive Summary
-    const executiveSummary = `The imported dataset contains ${metrics.totalShipments.toLocaleString()} shipments involving ${metrics.distinctExporters} exporters across ${metrics.distinctOrigins} origin jurisdictions. Analysis identified ${criticalCount + highCount} shipments exhibiting elevated forensic risk, primarily driven by price deviations and structural anomalies. No evidence alone confirms wrongdoing; however, these shipments warrant further examination.`;
+    const executiveSummary = `The analyzed dataset reflects ${metrics.totalShipments.toLocaleString()} shipments spanning ${metrics.distinctOrigins} origin hubs and ${metrics.distinctDestinations} target nations. A cumulative Forensic Risk Index of ${forensicIndex}% was measured, with ${criticalCount + highCount} shipments isolated for active intelligence review based on anomalous classification routing patterns and classification shifts.`;
 
     const generatedIntelligence = {
       section: "Shipment Ledger",
       executiveSummary,
       metrics,
       findings: [
-        { title: "Risk Distribution", description: `${criticalCount} Critical and ${highCount} High risk shipments identified.` },
-        { title: "Trade Concentration", description: `${topRoutes[0]?.route} represents the highest volume corridor.` }
+        { title: "Classification Anomalies", description: `${metrics.hsVarianceCount} product descriptions declared under shifting tariffs.` },
+        { title: "Risk Demographics", description: `${criticalCount} Critical, ${highCount} High, and ${mediumCount} Medium entries tracked.` }
       ],
-      anomalies: evidenceList.map(e => e.triggeredRules).flat().filter((v, i, a) => a.indexOf(v) === i),
+      anomalies: Array.from(new Set(evidenceList.flatMap(e => e.triggeredRules))),
       evidence: evidenceList,
       recommendations: [
-        "Review customs declarations for critical risk entries.",
-        "Compare invoice values against global medians.",
-        "Investigate beneficial ownership of top anomalous exporters.",
-        "Request additional customs documentation for diverted routes."
+        "Audit declaration routes involving products flagged for HS Code variance.",
+        "Request physical verification certificates of origin on high-risk transport corridors.",
+        "Perform deep transactional lookup on entities flagged with high relationship density.",
+        "Compare pricing variances against globally established customs clearing averages."
       ],
-      confidence: tradeData.length > 100 ? 92 : 75,
-      charts: { topRoutes },
-      topEntities: [], 
-      topRoutes,
-      topProducts: []
+      confidence: tradeData.length > 50 ? 95 : 70,
+      charts: {}
     };
 
     return { augmentedData: augmented, intelligenceObject: generatedIntelligence };
   }, [tradeData]);
 
-  // Register Intelligence Object with Context
   useEffect(() => {
     if (intelligenceObject && registerIntelligence) {
       registerIntelligence("Shipment Ledger", intelligenceObject);
