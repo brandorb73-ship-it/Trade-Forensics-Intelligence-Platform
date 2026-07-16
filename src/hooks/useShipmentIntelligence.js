@@ -17,33 +17,39 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
     const destinations = new Set();
     const routes = new Map();
 
-    // Map to identify HS Code Variance (same product, multiple HS Codes)
     const productToHsCodes = new Map();
 
-    // Pass 1: Baseline Analysis
+    // Pass 1: Baseline Analysis & Normalization
     tradeData.forEach((row) => {
-      totalValue += row.Amount || 0;
-      totalQty += row.Quantity || 0;
-      exporters.add(row.Exporter);
-      importers.add(row.Importer);
-      brands.add(row.Brand);
-      products.add(row.Product);
-      hsCodes.add(row.HSCode);
-      origins.add(row.OriginCountry);
-      destinations.add(row.DestinationCountry);
+      // Clean numeric values to prevent NaN
+      const cleanAmount = parseFloat(row.Amount?.toString().replace(/[^0-9.-]+/g, "")) || 0;
+      const cleanQty = parseFloat(row.Quantity?.toString().replace(/[^0-9.-]+/g, "")) || 0;
+      
+      totalValue += cleanAmount;
+      totalQty += cleanQty;
+      
+      if (row.Exporter) exporters.add(row.Exporter);
+      if (row.Importer) importers.add(row.Importer);
+      if (row.Brand) brands.add(row.Brand);
+      if (row.Product) products.add(row.Product);
+      if (row.HSCode) hsCodes.add(row.HSCode);
+      if (row.OriginCountry) origins.add(row.OriginCountry);
+      if (row.DestinationCountry) destinations.add(row.DestinationCountry);
 
       const routeKey = `${row.OriginCountry} ➔ ${row.DestinationCountry}`;
       routes.set(routeKey, (routes.get(routeKey) || 0) + 1);
 
-      if (row.Product) {
-        if (!productToHsCodes.has(row.Product)) {
-          productToHsCodes.set(row.Product, new Set());
+      if (row.Product && row.HSCode) {
+        // Normalize product descriptions to catch hidden variance (e.g., casing/spaces)
+        const normProduct = row.Product.toString().toLowerCase().trim();
+        const normHs = row.HSCode.toString().trim();
+        if (!productToHsCodes.has(normProduct)) {
+          productToHsCodes.set(normProduct, new Set());
         }
-        productToHsCodes.get(row.Product).add(row.HSCode);
+        productToHsCodes.get(normProduct).add(normHs);
       }
     });
 
-    // Detect products with multi-HS variance
     const productsWithVariance = new Set();
     productToHsCodes.forEach((codes, prod) => {
       if (codes.size > 1) {
@@ -58,40 +64,43 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
     let highCount = 0;
     let mediumCount = 0;
 
-    // Pass 2: Risk Flagging and Enrichment
+    // Pass 2: Risk Flagging with Explicit Threshold Context
     const augmented = tradeData.map((row) => {
       const flags = [];
       let riskScore = 'Low';
       let riskWeight = 0;
+      const normProduct = row.Product?.toString().toLowerCase().trim();
+      const hasHsVariance = normProduct ? productsWithVariance.has(normProduct) : false;
 
-      // Rule: HS Code Variance Detected
-      const hasHsVariance = productsWithVariance.has(row.Product);
       if (hasHsVariance) {
-        flags.push('HS Code Variance Detected');
+        flags.push('HS Code Variance Detected (+2 pts)');
         riskWeight += 2;
       }
 
-      // Rule: Semaglutide Customs Check / Origin Mismatch
       if (row.hsRisk === 'high') {
-        flags.push('Potential Origin Manipulation', 'HS Disguise');
+        flags.push('Potential Origin Manipulation / HS Disguise (+3 pts)');
         riskWeight += 3;
       }
 
-      // Rule: High Value Threshold
-      if (row.Amount > 500000) {
-        flags.push('High Value Transaction');
+      const cleanAmount = parseFloat(row.Amount?.toString().replace(/[^0-9.-]+/g, "")) || 0;
+      if (cleanAmount > 500000) {
+        flags.push('High Value Transaction Threshold Met (+1 pt)');
         riskWeight += 1;
       }
 
-      // Determine Risk Grade
+      // Explicit Threshold Mapping
+      let riskContext = "Routine verification.";
       if (riskWeight >= 4) {
         riskScore = 'Critical';
+        riskContext = `Threshold Met (Score: ${riskWeight} >= 4 pts). Mandatory audit required.`;
         criticalCount++;
       } else if (riskWeight >= 2) {
         riskScore = 'High';
+        riskContext = `Threshold Met (Score: ${riskWeight} >= 2 pts). Elevated scrutiny advised.`;
         highCount++;
       } else if (riskWeight === 1) {
         riskScore = 'Medium';
+        riskContext = `Threshold Met (Score: ${riskWeight} = 1 pt). Standard review.`;
         mediumCount++;
       }
 
@@ -100,6 +109,8 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
       const augmentedRow = { 
         ...row, 
         riskScore, 
+        riskContext,
+        riskWeight,
         flags,
         hasHsVariance 
       };
@@ -115,6 +126,8 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
           origin: row.OriginCountry,
           destination: row.DestinationCountry,
           quantity: row.Quantity,
+          weight: row.Weight,
+          transportMode: row.TransportMode,
           value: row.Amount,
           unitPrice: row.UnitPrice,
           riskScore,
@@ -126,7 +139,6 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
       return augmentedRow;
     });
 
-    // Score from 0 to 100 representing manifest risk severity
     const maxPossiblePoints = tradeData.length * 4;
     const forensicIndex = Math.min(100, Math.round((totalRiskPoints / (maxPossiblePoints || 1)) * 1000) / 10);
 
