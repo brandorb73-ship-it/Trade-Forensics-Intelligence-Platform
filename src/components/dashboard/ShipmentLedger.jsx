@@ -13,12 +13,11 @@ import {
 import { 
   Search, ArrowUpDown, ShieldAlert, Download, ChevronDown, ChevronRight, 
   Activity, AlertTriangle, Globe, Package, Navigation, Tag, FileText, 
-  CheckCircle2, RefreshCw, SlidersHorizontal, Scale, Truck
+  CheckCircle2, RefreshCw, SlidersHorizontal, Truck
 } from 'lucide-react';
 
 // Reusable Filter Component for Column Headers
 function ColumnFilter({ column, table }) {
-  const firstValue = table.getPreFilteredRowModel().flatRows[0]?.getValue(column.id);
   const columnFilterValue = column.getFilterValue();
   
   const uniqueValues = useMemo(() => {
@@ -150,7 +149,7 @@ export default function ShipmentLedger() {
       accessorKey: 'riskScore',
       header: 'Analysis Lens',
       filterFn: 'equals',
-      cell: ({ getValue, row }) => {
+      cell: ({ getValue }) => {
         const score = getValue();
         const colors = {
           Critical: 'bg-rose-950 text-rose-300 border-rose-700 animate-pulse',
@@ -187,7 +186,6 @@ export default function ShipmentLedger() {
 
   const currentAggregates = useMemo(() => {
     return table.getFilteredRowModel().rows.reduce((acc, row) => {
-      // Safe parsing to fix NaN issue
       const q = parseFloat(row.original.Quantity?.toString().replace(/[^0-9.-]+/g, "")) || 0;
       const w = parseFloat(row.original.Weight?.toString().replace(/[^0-9.-]+/g, "")) || 0;
       const a = parseFloat(row.original.Amount?.toString().replace(/[^0-9.-]+/g, "")) || 0;
@@ -347,7 +345,6 @@ export default function ShipmentLedger() {
                         {header.column.getCanSort() && <ArrowUpDown size={14} className="text-slate-400 shrink-0" />}
                       </div>
                       
-                      {/* Integrated Multi-Option Filtering Directly into Headers */}
                       {header.column.getCanFilter() && (
                         <ColumnFilter column={header.column} table={table} />
                       )}
@@ -437,7 +434,8 @@ export default function ShipmentLedger() {
               )}
             </tbody>
 
-            {filteredRecords = table.getFilteredRowModel().rows, filteredRecords.length > 0 && (
+            {/* This is the fixed line right below */}
+            {table.getFilteredRowModel().rows.length > 0 && (
               <tfoot>
                 <tr className="bg-slate-950 font-mono border-t-2 border-slate-600 font-black text-sm text-slate-100 sticky bottom-0 z-20 shadow-[0_-10px_20px_rgba(0,0,0,0.3)]">
                   <td className="px-5 py-4 text-emerald-400 tracking-wide font-black text-base uppercase">Ledger Totals</td>
