@@ -1,26 +1,30 @@
 import React, { useState, useMemo } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
+import { useShipmentIntelligence } from '../../hooks/useShipmentIntelligence';
 import { 
   useReactTable, 
   getCoreRowModel, 
   getSortedRowModel, 
   getFilteredRowModel, 
   getPaginationRowModel,
+  getExpandedRowModel,
   flexRender 
 } from '@tanstack/react-table';
-import { Search, ArrowUpDown, ShieldAlert, Download, FileSpreadsheet } from 'lucide-react';
+import { Search, ArrowUpDown, ShieldAlert, Download, FileSpreadsheet, ChevronDown, ChevronRight, Activity, AlertTriangle, Globe, Package, Navigation, Tag } from 'lucide-react';
 
 export default function ShipmentLedger() {
-  const { tradeData, uploadFile } = useTradeData();
+  const { tradeData, uploadFile, registerIntelligence } = useTradeData();
   const [globalFilter, setGlobalFilter] = useState('');
   const [columnFilters, setColumnFilters] = useState([]);
+  const [expanded, setExpanded] = useState({});
 
-  // Helper to safely format or extract Month-Year groups from raw date strings
+  // Intelligence Engine Hook
+  const { augmentedData, intelligenceObject } = useShipmentIntelligence(tradeData, registerIntelligence);
+
   const getMonthYearString = (dateStr) => {
     if (!dateStr || dateStr === 'N/A') return 'N/A';
     const dateObj = new Date(dateStr);
     if (isNaN(dateObj.getTime())) {
-      // Fallback parser for standard DD-MMM-YY formats (e.g. 9-Mar-26)
       const parts = dateStr.split('-');
       if (parts.length >= 2) {
         const monthStr = parts[1].substring(0, 3);
@@ -33,309 +37,284 @@ export default function ShipmentLedger() {
     return `${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
   };
 
-  // Dynamically extract unique values for header filter dropdowns
   const getUniqueColumnValues = (columnId) => {
-    if (columnId === 'forensicAlert') {
-      return ['PASSED', 'HS DISGUISE'];
-    }
-    
     const values = new Set();
-    tradeData.forEach(row => {
+    augmentedData.forEach(row => {
       if (columnId === 'Date') {
         values.add(getMonthYearString(row.Date));
       } else if (row[columnId] !== undefined && row[columnId] !== null && row[columnId] !== '') {
         values.add(row[columnId]);
       }
     });
-    return Array.from(values).sort((a, b) => {
-      if (columnId === 'Date') {
-        // Sort months chronologically backward
-        return new Date(`01 ${b}`) - new Date(`01 ${a}`);
-      }
-      return String(a).localeCompare(String(b));
-    });
+    return Array.from(values).sort((a, b) => String(a).localeCompare(String(b)));
   };
 
   const columns = useMemo(() => [
     {
+      id: 'expander',
+      header: () => null,
+      cell: ({ row }) => (
+        <button
+          onClick={row.getToggleExpandedHandler()}
+          className="p-1 hover:bg-slate-700 rounded text-slate-400 transition"
+        >
+          {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+        </button>
+      ),
+    },
+    {
       accessorKey: 'Date',
       header: 'Date',
-      // Custom filter function to check Month & Year matches
-      filterFn: (row, columnId, filterValue) => {
-        return getMonthYearString(row.original.Date) === filterValue;
-      },
-      cell: ({ getValue }) => <span className="whitespace-nowrap inline-block min-w-[100px] text-slate-100 font-medium">{getValue()}</span>
+      filterFn: (row, columnId, filterValue) => getMonthYearString(row.original.Date) === filterValue,
+      cell: ({ getValue }) => <span className="whitespace-nowrap inline-block min-w-[90px] text-slate-100 font-medium">{getValue()}</span>
     },
     {
       accessorKey: 'HSCode',
       header: 'HS Code',
-      cell: ({ getValue, row }) => (
-        <span className={`font-mono px-2 py-0.5 rounded text-xs font-bold ${
-          row.original.hsRisk === 'high' ? 'bg-rose-500/30 text-rose-300 border border-rose-500/40' : 'bg-slate-700 text-slate-200'
-        }`}>
-          {getValue()}
-        </span>
-      )
+      cell: ({ getValue }) => <span className="font-mono bg-slate-700 text-slate-200 px-2 py-0.5 rounded text-xs font-bold">{getValue()}</span>
     },
     {
       accessorKey: 'Product',
       header: 'Product Description',
-      cell: ({ getValue }) => <span className="truncate max-w-xs block font-semibold text-slate-200">{getValue()}</span>
+      cell: ({ getValue }) => <span className="truncate max-w-[150px] block font-semibold text-slate-200">{getValue()}</span>
     },
     {
       accessorKey: 'Brand',
-      header: 'Brand Ecosystem',
+      header: 'Brand',
       cell: ({ getValue }) => <span className="text-emerald-400 font-bold tracking-wide">{getValue()}</span>
     },
     {
       accessorKey: 'Exporter',
-      header: 'Exporter (Source)',
-      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{getValue()}</span>
+      header: 'Exporter',
+      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[120px] block">{getValue()}</span>
     },
     {
       accessorKey: 'Importer',
-      header: 'Importer (Target)',
-      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[140px] block">{getValue()}</span>
-    },
-    {
-      accessorKey: 'Quantity',
-      header: 'Qty',
-      cell: ({ getValue }) => <span className="font-mono text-slate-100 font-semibold">{Number(getValue() || 0).toLocaleString()}</span>
-    },
-    {
-      accessorKey: 'QuantityUnit',
-      header: 'Unit',
-      cell: ({ getValue }) => <span className="text-slate-300 font-mono text-xs uppercase">{getValue()}</span>
-    },
-    {
-      accessorKey: 'Weight',
-      header: 'Weight (Kg)',
-      cell: ({ getValue }) => <span className="font-mono text-slate-200">{Number(getValue() || 0).toLocaleString(undefined, {maximumFractionDigits: 2})}</span>
+      header: 'Importer',
+      cell: ({ getValue }) => <span className="font-mono text-xs text-slate-200 truncate max-w-[120px] block">{getValue()}</span>
     },
     {
       accessorKey: 'Amount',
       header: 'Value (USD)',
-      cell: ({ getValue }) => {
-        const val = getValue();
-        return <span className="font-mono font-bold text-slate-100">${Number(val).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>;
-      }
+      cell: ({ getValue }) => <span className="font-mono font-bold text-slate-100">${Number(getValue()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
     },
     {
       accessorKey: 'UnitPrice',
       header: 'Unit Price',
+      cell: ({ getValue }) => <span className="font-mono font-bold text-amber-400">${Number(getValue()).toFixed(2)}</span>
+    },
+    {
+      accessorKey: 'riskScore',
+      header: 'Risk',
+      filterFn: 'equals',
       cell: ({ getValue }) => {
-        const val = getValue();
-        return <span className="font-mono font-bold text-amber-400">${Number(val).toFixed(2)}</span>;
+        const score = getValue();
+        const colors = {
+          Critical: 'bg-rose-950/80 text-rose-400 border-rose-800/60 animate-pulse',
+          High: 'bg-orange-950/80 text-orange-400 border-orange-800/60',
+          Medium: 'bg-amber-950/80 text-amber-400 border-amber-800/60',
+          Low: 'bg-slate-800 text-slate-400 border-slate-700'
+        };
+        return (
+          <span className={`px-2 py-0.5 rounded text-xs font-bold border tracking-wider flex items-center gap-1 w-max ${colors[score]}`}>
+            {['Critical', 'High'].includes(score) && <ShieldAlert size={12} />}
+            {score}
+          </span>
+        );
       }
-    },
-    {
-      accessorKey: 'OriginCountry',
-      header: 'Origin',
-      cell: ({ getValue }) => <span className="text-slate-200 text-xs font-medium">{getValue()}</span>
-    },
-    {
-      accessorKey: 'DestinationCountry',
-      header: 'Destination',
-      cell: ({ getValue }) => <span className="text-slate-200 text-xs font-medium">{getValue()}</span>
-    },
-    {
-      accessorKey: 'TransportationMode',
-      header: 'Transit Mode',
-      cell: ({ getValue }) => (
-        <span className="text-xs font-mono font-bold tracking-wider px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-300 uppercase">
-          {getValue()}
-        </span>
-      )
-    },
-    {
-      id: 'forensicAlert',
-      header: 'Risk State',
-      filterFn: (row, columnId, filterValue) => {
-        const status = row.original.hsRisk === 'high' ? 'HS DISGUISE' : 'PASSED';
-        return status === filterValue;
-      },
-      cell: ({ row }) => row.original.hsRisk === 'high' ? (
-        <div className="flex items-center gap-1.5 text-rose-400 text-xs font-bold tracking-wider bg-rose-950/40 border border-rose-800/60 px-2 py-0.5 rounded animate-pulse">
-          <ShieldAlert size={13} /> HS DISGUISE
-        </div>
-      ) : (
-        <span className="text-slate-400 text-xs font-mono">PASSED</span>
-      )
     }
-  ], [tradeData]);
+  ], [augmentedData]);
 
   const table = useReactTable({
-    data: tradeData,
+    data: augmentedData,
     columns,
-    state: { globalFilter, columnFilters },
+    state: { globalFilter, columnFilters, expanded },
     onGlobalFilterChange: setGlobalFilter,
     onColumnFiltersChange: setColumnFilters,
+    onExpandedChange: setExpanded,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
+    getExpandedRowModel: getExpandedRowModel(),
     initialState: { pagination: { pageSize: 15 } }
   });
-
-  // Dynamically calculate aggregates strictly for active filtered row frames
-  const aggregates = useMemo(() => {
-    return table.getFilteredRowModel().rows.reduce((acc, row) => {
-      const qty = parseFloat(row.original.Quantity);
-      const wgt = parseFloat(row.original.Weight);
-      const amt = parseFloat(row.original.Amount);
-
-      acc.quantity += isNaN(qty) ? 0 : qty;
-      acc.weight += isNaN(wgt) ? 0 : wgt;
-      acc.amount += isNaN(amt) ? 0 : amt;
-      return acc;
-    }, { quantity: 0, weight: 0, amount: 0 });
-  }, [table.getFilteredRowModel().rows]);
 
   const handleFileChange = (e) => {
     if (e.target.files?.[0]) uploadFile(e.target.files[0]);
   };
 
-  // Safe client-side spreadsheet compilation engine for isolated row frames
-  const exportFilteredLedger = () => {
-    const activeRows = table.getFilteredRowModel().rows.map(row => row.original);
-    if (activeRows.length === 0) return;
-
-    // Build original clean column sequence mapping
-    const headers = [
-      'Date', 'HS Code', 'PRODUCT', 'Exporter', 'Importer', 'Brand', 
-      'Quantity', 'Quantity Unit', 'Weight(Kg)', 'Amount($)', 'Unit Price($)', 
-      'Origin Country', 'Destination Country', 'Mode of Transportation', 'Risk State'
-    ];
-
-    const csvRows = [headers.join(',')];
-
-    activeRows.forEach(row => {
-      const values = [
-        `"${row.Date}"`,
-        `"${row.HSCode}"`,
-        `"${row.Product.replace(/"/g, '""')}"`,
-        `"${row.Exporter.replace(/"/g, '""')}"`,
-        `"${row.Importer.replace(/"/g, '""')}"`,
-        `"${row.Brand.replace(/"/g, '""')}"`,
-        row.Quantity,
-        `"${row.QuantityUnit}"`,
-        row.Weight,
-        row.Amount,
-        row.UnitPrice,
-        `"${row.OriginCountry}"`,
-        `"${row.DestinationCountry}"`,
-        `"${row.TransportationMode}"`,
-        `"${row.hsRisk === 'high' ? 'HS DISGUISE' : 'PASSED'}"`
-      ];
-      csvRows.push(values.join(','));
-    });
-
-    const csvContent = "data:text/csv;charset=utf-8," + csvRows.join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const downloadLink = document.createElement("a");
-    downloadLink.setAttribute("href", encodedUri);
-    downloadLink.setAttribute("download", `BrandOrb_Filtered_Manifest_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
+  const applyQuickFilter = (type, value) => {
+    if (type === 'riskScore') {
+      table.getColumn('riskScore')?.setFilterValue(value);
+    } else if (type === 'clear') {
+      setColumnFilters([]);
+      setGlobalFilter('');
+    }
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1800px] mx-auto">
-      {/* Upper Control Workspace Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-slate-800 p-5 rounded-xl border border-slate-700 shadow-lg">
-        <div>
-          <h1 className="text-2xl font-black tracking-tight text-white flex items-center gap-2">
-            BrandOrb <span className="text-xs bg-slate-700 px-2 py-1 rounded text-slate-200 uppercase tracking-widest font-mono border border-slate-600">Master Ledger Workspace</span>
-          </h1>
-          <p className="text-sm text-slate-300 mt-1">Ingest customs-linked manifests to isolate supply-chain anomalies.</p>
-        </div>
-        
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          {tradeData.length > 0 && (
-            <button
-              onClick={exportFilteredLedger}
-              className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 border border-emerald-700 rounded-lg text-sm font-bold text-white cursor-pointer transition shadow-sm"
-            >
-              <FileSpreadsheet size={16} />
-              <span>Export Filtered Matrix</span>
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto print:p-0 print:bg-white print:text-black">
+      
+      {/* Executive Investigation Dashboard */}
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 shadow-2xl print:border-none print:shadow-none print:bg-white">
+        <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
+          <div>
+            <h1 className="text-3xl font-black tracking-tight text-white flex items-center gap-3 print:text-black">
+              Forensic Shipment Workspace
+              <span className="text-xs bg-emerald-900/50 text-emerald-400 px-2 py-1 rounded tracking-widest font-mono border border-emerald-800">ACTIVE INVESTIGATION</span>
+            </h1>
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-3 print:hidden">
+            <button className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded text-sm font-semibold text-white transition">
+              <FileSpreadsheet size={16} /> Export Dossier
             </button>
-          )}
+            <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded text-sm font-semibold text-white cursor-pointer transition">
+              <Download size={16} /> Load Data
+              <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
+            </label>
+          </div>
+        </div>
 
-          <label className="flex items-center gap-2 px-4 py-2.5 bg-slate-700 hover:bg-slate-600 border border-slate-600 rounded-lg text-sm font-semibold text-white cursor-pointer transition shadow-sm">
-            <Download size={16} />
-            <span>Load Customs CSV</span>
-            <input type="file" accept=".csv" onChange={handleFileChange} className="hidden" />
-          </label>
+        {intelligenceObject && (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+              <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 print:border-gray-300 print:bg-gray-50">
+                <p className="text-slate-400 text-xs font-bold uppercase mb-1 flex items-center gap-2"><Package size={14}/> Total Shipments</p>
+                <p className="text-2xl font-mono text-white print:text-black">{intelligenceObject.metrics.totalShipments.toLocaleString()}</p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 print:border-gray-300 print:bg-gray-50">
+                <p className="text-slate-400 text-xs font-bold uppercase mb-1 flex items-center gap-2"><Activity size={14}/> Trade Value (USD)</p>
+                <p className="text-2xl font-mono text-emerald-400">${(intelligenceObject.metrics.totalValue / 1000000).toFixed(2)}M</p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 print:border-gray-300 print:bg-gray-50">
+                <p className="text-slate-400 text-xs font-bold uppercase mb-1 flex items-center gap-2"><Globe size={14}/> Entities</p>
+                <p className="text-2xl font-mono text-blue-400">{intelligenceObject.metrics.distinctExporters} <span className="text-sm text-slate-500 font-sans">Exp</span> / {intelligenceObject.metrics.distinctImporters} <span className="text-sm text-slate-500 font-sans">Imp</span></p>
+              </div>
+              <div className="bg-slate-800 p-4 rounded-lg border border-slate-700 print:border-gray-300 print:bg-gray-50">
+                <p className="text-slate-400 text-xs font-bold uppercase mb-1 flex items-center gap-2"><Tag size={14}/> Unique Brands</p>
+                <p className="text-2xl font-mono text-purple-400">{intelligenceObject.metrics.distinctBrands}</p>
+              </div>
+              <div className="bg-rose-950/30 p-4 rounded-lg border border-rose-900/50 print:border-gray-300 print:bg-gray-50">
+                <p className="text-rose-400 text-xs font-bold uppercase mb-1 flex items-center gap-2"><AlertTriangle size={14}/> Risk Anomalies</p>
+                <p className="text-2xl font-mono text-rose-400">{intelligenceObject.evidence.length}</p>
+              </div>
+            </div>
 
-          <div className="relative flex-1 md:w-80">
-            <Search className="absolute left-3 top-3 text-slate-300" size={16} />
+            {/* AI Summary */}
+            <div className="bg-slate-800/50 border-l-4 border-blue-500 p-4 rounded-r-lg mb-6">
+              <p className="text-sm text-slate-300 leading-relaxed print:text-black">
+                <span className="font-bold text-white print:text-black">AI Intelligence Summary: </span> 
+                {intelligenceObject.executiveSummary}
+              </p>
+            </div>
+            
+            {/* Investigation Filters */}
+            <div className="flex flex-wrap gap-2 print:hidden">
+              <span className="text-xs text-slate-400 font-bold uppercase py-2 mr-2">Quick Lenses:</span>
+              <button onClick={() => applyQuickFilter('riskScore', 'Critical')} className="px-3 py-1 bg-rose-900/40 text-rose-300 border border-rose-800 rounded-full text-xs font-bold hover:bg-rose-900/60 transition">Critical Risk Only</button>
+              <button onClick={() => applyQuickFilter('riskScore', 'High')} className="px-3 py-1 bg-orange-900/40 text-orange-300 border border-orange-800 rounded-full text-xs font-bold hover:bg-orange-900/60 transition">High & Critical</button>
+              <button onClick={() => applyQuickFilter('clear', '')} className="px-3 py-1 bg-slate-700 text-slate-300 border border-slate-600 rounded-full text-xs font-bold hover:bg-slate-600 transition">Clear Filters</button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Main Ledger Table */}
+      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl print:border-none print:shadow-none">
+        
+        <div className="p-4 border-b border-slate-700 bg-slate-900/50 flex justify-between items-center print:hidden">
+          <div className="relative w-96">
+            <Search className="absolute left-3 top-2.5 text-slate-400" size={16} />
             <input
               type="text"
-              placeholder="Global ledger search..."
+              placeholder="Search across all fields..."
               value={globalFilter ?? ''}
               onChange={e => setGlobalFilter(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-600 rounded-lg pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-slate-400 font-mono placeholder:text-slate-500"
+              className="w-full bg-slate-950 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 font-mono"
             />
           </div>
         </div>
-      </div>
 
-      {/* Main Ledger Table Layout frame */}
-      <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden shadow-2xl">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="bg-slate-900 border-b border-slate-700">
-                  {headerGroup.headers.map(header => {
-                    const uniqueValues = header.column.id === 'forensicAlert' || header.column.getCanFilter()
-                      ? getUniqueColumnValues(header.column.id) 
-                      : [];
-
-                    return (
-                      <th key={header.id} className="px-3 py-3 text-xs font-bold tracking-wider text-slate-200 font-mono select-none border-r border-slate-800 last:border-0 min-w-[95px]">
-                        {/* Column Header Sorting Trigger */}
-                        <div 
-                          onClick={header.column.getToggleSortingHandler()}
-                          className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors mb-2"
-                        >
-                          {flexRender(header.column.columnDef.header, header.getContext())}
-                          {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-400 shrink-0" />}
-                        </div>
-
-                        {/* Dropdown Select Filter Blocks */}
-                        {(header.column.getCanFilter() || header.column.id === 'forensicAlert') && uniqueValues.length > 0 ? (
-                          <select
-                            value={(header.column.getFilterValue() ?? '')}
-                            onChange={e => header.column.setFilterValue(e.target.value || undefined)}
-                            className="w-full bg-slate-950 text-[11px] font-mono px-1 py-1 rounded border border-slate-700 focus:outline-none focus:border-slate-500 text-slate-200 cursor-pointer font-normal"
-                          >
-                            <option value="">{header.column.id === 'Date' ? 'All Months' : 'All'}</option>
-                            {uniqueValues.map(val => (
-                              <option key={val} value={val}>{val}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <div className="h-6"></div>
-                        )}
-                      </th>
-                    );
-                  })}
+                <tr key={headerGroup.id} className="bg-slate-900 border-b border-slate-700 print:bg-gray-200">
+                  {headerGroup.headers.map(header => (
+                    <th key={header.id} className="px-3 py-3 text-xs font-bold tracking-wider text-slate-300 font-mono select-none border-r border-slate-800 last:border-0 print:text-black print:border-gray-300">
+                      <div 
+                        onClick={header.column.getToggleSortingHandler()}
+                        className="flex items-center gap-1 cursor-pointer hover:text-white transition-colors"
+                      >
+                        {flexRender(header.column.columnDef.header, header.getContext())}
+                        {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-500 shrink-0" />}
+                      </div>
+                    </th>
+                  ))}
                 </tr>
               ))}
             </thead>
             
-            <tbody className="divide-y divide-slate-700/80 bg-slate-800">
+            <tbody className="divide-y divide-slate-700/80 bg-slate-800 print:bg-white print:divide-gray-300">
               {table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map(row => (
-                  <tr key={row.id} className="hover:bg-slate-700/40 transition-colors">
-                    {row.getVisibleCells().map(cell => (
-                      <td key={cell.id} className="px-3 py-3 text-sm align-middle">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
+                  <React.Fragment key={row.id}>
+                    <tr className="hover:bg-slate-700/40 transition-colors print:text-black">
+                      {row.getVisibleCells().map(cell => (
+                        <td key={cell.id} className="px-3 py-3 text-sm align-middle print:border-b print:border-gray-200">
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </td>
+                      ))}
+                    </tr>
+                    
+                    {/* Expanded Row: Investigation Drawer */}
+                    {row.getIsExpanded() && (
+                      <tr className="bg-slate-900 border-b-2 border-slate-600 print:hidden">
+                        <td colSpan={columns.length} className="p-0">
+                          <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-inner">
+                            
+                            <div className="space-y-4">
+                              <h4 className="text-slate-200 font-bold uppercase text-xs tracking-widest border-b border-slate-700 pb-2 flex items-center gap-2"><Navigation size={14}/> Entity Intelligence</h4>
+                              <div className="text-sm">
+                                <p className="text-slate-400">Exporter: <span className="text-white font-mono">{row.original.Exporter}</span></p>
+                                <p className="text-slate-400 mt-2">Importer: <span className="text-white font-mono">{row.original.Importer}</span></p>
+                                <p className="text-slate-400 mt-2">Route: <span className="text-white font-mono">{row.original.OriginCountry} ➔ {row.original.DestinationCountry}</span></p>
+                              </div>
+                              <button className="text-xs bg-blue-900/30 text-blue-400 border border-blue-800 px-3 py-1.5 rounded hover:bg-blue-900/50 transition w-full">Launch Entity Intelligence</button>
+                            </div>
+
+                            <div className="space-y-4">
+                              <h4 className="text-slate-200 font-bold uppercase text-xs tracking-widest border-b border-slate-700 pb-2 flex items-center gap-2"><Activity size={14}/> Price Forensics</h4>
+                              <div className="text-sm">
+                                <p className="text-slate-400">Declared Unit Price: <span className="text-amber-400 font-mono font-bold">${row.original.UnitPrice}</span></p>
+                                <p className="text-slate-400 mt-2">Total Value: <span className="text-emerald-400 font-mono font-bold">${row.original.Amount.toLocaleString()}</span></p>
+                                <p className="text-slate-400 mt-2">Quantity: <span className="text-white font-mono">{row.original.Quantity} {row.original.QuantityUnit}</span></p>
+                              </div>
+                              <button className="text-xs bg-amber-900/30 text-amber-400 border border-amber-800 px-3 py-1.5 rounded hover:bg-amber-900/50 transition w-full">Launch Price Forensics</button>
+                            </div>
+
+                            <div className="space-y-4">
+                              <h4 className="text-slate-200 font-bold uppercase text-xs tracking-widest border-b border-slate-700 pb-2 flex items-center gap-2"><AlertTriangle size={14}/> Investigation Flags</h4>
+                              <div className="flex flex-wrap gap-2">
+                                {row.original.flags && row.original.flags.length > 0 ? row.original.flags.map((flag, i) => (
+                                  <span key={i} className="text-xs font-mono bg-rose-950 text-rose-300 px-2 py-1 border border-rose-800 rounded">
+                                    {flag}
+                                  </span>
+                                )) : <span className="text-slate-500 text-sm italic">No forensic flags triggered.</span>}
+                              </div>
+                              <p className="text-xs text-slate-400 mt-2">
+                                AI Assessment: {row.original.riskScore === 'Critical' ? 'Immediate review recommended. Cargo exhibits multiple indicators of structural disguise.' : 'Standard cargo processing.'}
+                              </p>
+                            </div>
+
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))
               ) : (
                 <tr>
@@ -345,54 +324,27 @@ export default function ShipmentLedger() {
                 </tr>
               )}
             </tbody>
-
-            {/* Summary Totals Footer Row */}
-            {tradeData.length > 0 && (
-              <tfoot>
-                <tr className="bg-slate-900/90 font-mono border-t-2 border-slate-600 font-bold text-xs text-slate-100">
-                  <td className="px-3 py-4 text-emerald-400 tracking-wide text-sm font-black">SUMMARY</td>
-                  <td colSpan={5} className="px-3 py-4 text-slate-400 text-right uppercase font-medium">
-                    Filtered Dataset Aggregate Totals:
-                  </td>
-                  {/* Quantity Total */}
-                  <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
-                    {aggregates.quantity.toLocaleString()}
-                  </td>
-                  {/* Unit Column Buffer */}
-                  <td className="bg-slate-900/40"></td>
-                  {/* Weight Total */}
-                  <td className="px-3 py-4 text-slate-100 font-bold border-x border-slate-800">
-                    {aggregates.weight.toLocaleString(undefined, {maximumFractionDigits: 2})} kg
-                  </td>
-                  {/* Amount Total */}
-                  <td className="px-3 py-4 text-emerald-400 font-black border-r border-slate-800 text-sm">
-                    ${aggregates.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
-                  </td>
-                  <td colSpan={5} className="bg-slate-900/40"></td>
-                </tr>
-              </tfoot>
-            )}
           </table>
         </div>
 
-        {/* Pagination Panel Control Wrapper */}
-        {tradeData.length > 0 && (
-          <div className="flex items-center justify-between p-4 bg-slate-900 border-t border-slate-700 text-xs font-mono text-slate-300">
+        {/* Pagination Panel */}
+        {augmentedData.length > 0 && (
+          <div className="flex items-center justify-between p-4 bg-slate-900 border-t border-slate-700 text-xs font-mono text-slate-300 print:hidden">
             <div>
-              Showing rows {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} – {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, tradeData.length)} of {tradeData.length}
+              Showing rows {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} – {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, augmentedData.length)} of {augmentedData.length}
             </div>
             <div className="flex items-center gap-2">
               <button 
                 onClick={() => table.previousPage()} 
                 disabled={!table.getCanPreviousPage()}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-white font-bold transition disabled:cursor-not-allowed"
+                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-white font-bold transition"
               >
                 Previous
               </button>
               <button 
                 onClick={() => table.nextPage()} 
                 disabled={!table.getCanNextPage()}
-                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-white font-bold transition disabled:cursor-not-allowed"
+                className="px-3 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 rounded text-white font-bold transition"
               >
                 Next
               </button>
