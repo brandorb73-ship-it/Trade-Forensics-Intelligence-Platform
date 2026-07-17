@@ -16,15 +16,18 @@ import {
   CheckCircle2, RefreshCw, SlidersHorizontal, Truck
 } from 'lucide-react';
 
-// Refined, ultra-compact filter for professional data grids
+// FIXED: Dropdown Filter Component
 function ColumnFilter({ column, table }) {
   const columnFilterValue = column.getFilterValue();
   
   const uniqueValues = useMemo(() => {
     const values = new Set();
-    table.getPreFilteredRowModel().flatRows.forEach(row => {
+    // Use core row model to ensure we get ALL values before other filters strip them out
+    table.getCoreRowModel().flatRows.forEach(row => {
       const val = row.getValue(column.id);
-      if (val) values.add(val);
+      if (val !== undefined && val !== null && val !== '') {
+        values.add(String(val).trim());
+      }
     });
     return Array.from(values).sort();
   }, [table, column.id]);
@@ -34,7 +37,7 @@ function ColumnFilter({ column, table }) {
       <select
         value={(columnFilterValue ?? '')}
         onChange={e => column.setFilterValue(e.target.value || undefined)}
-        className="w-full bg-slate-900/50 border border-slate-700 text-slate-300 text-[11px] rounded px-1.5 py-1 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 cursor-pointer transition-colors"
+        className="w-full bg-slate-900 border border-slate-700 text-slate-300 text-[11px] rounded px-1.5 py-1 focus:outline-none focus:border-blue-500 cursor-pointer transition-colors"
         onClick={(e) => e.stopPropagation()} 
       >
         <option value="">All</option>
@@ -76,7 +79,7 @@ export default function ShipmentLedger() {
     {
       id: 'expander',
       header: () => null,
-      size: 40,
+      size: 32,
       cell: ({ row }) => (
         <div className="flex items-center justify-center w-full">
           <button 
@@ -94,7 +97,7 @@ export default function ShipmentLedger() {
     {
       accessorKey: 'Date',
       header: 'Date',
-      cell: ({ getValue }) => <span className="whitespace-nowrap text-slate-200 text-sm font-medium">{getValue()}</span>
+      cell: ({ getValue }) => <span className="whitespace-nowrap text-slate-300 text-sm font-medium">{getValue()}</span>
     },
     {
       accessorKey: 'HSCode',
@@ -102,7 +105,7 @@ export default function ShipmentLedger() {
       cell: ({ getValue, row }) => (
         <span className={`font-mono text-xs px-2 py-0.5 rounded border ${
           row.original.hasHsVariance 
-            ? 'bg-amber-900/30 text-amber-400 border-amber-700/50' 
+            ? 'bg-rose-950/30 text-rose-300 border-rose-800/50' 
             : 'bg-slate-800 text-slate-300 border-slate-700'
         }`}>
           {getValue()}
@@ -112,7 +115,7 @@ export default function ShipmentLedger() {
     {
       accessorKey: 'Product',
       header: 'Product Description',
-      cell: ({ getValue }) => <span className="truncate max-w-[180px] block text-slate-200 text-sm" title={getValue()}>{getValue()}</span>
+      cell: ({ getValue }) => <span className="truncate max-w-[180px] block text-slate-300 text-sm" title={getValue()}>{getValue()}</span>
     },
     {
       accessorKey: 'Brand',
@@ -151,7 +154,7 @@ export default function ShipmentLedger() {
     {
       accessorKey: 'Amount',
       header: () => <div className="text-right">Value (USD)</div>,
-      cell: ({ getValue }) => <div className="text-right font-mono text-sm font-medium text-emerald-400">${Number(getValue()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
+      cell: ({ getValue }) => <div className="text-right font-mono text-sm font-medium text-emerald-400/90">${Number(getValue()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
     },
     {
       accessorKey: 'riskScore',
@@ -160,13 +163,13 @@ export default function ShipmentLedger() {
       cell: ({ getValue }) => {
         const score = getValue();
         const styles = {
-          Critical: 'text-rose-400 border-rose-800 bg-rose-950/30',
-          High: 'text-orange-400 border-orange-800 bg-orange-950/30',
-          Medium: 'text-amber-400 border-amber-800 bg-amber-950/30',
+          Critical: 'text-rose-400 border-rose-800/80 bg-rose-950/40',
+          High: 'text-orange-400 border-orange-800/80 bg-orange-950/40',
+          Medium: 'text-amber-400 border-amber-800/80 bg-amber-950/40',
           Low: 'text-slate-400 border-slate-700 bg-slate-800/50'
         };
         return (
-          <span className={`px-2 py-1 rounded text-xs font-semibold border flex items-center gap-1 w-max ${styles[score]}`}>
+          <span className={`px-2 py-1 rounded text-xs font-medium border flex items-center gap-1 w-max ${styles[score]}`}>
             {['Critical', 'High'].includes(score) && <ShieldAlert size={12} />}
             {score}
           </span>
@@ -219,14 +222,13 @@ export default function ShipmentLedger() {
   return (
     <div className="p-6 space-y-6 max-w-[1900px] mx-auto print:p-0 print:bg-white print:text-black">
       
-      {/* Premium Dashboard Panel */}
-      <div className="bg-slate-900 border border-slate-700/60 rounded-xl p-6 shadow-lg relative overflow-hidden print:border-none print:shadow-none print:bg-white">
+      <div className="bg-[#121826] border border-slate-700/80 rounded-xl p-6 shadow-lg relative overflow-hidden print:border-none print:shadow-none print:bg-white">
         
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6 relative z-10">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight text-white flex items-center gap-3 print:text-black">
+            <h1 className="text-2xl font-semibold tracking-tight text-slate-100 flex items-center gap-3 print:text-black">
               Forensic Shipment Workspace
-              <span className="text-[10px] bg-emerald-950/50 text-emerald-400 px-2.5 py-1 rounded-sm uppercase tracking-widest font-medium border border-emerald-800/50">Active Investigation</span>
+              <span className="text-[10px] bg-emerald-950/40 text-emerald-400 px-2.5 py-1 rounded-sm uppercase tracking-widest font-medium border border-emerald-800/40">Active Investigation</span>
             </h1>
             <p className="text-sm text-slate-400 mt-1.5 print:hidden">Isolate potential tariff evasion, grey market distribution channels, and classification anomalies.</p>
           </div>
@@ -234,7 +236,7 @@ export default function ShipmentLedger() {
           <div className="flex flex-wrap items-center gap-3 print:hidden">
             <button 
               onClick={handlePrintDossier}
-              className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-md text-sm font-medium text-slate-200 transition-colors"
+              className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] hover:bg-slate-700 border border-slate-600 rounded-md text-sm font-medium text-slate-200 transition-colors"
             >
               <FileText size={16} /> Export Dossier
             </button>
@@ -251,14 +253,14 @@ export default function ShipmentLedger() {
               {[
                 { label: "Total Shipments", value: intelligenceObject.metrics.totalShipments.toLocaleString(), icon: Package, color: "text-slate-100" },
                 { label: "Value (USD)", value: `$${(intelligenceObject.metrics.totalValue / 1000000).toFixed(2)}M`, icon: Activity, color: "text-emerald-400" },
-                { label: "Importers / Exp", value: `${intelligenceObject.metrics.distinctImporters} / ${intelligenceObject.metrics.distinctExporters}`, icon: Globe, color: "text-blue-400" },
-                { label: "Unique Brands", value: intelligenceObject.metrics.distinctBrands, icon: Tag, color: "text-purple-400" },
-                { label: "Origins", value: intelligenceObject.metrics.distinctOrigins, icon: Globe, color: "text-teal-400" },
-                { label: "Destinations", value: intelligenceObject.metrics.distinctDestinations, icon: Navigation, color: "text-indigo-400" },
+                { label: "Importers / Exp", value: `${intelligenceObject.metrics.distinctImporters} / ${intelligenceObject.metrics.distinctExporters}`, icon: Globe, color: "text-blue-300" },
+                { label: "Unique Brands", value: intelligenceObject.metrics.distinctBrands, icon: Tag, color: "text-purple-300" },
+                { label: "Origins", value: intelligenceObject.metrics.distinctOrigins, icon: Globe, color: "text-teal-300" },
+                { label: "Destinations", value: intelligenceObject.metrics.distinctDestinations, icon: Navigation, color: "text-indigo-300" },
                 { label: "HS Variance", value: intelligenceObject.metrics.hsVarianceCount, icon: AlertTriangle, color: "text-amber-400", alert: intelligenceObject.metrics.hsVarianceCount > 0 },
-                { label: "Lens Risk FSI", value: `${intelligenceObject.metrics.forensicIndex}%`, icon: ShieldAlert, color: "text-rose-400", bg: "bg-rose-950/20 border-rose-900/50" }
+                { label: "Lens Risk FSI", value: `${intelligenceObject.metrics.forensicIndex}%`, icon: ShieldAlert, color: "text-rose-400", bg: "bg-rose-950/20 border-rose-900/40" }
               ].map((stat, idx) => (
-                <div key={idx} className={`p-3 rounded-lg border ${stat.bg || 'bg-slate-800/40 border-slate-700/50'} relative print:border-gray-300 print:bg-gray-50`}>
+                <div key={idx} className={`p-3 rounded-lg border ${stat.bg || 'bg-[#1e293b]/60 border-slate-700/60'} relative print:border-gray-300 print:bg-gray-50`}>
                   <p className="text-slate-400 text-[10px] font-semibold uppercase tracking-wider mb-1 flex items-center gap-1.5"><stat.icon size={12}/> {stat.label}</p>
                   <p className={`text-lg font-medium ${stat.color} print:text-black`}>{stat.value}</p>
                   {stat.alert && <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>}
@@ -266,10 +268,10 @@ export default function ShipmentLedger() {
               ))}
             </div>
 
-            <div className="bg-blue-950/20 border border-blue-900/50 p-4 rounded-lg mb-6 flex items-start gap-3 print:border-gray-300">
+            <div className="bg-blue-950/20 border border-blue-900/40 p-4 rounded-lg mb-6 flex items-start gap-3 print:border-gray-300">
               <Activity className="text-blue-400 mt-0.5 shrink-0" size={18} />
               <p className="text-sm text-slate-300 leading-relaxed print:text-black">
-                <span className="font-semibold text-blue-400 print:text-black mr-2">Workspace Diagnostic:</span> 
+                <span className="font-semibold text-blue-300 print:text-black mr-2">AI Diagnostic Briefing:</span> 
                 {intelligenceObject.executiveSummary}
               </p>
             </div>
@@ -281,23 +283,23 @@ export default function ShipmentLedger() {
             <span className="text-xs text-slate-400 font-semibold uppercase tracking-wider mr-2 flex items-center gap-1.5">
               <SlidersHorizontal size={14}/> Filters
             </span>
-            <button onClick={() => applyQuickFilter('riskScore', 'Critical')} className="px-3 py-1 bg-slate-800 border border-slate-700 text-rose-400 rounded text-xs font-medium hover:bg-slate-700 transition">Critical</button>
-            <button onClick={() => applyQuickFilter('riskScore', 'High')} className="px-3 py-1 bg-slate-800 border border-slate-700 text-orange-400 rounded text-xs font-medium hover:bg-slate-700 transition">High</button>
-            <button onClick={() => applyQuickFilter('riskScore', 'Medium')} className="px-3 py-1 bg-slate-800 border border-slate-700 text-amber-400 rounded text-xs font-medium hover:bg-slate-700 transition">Medium</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'Critical')} className="px-3 py-1 bg-[#1e293b] border border-slate-700 text-rose-300 rounded text-xs font-medium hover:bg-slate-700 transition">Critical</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'High')} className="px-3 py-1 bg-[#1e293b] border border-slate-700 text-orange-300 rounded text-xs font-medium hover:bg-slate-700 transition">High</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'Medium')} className="px-3 py-1 bg-[#1e293b] border border-slate-700 text-amber-300 rounded text-xs font-medium hover:bg-slate-700 transition">Medium</button>
             <div className="w-px h-4 bg-slate-700 mx-1"></div>
-            <button onClick={() => applyQuickFilter('clear', '')} className="px-3 py-1 bg-slate-800/50 border border-slate-700 text-slate-300 rounded text-xs font-medium hover:bg-slate-700 transition">Reset</button>
+            <button onClick={() => applyQuickFilter('clear', '')} className="px-3 py-1 bg-[#1e293b]/50 border border-slate-700 text-slate-300 rounded text-xs font-medium hover:bg-slate-700 transition">Reset</button>
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-700 rounded-md p-1">
+          <div className="flex items-center gap-1 bg-[#0f111a] border border-slate-700 rounded-md p-1">
             <button 
               onClick={() => { setViewportMode('scroll'); table.setPageSize(100000); }}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${viewportMode === 'scroll' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${viewportMode === 'scroll' ? 'bg-[#1e293b] text-white shadow-sm border border-slate-600' : 'text-slate-400 hover:text-white border border-transparent'}`}
             >
               <SlidersHorizontal size={14}/> Continuous
             </button>
             <button 
               onClick={() => { setViewportMode('pages'); table.setPageSize(15); }}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${viewportMode === 'pages' ? 'bg-slate-700 text-white shadow-sm' : 'text-slate-400 hover:text-white'}`}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition flex items-center gap-1.5 ${viewportMode === 'pages' ? 'bg-[#1e293b] text-white shadow-sm border border-slate-600' : 'text-slate-400 hover:text-white border border-transparent'}`}
             >
               <RefreshCw size={14}/> Paginated
             </button>
@@ -305,10 +307,9 @@ export default function ShipmentLedger() {
         </div>
       </div>
 
-      {/* Premium Data Grid */}
-      <div className="bg-slate-900 border border-slate-700/60 rounded-xl overflow-hidden shadow-lg print:border-none print:shadow-none print:bg-white flex flex-col">
+      <div className="bg-[#121826] border border-slate-700/80 rounded-xl overflow-hidden shadow-lg print:border-none print:shadow-none print:bg-white flex flex-col">
         
-        <div className="p-4 border-b border-slate-700/60 bg-slate-900/50 flex justify-between items-center print:hidden">
+        <div className="p-4 border-b border-slate-700/60 bg-[#0f111a] flex justify-between items-center print:hidden">
           <div className="relative w-full max-w-md">
             <Search className="absolute left-3 top-2.5 text-slate-500" size={16} />
             <input
@@ -316,7 +317,7 @@ export default function ShipmentLedger() {
               placeholder="Deep search entity ledger..."
               value={globalFilter ?? ''}
               onChange={e => setGlobalFilter(e.target.value)}
-              className="w-full bg-slate-950 border border-slate-700 rounded-md pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-slate-600 transition-all"
+              className="w-full bg-[#1e293b] border border-slate-600 rounded-md pl-9 pr-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 placeholder:text-slate-500 transition-all shadow-inner"
             />
           </div>
         </div>
@@ -325,7 +326,7 @@ export default function ShipmentLedger() {
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
-                <tr key={headerGroup.id} className="bg-slate-950 border-b border-slate-700 sticky top-0 z-20 print:bg-gray-100">
+                <tr key={headerGroup.id} className="bg-[#0f111a] border-b border-slate-700 sticky top-0 z-20 print:bg-gray-100">
                   {headerGroup.headers.map(header => (
                     <th 
                       key={header.id} 
@@ -349,13 +350,13 @@ export default function ShipmentLedger() {
               ))}
             </thead>
             
-            <tbody className="divide-y divide-slate-800/60 bg-slate-900 print:bg-white print:divide-gray-300">
+            <tbody className="divide-y divide-slate-800/60 bg-[#121826] print:bg-white print:divide-gray-300">
               {table.getRowModel().rows.length > 0 ? (
                 table.getRowModel().rows.map(row => (
                   <React.Fragment key={row.id}>
                     <tr 
                       onClick={() => row.toggleExpanded()}
-                      className={`hover:bg-slate-800/50 transition-colors print:text-black cursor-pointer group ${row.getIsExpanded() ? 'bg-slate-800/30' : ''}`}
+                      className={`hover:bg-[#1e293b]/50 transition-colors print:text-black cursor-pointer group ${row.getIsExpanded() ? 'bg-[#1e293b]/30' : ''}`}
                     >
                       {row.getVisibleCells().map(cell => (
                         <td key={cell.id} className="px-3 py-2.5 align-middle print:border-b print:border-gray-300">
@@ -365,11 +366,11 @@ export default function ShipmentLedger() {
                     </tr>
                     
                     {row.getIsExpanded() && (
-                      <tr className="bg-slate-950 border-y border-slate-700/50 print:hidden">
+                      <tr className="bg-[#0f111a] border-y border-slate-700/50 print:hidden">
                         <td colSpan={columns.length} className="p-0">
                           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-inner">
                             
-                            <div className="space-y-3 bg-slate-900 p-4 rounded-md border border-slate-800">
+                            <div className="space-y-3 bg-[#1e293b]/40 p-4 rounded-md border border-slate-700/60">
                               <h4 className="text-slate-300 font-semibold uppercase text-xs tracking-wider border-b border-slate-700/50 pb-2 flex items-center gap-2">
                                 <Navigation size={14} className="text-blue-400"/> Routing Details
                               </h4>
@@ -380,7 +381,7 @@ export default function ShipmentLedger() {
                               </div>
                             </div>
 
-                            <div className="space-y-3 bg-slate-900 p-4 rounded-md border border-slate-800">
+                            <div className="space-y-3 bg-[#1e293b]/40 p-4 rounded-md border border-slate-700/60">
                               <h4 className="text-slate-300 font-semibold uppercase text-xs tracking-wider border-b border-slate-700/50 pb-2 flex items-center gap-2">
                                 <Activity size={14} className="text-emerald-400"/> Transaction Metrics
                               </h4>
@@ -391,23 +392,23 @@ export default function ShipmentLedger() {
                               </div>
                             </div>
 
-                            <div className="space-y-3 bg-slate-900 p-4 rounded-md border border-slate-800 relative overflow-hidden">
-                              <div className="absolute inset-0 bg-gradient-to-br from-rose-900/10 to-transparent pointer-events-none"></div>
+                            <div className="space-y-3 bg-[#1e293b]/40 p-4 rounded-md border border-slate-700/60 relative overflow-hidden">
+                              <div className="absolute inset-0 bg-gradient-to-br from-rose-900/5 to-transparent pointer-events-none"></div>
                               <h4 className="text-slate-300 font-semibold uppercase text-xs tracking-wider border-b border-slate-700/50 pb-2 flex items-center gap-2 relative z-10">
                                 <AlertTriangle size={14} className="text-rose-400"/> Forensic Findings
                               </h4>
                               <div className="relative z-10 space-y-3">
                                 <div>
-                                  <span className="text-xs font-medium text-slate-300 bg-slate-800 px-2 py-1 rounded border border-slate-700">
+                                  <span className="text-xs font-medium text-slate-300 bg-slate-800 px-2 py-1 rounded border border-slate-600">
                                     Status: {row.original.riskContext}
                                   </span>
                                 </div>
                                 <div className="flex flex-col gap-1.5">
                                   {row.original.flags && row.original.flags.length > 0 ? row.original.flags.map((flag, i) => (
-                                    <span key={i} className="text-[11px] font-medium bg-rose-950/40 text-rose-300 px-2 py-1.5 border border-rose-900/50 rounded flex items-start gap-1.5">
+                                    <span key={i} className="text-[11px] font-medium bg-rose-950/30 text-rose-300 px-2 py-1.5 border border-rose-900/40 rounded flex items-start gap-1.5">
                                       <span className="mt-0.5">•</span> {flag}
                                     </span>
-                                  )) : <span className="text-slate-400 text-xs flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500"/> Standard matrix checks passed.</span>}
+                                  )) : <span className="text-slate-400 text-xs flex items-center gap-1.5"><CheckCircle2 size={14} className="text-emerald-500/80"/> Standard matrix checks passed.</span>}
                                 </div>
                               </div>
                             </div>
@@ -420,7 +421,7 @@ export default function ShipmentLedger() {
                 ))
               ) : (
                 <tr>
-                  <td colSpan={columns.length} className="text-center py-16 text-slate-400 text-sm bg-slate-900">
+                  <td colSpan={columns.length} className="text-center py-16 text-slate-500 text-sm bg-[#121826]">
                     No active customs data matches the current lens parameters.
                   </td>
                 </tr>
@@ -429,7 +430,7 @@ export default function ShipmentLedger() {
 
             {table.getFilteredRowModel().rows.length > 0 && (
               <tfoot>
-                <tr className="bg-slate-950 border-t border-slate-700 font-medium text-xs text-slate-300 sticky bottom-0 z-20">
+                <tr className="bg-[#0f111a] border-t border-slate-700 font-medium text-xs text-slate-300 sticky bottom-0 z-20">
                   <td colSpan={8} className="px-3 py-3 text-right uppercase tracking-wider text-slate-400">
                     Ledger Aggregates:
                   </td>
@@ -439,7 +440,7 @@ export default function ShipmentLedger() {
                   <td className="px-3 py-3 text-right font-mono text-slate-200 border-l border-slate-800/50">
                     {currentAggregates.weight.toLocaleString()}kg
                   </td>
-                  <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-400 border-l border-slate-800/50">
+                  <td className="px-3 py-3 text-right font-mono font-semibold text-emerald-400/90 border-l border-slate-800/50">
                     ${currentAggregates.amount.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}
                   </td>
                   <td className="px-3 py-3 border-l border-slate-800/50"></td>
@@ -450,7 +451,7 @@ export default function ShipmentLedger() {
         </div>
 
         {viewportMode === 'pages' && table.getFilteredRowModel().rows.length > 0 && (
-          <div className="flex items-center justify-between p-4 bg-slate-950 border-t border-slate-800 text-xs text-slate-400 font-medium print:hidden">
+          <div className="flex items-center justify-between p-4 bg-[#0f111a] border-t border-slate-800 text-xs text-slate-400 font-medium print:hidden">
             <div>
               Displaying {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1} – {Math.min((table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize, table.getFilteredRowModel().rows.length)} of {table.getFilteredRowModel().rows.length} records
             </div>
@@ -458,14 +459,14 @@ export default function ShipmentLedger() {
               <button 
                 onClick={() => table.previousPage()} 
                 disabled={!table.getCanPreviousPage()}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded text-slate-200 transition-colors disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-[#1e293b] hover:bg-slate-700 border border-slate-600 disabled:opacity-50 rounded text-slate-200 transition-colors disabled:cursor-not-allowed"
               >
                 Previous
               </button>
               <button 
                 onClick={() => table.nextPage()} 
                 disabled={!table.getCanNextPage()}
-                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 rounded text-slate-200 transition-colors disabled:cursor-not-allowed"
+                className="px-3 py-1.5 bg-[#1e293b] hover:bg-slate-700 border border-slate-600 disabled:opacity-50 rounded text-slate-200 transition-colors disabled:cursor-not-allowed"
               >
                 Next
               </button>
