@@ -13,16 +13,16 @@ import {
 import { 
   Search, ArrowUpDown, ShieldAlert, Download, ChevronDown, ChevronRight, 
   Activity, AlertTriangle, Globe, Package, Navigation, Tag, FileText, 
-  CheckCircle2, RefreshCw, SlidersHorizontal, Truck
+  CheckCircle2, RefreshCw, SlidersHorizontal, Truck, Filter, Check
 } from 'lucide-react';
 
-// FIXED: Dropdown Filter Component
-function ColumnFilter({ column, table }) {
-  const columnFilterValue = column.getFilterValue();
+// Premium Multi-Select Header Filter Component
+function PopoverFilter({ column, table }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const filterValue = column.getFilterValue() || [];
   
   const uniqueValues = useMemo(() => {
     const values = new Set();
-    // Use core row model to ensure we get ALL values before other filters strip them out
     table.getCoreRowModel().flatRows.forEach(row => {
       const val = row.getValue(column.id);
       if (val !== undefined && val !== null && val !== '') {
@@ -32,22 +32,59 @@ function ColumnFilter({ column, table }) {
     return Array.from(values).sort();
   }, [table, column.id]);
 
+  if (uniqueValues.length === 0) return null;
+
+  const toggleValue = (val) => {
+    const newVal = filterValue.includes(val)
+      ? filterValue.filter(v => v !== val)
+      : [...filterValue, val];
+    column.setFilterValue(newVal.length ? newVal : undefined);
+  };
+
+  const isActive = filterValue.length > 0;
+
   return (
-    <div className="mt-1.5 w-full print:hidden">
-      <select
-        value={(columnFilterValue ?? '')}
-        onChange={e => column.setFilterValue(e.target.value || undefined)}
-        className="w-full bg-slate-900 border border-slate-700 text-slate-300 text-[11px] rounded px-1.5 py-1 focus:outline-none focus:border-blue-500 cursor-pointer transition-colors"
-        onClick={(e) => e.stopPropagation()} 
+    <div className="relative inline-block text-left ml-2 print:hidden">
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
+        className={`p-1 rounded transition-colors ${isActive ? 'text-blue-400 bg-blue-900/30' : 'text-slate-500 hover:bg-slate-700 hover:text-slate-300'}`}
       >
-        <option value="">All</option>
-        {uniqueValues.map(val => (
-          <option key={val} value={val}>{val}</option>
-        ))}
-      </select>
+        <Filter size={13} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}></div>
+          <div className="absolute left-0 mt-2 origin-top-right z-40 w-56 bg-[#1e293b] border border-slate-600 rounded-md shadow-2xl focus:outline-none overflow-hidden flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="p-2 border-b border-slate-600/60 flex justify-between items-center bg-[#0f111a]">
+              <span className="text-[10px] uppercase font-semibold text-slate-400 tracking-wider">Filter Options</span>
+              <button onClick={() => column.setFilterValue(undefined)} className="text-[10px] text-blue-400 hover:text-blue-300">Clear</button>
+            </div>
+            <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 p-1">
+              {uniqueValues.map(val => {
+                const isChecked = filterValue.includes(val);
+                return (
+                  <label key={val} className="flex items-center gap-2 px-2 py-1.5 hover:bg-slate-700/50 rounded cursor-pointer text-xs text-slate-300 transition-colors">
+                    <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center shrink-0 ${isChecked ? 'bg-blue-600 border-blue-600' : 'border-slate-500 bg-slate-800'}`}>
+                      {isChecked && <Check size={10} className="text-white" />}
+                    </div>
+                    <span className="truncate" title={val}>{val}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
+
+// Multi-select custom filter function for TanStack Table
+const multiSelectFilter = (row, columnId, filterValue) => {
+  if (!filterValue || filterValue.length === 0) return true;
+  return filterValue.includes(String(row.getValue(columnId)).trim());
+};
 
 export default function ShipmentLedger() {
   const { tradeData, uploadFile, registerIntelligence } = useTradeData();
@@ -62,11 +99,9 @@ export default function ShipmentLedger() {
     const prevMode = viewportMode;
     const prevFilters = columnFilters;
     const prevGlobal = globalFilter;
-
     setViewportMode('scroll');
     setColumnFilters([]);
     setGlobalFilter('');
-
     setTimeout(() => {
       window.print();
       setViewportMode(prevMode);
@@ -83,10 +118,7 @@ export default function ShipmentLedger() {
       cell: ({ row }) => (
         <div className="flex items-center justify-center w-full">
           <button 
-            onClick={(e) => {
-              e.stopPropagation();
-              row.toggleExpanded();
-            }}
+            onClick={(e) => { e.stopPropagation(); row.toggleExpanded(); }}
             className="p-1 hover:bg-slate-700/50 rounded text-slate-400 hover:text-white transition-colors"
           >
             {row.getIsExpanded() ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
@@ -102,64 +134,66 @@ export default function ShipmentLedger() {
     {
       accessorKey: 'HSCode',
       header: 'HS Code',
+      filterFn: multiSelectFilter,
       cell: ({ getValue, row }) => (
         <span className={`font-mono text-xs px-2 py-0.5 rounded border ${
           row.original.hasHsVariance 
             ? 'bg-rose-950/30 text-rose-300 border-rose-800/50' 
             : 'bg-slate-800 text-slate-300 border-slate-700'
         }`}>
-          {getValue()}
+          {getValue() || '?'}
         </span>
       )
     },
     {
       accessorKey: 'Product',
       header: 'Product Description',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => <span className="truncate max-w-[180px] block text-slate-300 text-sm" title={getValue()}>{getValue()}</span>
     },
     {
       accessorKey: 'Brand',
       header: 'Ecosystem',
-      filterFn: 'equals',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => <span className="text-slate-300 text-sm">{getValue()}</span>
     },
     {
       accessorKey: 'OriginCountry',
       header: 'Origin',
-      filterFn: 'equals',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => <span className="text-sm text-slate-300">{getValue()}</span>
     },
     {
       accessorKey: 'DestinationCountry',
       header: 'Destination',
-      filterFn: 'equals',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => <span className="text-sm text-slate-300">{getValue()}</span>
     },
     {
       accessorKey: 'TransportMode',
       header: 'Transport',
-      filterFn: 'equals',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => <span className="text-sm text-slate-400 flex items-center gap-1.5"><Truck size={13}/>{getValue() || 'N/A'}</span>
     },
     {
       accessorKey: 'Quantity',
-      header: () => <div className="text-right">Quantity</div>,
+      header: 'Quantity',
       cell: ({ getValue }) => <div className="text-right font-mono text-sm text-slate-300">{getValue()}</div>
     },
     {
       accessorKey: 'Weight',
-      header: () => <div className="text-right">Weight</div>,
+      header: 'Weight',
       cell: ({ getValue }) => <div className="text-right font-mono text-sm text-slate-300">{getValue()}</div>
     },
     {
       accessorKey: 'Amount',
-      header: () => <div className="text-right">Value (USD)</div>,
+      header: 'Value (USD)',
       cell: ({ getValue }) => <div className="text-right font-mono text-sm font-medium text-emerald-400/90">${Number(getValue()).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}</div>
     },
     {
       accessorKey: 'riskScore',
       header: 'Risk Lens',
-      filterFn: 'equals',
+      filterFn: multiSelectFilter,
       cell: ({ getValue }) => {
         const score = getValue();
         const styles = {
@@ -212,7 +246,7 @@ export default function ShipmentLedger() {
 
   const applyQuickFilter = (type, value) => {
     if (type === 'riskScore') {
-      table.getColumn('riskScore')?.setFilterValue(value);
+      table.getColumn('riskScore')?.setFilterValue([value]);
     } else if (type === 'clear') {
       setColumnFilters([]);
       setGlobalFilter('');
@@ -223,7 +257,6 @@ export default function ShipmentLedger() {
     <div className="p-6 space-y-6 max-w-[1900px] mx-auto print:p-0 print:bg-white print:text-black">
       
       <div className="bg-[#121826] border border-slate-700/80 rounded-xl p-6 shadow-lg relative overflow-hidden print:border-none print:shadow-none print:bg-white">
-        
         <div className="flex flex-col md:flex-row justify-between items-start gap-4 mb-6 relative z-10">
           <div>
             <h1 className="text-2xl font-semibold tracking-tight text-slate-100 flex items-center gap-3 print:text-black">
@@ -234,10 +267,7 @@ export default function ShipmentLedger() {
           </div>
           
           <div className="flex flex-wrap items-center gap-3 print:hidden">
-            <button 
-              onClick={handlePrintDossier}
-              className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] hover:bg-slate-700 border border-slate-600 rounded-md text-sm font-medium text-slate-200 transition-colors"
-            >
+            <button onClick={handlePrintDossier} className="flex items-center gap-2 px-4 py-2 bg-[#1e293b] hover:bg-slate-700 border border-slate-600 rounded-md text-sm font-medium text-slate-200 transition-colors">
               <FileText size={16} /> Export Dossier
             </button>
             <label className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 border border-blue-500 rounded-md text-sm font-medium text-white cursor-pointer transition-colors shadow-sm">
@@ -322,30 +352,35 @@ export default function ShipmentLedger() {
           </div>
         </div>
 
-        <div className={`overflow-x-auto w-full ${viewportMode === 'scroll' ? 'max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent' : ''}`}>
+        <div className={`overflow-x-auto w-full pb-32 ${viewportMode === 'scroll' ? 'max-h-[600px] overflow-y-auto scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent' : ''}`}>
           <table className="w-full text-left border-collapse whitespace-nowrap">
             <thead>
               {table.getHeaderGroups().map(headerGroup => (
                 <tr key={headerGroup.id} className="bg-[#0f111a] border-b border-slate-700 sticky top-0 z-20 print:bg-gray-100">
-                  {headerGroup.headers.map(header => (
-                    <th 
-                      key={header.id} 
-                      style={{ width: header.column.getSize() !== 150 ? header.column.getSize() : 'auto' }}
-                      className="px-3 py-2.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none border-r border-slate-800/50 last:border-0 align-top print:text-black print:border-gray-300"
-                    >
-                      <div 
-                        onClick={header.column.getToggleSortingHandler()}
-                        className={`flex items-center gap-1.5 cursor-pointer hover:text-slate-200 transition-colors ${header.column.id === 'Quantity' || header.column.id === 'Weight' || header.column.id === 'Amount' ? 'justify-end' : ''}`}
+                  {headerGroup.headers.map(header => {
+                    const isNumeric = ['Quantity', 'Weight', 'Amount'].includes(header.column.id);
+                    return (
+                      <th 
+                        key={header.id} 
+                        style={{ width: header.column.getSize() !== 150 ? header.column.getSize() : 'auto' }}
+                        className="px-3 py-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider select-none border-r border-slate-800/50 last:border-0 align-middle print:text-black print:border-gray-300"
                       >
-                        {flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-600 shrink-0" />}
-                      </div>
-                      
-                      {header.column.getCanFilter() && (
-                        <ColumnFilter column={header.column} table={table} />
-                      )}
-                    </th>
-                  ))}
+                        <div className={`flex items-center group ${isNumeric ? 'flex-row-reverse justify-between' : 'justify-between'}`}>
+                          <div 
+                            onClick={header.column.getToggleSortingHandler()}
+                            className={`flex items-center gap-1.5 cursor-pointer hover:text-slate-200 transition-colors flex-1 ${isNumeric ? 'justify-end' : ''}`}
+                          >
+                            {flexRender(header.column.columnDef.header, header.getContext())}
+                            {header.column.getCanSort() && <ArrowUpDown size={12} className="text-slate-600 shrink-0 group-hover:text-slate-400 transition-colors" />}
+                          </div>
+                          
+                          {header.column.getCanFilter() && (
+                            <PopoverFilter column={header.column} table={table} />
+                          )}
+                        </div>
+                      </th>
+                    );
+                  })}
                 </tr>
               ))}
             </thead>
@@ -369,7 +404,6 @@ export default function ShipmentLedger() {
                       <tr className="bg-[#0f111a] border-y border-slate-700/50 print:hidden">
                         <td colSpan={columns.length} className="p-0">
                           <div className="p-6 grid grid-cols-1 md:grid-cols-3 gap-6 shadow-inner">
-                            
                             <div className="space-y-3 bg-[#1e293b]/40 p-4 rounded-md border border-slate-700/60">
                               <h4 className="text-slate-300 font-semibold uppercase text-xs tracking-wider border-b border-slate-700/50 pb-2 flex items-center gap-2">
                                 <Navigation size={14} className="text-blue-400"/> Routing Details
@@ -412,7 +446,6 @@ export default function ShipmentLedger() {
                                 </div>
                               </div>
                             </div>
-
                           </div>
                         </td>
                       </tr>
@@ -430,7 +463,7 @@ export default function ShipmentLedger() {
 
             {table.getFilteredRowModel().rows.length > 0 && (
               <tfoot>
-                <tr className="bg-[#0f111a] border-t border-slate-700 font-medium text-xs text-slate-300 sticky bottom-0 z-20">
+                <tr className="bg-[#0f111a] border-t border-slate-700 font-medium text-xs text-slate-300 sticky bottom-0 z-20 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
                   <td colSpan={8} className="px-3 py-3 text-right uppercase tracking-wider text-slate-400">
                     Ledger Aggregates:
                   </td>
