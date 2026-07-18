@@ -27,7 +27,6 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
     const routes = new Map();
 
     const productToHsCodes = new Map();
-    const aiFlaggedProducts = new Set();
 
     // Pass 1: Baseline Analysis, Normalization & Global State Extraction
     tradeData.forEach((row) => {
@@ -56,19 +55,13 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
           productToHsCodes.set(normProduct, new Set());
         }
         productToHsCodes.get(normProduct).add(normHs);
-
-        // Deterministic AI Verification Check during baseline pass
-        const matchedRule = AI_CLASSIFICATION_RULES.find(rule => normProduct.includes(rule.keyword));
-        if (matchedRule && !matchedRule.authorizedCodes.includes(normHs)) {
-          aiFlaggedProducts.add(normProduct);
-        }
       }
     });
 
-    // Extract both multi-code contradictions and explicit objective AI classification mismatches
+    // Extract internal dataset contradictions (only applied later if NO AI rule exists)
     const productsWithVariance = new Set();
     productToHsCodes.forEach((codes, prod) => {
-      if (codes.size > 1 || aiFlaggedProducts.has(prod)) {
+      if (codes.size > 1) {
         productsWithVariance.add(prod);
       }
     });
@@ -79,31 +72,38 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
     let criticalCount = 0;
     let highCount = 0;
     let mediumCount = 0;
+    let hsVarianceCount = 0;
 
     // Pass 2: Risk Flagging with Explicit Threshold Context
     const augmented = tradeData.map((row) => {
       const flags = [];
       let riskScore = 'Low';
       let riskWeight = 0;
+      let hasHsVariance = false;
       
       const normProduct = row.Product?.toString().toLowerCase().trim();
       const normHs = row.HSCode?.toString().replace(/\D/g, '').trim();
       
-      // Determine if it triggers baseline multi-code shift OR the objective AI rule mismatch
       const matchedRule = AI_CLASSIFICATION_RULES.find(rule => normProduct?.includes(rule.keyword));
-      const aiRuleViolation = matchedRule && !matchedRule.authorizedCodes.includes(normHs);
-      const datasetInconsistency = normProduct ? productsWithVariance.has(normProduct) : false;
-      
-      const hasHsVariance = aiRuleViolation || datasetInconsistency;
 
-      if (hasHsVariance) {
-        if (aiRuleViolation) {
-          flags.push(`HS Code Variance Detected (+2 pts) — AI Verification Failure: Declared code ${normHs} contradicts standard industry schedule [${matchedRule.authorizedCodes.join(', ')}]`);
-        } else {
-          flags.push('HS Code Variance Detected (+2 pts)');
+      // ARCHITECTURE FIX: AI Rules strictly override internal dataset contradictions.
+      if (matchedRule) {
+        // Only flag if the specific row's HS code is illegal according to the AI.
+        if (!matchedRule.authorizedCodes.includes(normHs)) {
+          hasHsVariance = true;
+          flags.push(`HS Code Variance Detected (+2 pts) — AI Verification Failure: Declared code '${normHs || '?'}' contradicts authorized schedule.`);
+          riskWeight += 2;
         }
-        riskWeight += 2;
+      } else {
+        // Fallback: If no AI rule exists, rely on internal dataset contradictions.
+        if (normProduct && productsWithVariance.has(normProduct)) {
+          hasHsVariance = true;
+          flags.push('HS Code Variance Detected (+2 pts) — Internal Dataset Contradiction');
+          riskWeight += 2;
+        }
       }
+
+      if (hasHsVariance) hsVarianceCount++;
 
       if (row.hsRisk === 'high') {
         flags.push('Potential Origin Manipulation / HS Disguise (+3 pts)');
@@ -182,12 +182,11 @@ export function useShipmentIntelligence(tradeData, registerIntelligence) {
       distinctHSCodes: hsCodes.size,
       distinctOrigins: origins.size,
       distinctDestinations: destinations.size,
-      hsVarianceCount: productsWithVariance.size,
+      hsVarianceCount,
       forensicIndex
     };
 
-    // Premium Legal & Law Enforcement Macro Executive Summary
-    const executiveSummary = `The AI forensic engine executed comprehensive regulatory analysis on ${metrics.totalShipments.toLocaleString()} shipments totaling $${(totalValue / 1000000).toFixed(2)}M, charting global commerce corridors across ${metrics.distinctOrigins} origin hubs and ${metrics.distinctDestinations} target nations. A cumulative Forensic Risk Index of ${forensicIndex}% was measured, with ${criticalCount + highCount} corporate shipments isolated for active evidentiary review based on structural classification shifts and routing anomalies. Crucially, the system intercepted ${metrics.hsVarianceCount} verified instances of classification variance where physical line-item descriptions—such as filter rods misdeclared under mismatched tariffs like 48189000—mathematically deviate from statutory customs protocols. For legal counsel and enforcement teams, these specific deltas provide clean, actionable proof of tariff evasion vectors, trade-compliance fraud, and illicit quota bypass schemes demanding rapid corporate audit or asset interdiction.`;
+    const executiveSummary = `The AI forensic engine executed comprehensive regulatory analysis on ${metrics.totalShipments.toLocaleString()} shipments totaling $${(totalValue / 1000000).toFixed(2)}M, charting global commerce corridors across ${metrics.distinctOrigins} origin hubs and ${metrics.distinctDestinations} target nations. A cumulative Forensic Risk Index of ${forensicIndex}% was measured, with ${criticalCount + highCount} corporate shipments isolated for active evidentiary review based on structural classification shifts and routing anomalies. Crucially, the system intercepted ${metrics.hsVarianceCount} verified instances of classification variance where physical line-item descriptions—such as filter rods misdeclared under mismatched tariffs or left blank—mathematically deviate from statutory customs protocols. For legal counsel and enforcement teams, these specific deltas provide clean, actionable proof of tariff evasion vectors, trade-compliance fraud, and illicit quota bypass schemes demanding rapid corporate audit or asset interdiction.`;
 
     const generatedIntelligence = {
       section: "Shipment Ledger",
