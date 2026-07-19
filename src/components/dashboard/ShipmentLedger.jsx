@@ -21,10 +21,10 @@ function HeaderDropdown({ column, table, title }) {
   const [isOpen, setIsOpen] = useState(false);
   const filterValue = column.getFilterValue() || [];
   
-  // Fetch all unique values from the pre-filtered dataset to ensure the list is always populated
+  // Fetch all unique values from the core dataset to ensure the list is always populated
   const uniqueValues = useMemo(() => {
     const values = new Set();
-    table.getPreFilteredRowModel().flatRows.forEach(row => {
+    table.getCoreRowModel().flatRows.forEach(row => {
       const val = row.getValue(column.id);
       if (val !== undefined && val !== null && val !== '') {
         values.add(String(val).trim());
@@ -40,8 +40,8 @@ function HeaderDropdown({ column, table, title }) {
   }
 
   return (
-    <div className="relative inline-block w-full text-left print:hidden">
-      <div className="flex items-center justify-between gap-1 group">
+    <div className="relative inline-block w-full text-left">
+      <div className="flex items-center justify-between gap-1 group print:hidden">
         <div 
           onClick={(e) => { e.stopPropagation(); setIsOpen(!isOpen); }}
           className={`flex items-center gap-1.5 cursor-pointer flex-1 transition-colors select-none ${
@@ -70,22 +70,30 @@ function HeaderDropdown({ column, table, title }) {
       {isOpen && (
         <>
           <div className="fixed inset-0 z-30" onClick={(e) => { e.stopPropagation(); setIsOpen(false); }}></div>
-          <div className="absolute left-0 mt-2 origin-top-left z-40 w-56 bg-[#1e293b] border border-slate-500 rounded-md shadow-2xl focus:outline-none overflow-hidden flex flex-col font-sans normal-case tracking-normal" onClick={(e) => e.stopPropagation()}>
-            <div className="p-2.5 border-b border-slate-600/80 flex justify-between items-center bg-[#0f111a]">
+          <div className="absolute left-0 mt-2 origin-top-left z-40 w-64 bg-[#0f111a] border border-slate-700 rounded-md shadow-2xl focus:outline-none overflow-hidden flex flex-col font-sans normal-case tracking-normal" onClick={(e) => e.stopPropagation()}>
+            <div className="p-2.5 border-b border-slate-700 flex justify-between items-center bg-[#1e293b]">
               <span className="text-xs uppercase font-bold text-slate-300 tracking-wider">Filter {title}</span>
-              <button onClick={() => column.setFilterValue(undefined)} className="text-xs font-medium text-blue-400 hover:text-blue-300">Clear</button>
+              <button onClick={() => column.setFilterValue(undefined)} className="text-xs font-medium text-blue-400 hover:text-blue-300 transition-colors">Clear</button>
             </div>
-            <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-500 p-1.5 bg-[#1e293b]">
+            <div className="max-h-60 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-[#0f111a] py-1">
               {uniqueValues.length === 0 ? (
-                <div className="text-xs text-slate-500 p-2 text-center">No options available</div>
+                <div className="text-xs text-slate-500 p-3 text-center">No options available</div>
               ) : (
                 uniqueValues.map(val => {
                   const isChecked = filterValue.includes(val);
                   return (
-                    <label key={val} className="flex items-center gap-2.5 px-2 py-2 hover:bg-slate-700 rounded cursor-pointer text-xs font-medium text-slate-200 transition-colors">
-                      <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isChecked ? 'bg-blue-500 border-blue-500' : 'border-slate-500 bg-slate-800'}`}>
-                        {isChecked && <Check size={12} className="text-white" strokeWidth={3} />}
-                      </div>
+                    <label key={val} className="flex items-center gap-3 px-3 py-2 hover:bg-[#1e293b] cursor-pointer text-xs font-medium text-slate-200 transition-colors">
+                      <input 
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={(e) => {
+                          const newFilterValue = isChecked 
+                            ? filterValue.filter(v => v !== val)
+                            : [...filterValue, val];
+                          column.setFilterValue(newFilterValue.length ? newFilterValue : undefined);
+                        }}
+                        className="w-3.5 h-3.5 rounded-sm border-slate-500 bg-slate-800 text-teal-500 focus:ring-0 focus:ring-offset-0 cursor-pointer accent-teal-500 shrink-0" 
+                      />
                       <span className="truncate" title={val}>{val}</span>
                     </label>
                   );
