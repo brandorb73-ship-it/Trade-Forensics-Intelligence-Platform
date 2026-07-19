@@ -21,6 +21,7 @@ export default function HSIntelligencePhase2() {
   const [sortDirection, setSortDirection] = useState('desc');
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [isMultiFilterOpen, setIsMultiFilterOpen] = useState(false);
+  const [dictionarySearch, setDictionarySearch] = useState('');
 
   // ============================================================================
   // ADVANCED FORENSIC COMPUTATION ENGINE
@@ -607,11 +608,70 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
+      {/* DYNAMIC INTELLIGENT NOMENCLATURE DICTIONARY */}
+      <div 
+        className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-4 shadow-2xl"
+        title="Dynamic Nomenclature Engine: Automatically builds a searchable classification dictionary by extracting and translating the most frequent semantic product strings associated with each HS Code in the active manifest."
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
+          <div className="flex items-center gap-2 text-xs font-black text-slate-200 uppercase tracking-wider">
+            <Box size={14} className="text-purple-400" />
+            <span>Dynamic Intelligent Nomenclature Dictionary</span>
+          </div>
+          <div className="relative">
+            <Search size={13} className="absolute left-2.5 top-2 text-slate-500" />
+            <input 
+              type="text" 
+              placeholder="Query HS Code or Product..." 
+              value={dictionarySearch}
+              onChange={(e) => setDictionarySearch(e.target.value)}
+              className="pl-7 pr-3 py-1.5 bg-slate-950 border-2 border-slate-700/80 text-xs text-slate-200 rounded outline-none focus:border-purple-500 transition-colors w-full sm:w-72 font-mono shadow-inner"
+            />
+          </div>
+        </div>
+        
+        <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 max-h-64 overflow-y-auto">
+          <div className="grid grid-cols-4 text-[11px] font-bold text-slate-400 uppercase tracking-wider pb-2 border-b border-slate-800 sticky top-0 bg-slate-950 z-10">
+            <span>HS Root Code</span>
+            <span className="col-span-2">Dynamic Semantic Translation (Derived)</span>
+            <span className="text-right">Observed Frequency</span>
+          </div>
+          <div className="divide-y divide-slate-800/60 mt-1">
+            {Array.from(new Set(forensicAnalytics.records.map(r => r.hsCode)))
+              .filter(hs => hs.toLowerCase().includes(dictionarySearch.toLowerCase()) || 
+                            forensicAnalytics.records.find(r => r.hsCode === hs)?.product.toLowerCase().includes(dictionarySearch.toLowerCase()))
+              .sort((a, b) => a.localeCompare(b))
+              .map((hs, idx) => {
+                const matches = forensicAnalytics.records.filter(r => r.hsCode === hs);
+                const frequency = matches.length;
+                
+                // Intelligently derive the most common manifest string for this specific HS code
+                const prodCounts = matches.reduce((acc, curr) => {
+                  acc[curr.product] = (acc[curr.product] || 0) + 1;
+                  return acc;
+                }, {});
+                const primaryProduct = Object.keys(prodCounts).sort((a, b) => prodCounts[b] - prodCounts[a])[0] || 'Unknown Origin Semantic';
+                
+                return (
+                  <div key={idx} className="grid grid-cols-4 text-xs py-2.5 items-center hover:bg-slate-900/50 transition-colors">
+                    <span className="text-purple-400 font-bold font-mono">HS {hs}</span>
+                    <span className="col-span-2 text-slate-300 truncate pr-4" title={primaryProduct}>{primaryProduct}</span>
+                    <span className="text-right text-slate-400 font-mono">{frequency} entries</span>
+                  </div>
+                );
+            })}
+            
+            {dictionarySearch && !forensicAnalytics.records.some(r => r.hsCode.toLowerCase().includes(dictionarySearch.toLowerCase()) || r.product.toLowerCase().includes(dictionarySearch.toLowerCase())) && (
+              <div className="text-center text-slate-500 py-6 font-bold text-xs">No nomenclature alignments found for "{dictionarySearch}"</div>
+            )}
+          </div>
+        </div>
+      </div>
       {/* HIERARCHY DRILLDOWN INTERACTIVE HEADER */}
       <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-3 shadow-2xl">
         <div className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-2">
           <Layers size={14} className="text-teal-400"/>
-          <span>Upgrade 3: Inbound Customs HS Structural Hierarchy Drill-Down</span>
+          <span>Inbound Customs HS Structural Hierarchy Drill-Down</span>
         </div>
         
         <div className="flex items-center gap-3 text-xs bg-slate-950 px-3 py-2.5 rounded-lg border border-slate-800">
@@ -775,7 +835,7 @@ export default function HSIntelligencePhase2() {
 
                                 <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg space-y-2">
                                   <div className="text-xs font-black text-slate-200 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
-                                    <Cpu size={12} className="text-amber-400"/> Upgrade 6: Customs Risks Evidence
+                                    <Cpu size={12} className="text-amber-400"/> Customs Risks Evidence
                                   </div>
                                   <div className="text-xs text-slate-300 space-y-1">
                                     {rec.customsRisks.length > 0 ? (
@@ -792,7 +852,7 @@ export default function HSIntelligencePhase2() {
 
                                 <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg space-y-2">
                                   <div className="text-xs font-black text-slate-200 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
-                                    <ShieldCheck size={12} className="text-rose-400"/> Upgrade 7: Trade Remedy Indicators
+                                    <ShieldCheck size={12} className="text-rose-400"/> Trade Remedy Indicators
                                   </div>
                                   <div className="text-xs text-slate-300 space-y-1">
                                     {rec.remedyIndicators.length > 0 ? (
