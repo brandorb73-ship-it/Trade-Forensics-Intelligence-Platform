@@ -21,17 +21,19 @@ function HeaderDropdown({ column, table, title }) {
   const [isOpen, setIsOpen] = useState(false);
   const filterValue = column.getFilterValue() || [];
   
-  // Fetch all unique values from the core dataset to ensure the list is always populated
+  // Extract core rows to ensure useMemo detects data changes
+  const coreRows = table.getCoreRowModel().flatRows;
+  
   const uniqueValues = useMemo(() => {
     const values = new Set();
-    table.getCoreRowModel().flatRows.forEach(row => {
+    coreRows.forEach(row => {
       const val = row.getValue(column.id);
       if (val !== undefined && val !== null && val !== '') {
         values.add(String(val).trim());
       }
     });
     return Array.from(values).sort();
-  }, [table, column.id]);
+  }, [coreRows, column.id]);
 
   const isActive = filterValue.length > 0;
 
@@ -364,9 +366,9 @@ export default function ShipmentLedger() {
             <span className="text-xs text-slate-400 font-bold uppercase tracking-wider mr-2 flex items-center gap-1.5">
               <SlidersHorizontal size={14}/> Filters
             </span>
-            <button onClick={() => applyQuickFilter('riskScore', 'Critical')} className="px-3 py-1.5 bg-[#1e293b] border border-slate-700 text-rose-300 rounded text-xs font-bold hover:bg-slate-700 transition">Critical</button>
-            <button onClick={() => applyQuickFilter('riskScore', 'High')} className="px-3 py-1.5 bg-[#1e293b] border border-slate-700 text-orange-300 rounded text-xs font-bold hover:bg-slate-700 transition">High</button>
-            <button onClick={() => applyQuickFilter('riskScore', 'Medium')} className="px-3 py-1.5 bg-[#1e293b] border border-slate-700 text-amber-300 rounded text-xs font-bold hover:bg-slate-700 transition">Medium</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'Critical')} className="px-3 py-1.5 bg-rose-950/40 border border-rose-800/80 text-rose-400 rounded text-xs font-bold hover:bg-rose-900/60 transition">Critical</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'High')} className="px-3 py-1.5 bg-orange-950/40 border border-orange-800/80 text-orange-400 rounded text-xs font-bold hover:bg-orange-900/60 transition">High</button>
+            <button onClick={() => applyQuickFilter('riskScore', 'Medium')} className="px-3 py-1.5 bg-amber-950/40 border border-amber-800/80 text-amber-400 rounded text-xs font-bold hover:bg-amber-900/60 transition">Medium</button>
             <div className="w-px h-4 bg-slate-700 mx-1"></div>
             <button onClick={() => applyQuickFilter('clear', '')} className="px-3 py-1.5 bg-[#1e293b]/50 border border-slate-700 text-slate-300 rounded text-xs font-bold hover:bg-slate-700 transition">Reset</button>
           </div>
