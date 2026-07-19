@@ -62,9 +62,9 @@ export default function HSIntelligencePhase2() {
       totalTradeValue += amount;
       totalQuantity += quantity;
 
-      // Map Generation
+      // Map Generation - Added 'title' property safely
       if (!hsCodeMap[hs]) hsCodeMap[hs] = { code: hs, value: 0, qty: 0, count: 0, rows: [] };
-      if (!chapterMap[ch]) chapterMap[ch] = { code: ch, value: 0, count: 0 };
+      if (!chapterMap[ch]) chapterMap[ch] = { code: ch, value: 0, count: 0, title: `Chapter ${ch}` };
       if (!headingMap[hd]) headingMap[hd] = { code: hd, value: 0, count: 0 };
       if (!productMap[prod]) productMap[prod] = { name: prod, value: 0, count: 0 };
       if (!corridorMap[corridor]) corridorMap[corridor] = { name: corridor, value: 0, anomalyValue: 0, count: 0 };
@@ -138,7 +138,6 @@ export default function HSIntelligencePhase2() {
       const remedyIndicators = [];
       
       // Dynamic Rules Evaluation System (Zero Hardcoding)
-      // Rule A: Dynamic AI Nomenclature Dictionary Checks
       let expectedChapter = null;
       if (prod.includes('FILTER') || prod.includes('TOW') || prod.includes('ACETATE') || prod.includes('ROD')) expectedChapter = '56';
       else if (prod.includes('PAPER') || prod.includes('BOX') || prod.includes('CELLULOSE')) expectedChapter = '48';
@@ -240,7 +239,6 @@ export default function HSIntelligencePhase2() {
   const filteredRecords = useMemo(() => {
     let result = [...forensicAnalytics.records];
 
-    // 1. Investigation Panel Controls (Photo 1 Sync)
     if (activeInvestigationFilter === 'RISK_ONLY') {
       result = result.filter(r => r.isMismatched);
     } else if (activeInvestigationFilter.startsWith('HEADING_')) {
@@ -248,14 +246,12 @@ export default function HSIntelligencePhase2() {
       result = result.filter(r => r.chapterPrefix === prefix);
     }
 
-    // 2. Interactive KPI Card Filters
     if (activeKpiFilter) {
       if (activeKpiFilter === 'HIGH_RISK') result = result.filter(r => r.isMismatched);
       if (activeKpiFilter === 'MAX_VALUE') result = result.filter(r => r.hsCode === forensicAnalytics.highestValueHS);
       if (activeKpiFilter === 'MAX_VOLUME') result = result.filter(r => r.hsCode === forensicAnalytics.highestVolumeHS);
     }
 
-    // 3. Interactive Breadcrumb Hierarchy Levels (Upgrade 3)
     if (activeHierarchyDrill.chapter) {
       result = result.filter(r => r.chapterPrefix === activeHierarchyDrill.chapter);
     }
@@ -263,12 +259,10 @@ export default function HSIntelligencePhase2() {
       result = result.filter(r => r.headingPrefix === activeHierarchyDrill.heading);
     }
 
-    // 4. Multi-Select Dropdown Token Filters (Upgrade 15)
     if (selectedAuditFlags.length > 0) {
       result = result.filter(r => selectedAuditFlags.every(flag => r.investigationFlags.includes(flag)));
     }
 
-    // Execution Sort Routine
     return result.sort((a, b) => {
       let valA, valB;
       if (sortField === 'Date') {
@@ -287,15 +281,15 @@ export default function HSIntelligencePhase2() {
     });
   }, [forensicAnalytics.records, activeInvestigationFilter, activeKpiFilter, activeHierarchyDrill, selectedAuditFlags, sortField, sortDirection]);
 
-  // Handle KPI interaction toggles
-  const handleKpiClick = (type) => {
-    setActiveKpiFilter(prev => prev === type ? null : type);
+  const handleKpiClick = (type) => setActiveKpiFilter(prev => prev === type ? null : type);
+  const toggleSort = (field) => {
+    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    else { setSortField(field); setSortDirection('desc'); }
   };
 
   return (
     <div className="p-6 space-y-8 max-w-[1800px] mx-auto bg-slate-950 text-slate-100 min-h-screen font-mono id-print-section select-none">
       
-      {/* MINIMALIST VISUAL PRINT ARCHITECTURE STYLING */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           @page { size: landscape; margin: 10mm; }
@@ -303,12 +297,8 @@ export default function HSIntelligencePhase2() {
           .id-print-section { background: #ffffff !important; color: #0f172a !important; padding: 0 !important; }
           .non-printable { display: none !important; }
           .bg-slate-900, .bg-slate-800, .bg-slate-800\\/80, .bg-slate-950 {
-            background: #ffffff !important;
-            border: 1px solid #cbd5e1 !important;
-            color: #0f172a !important;
-            box-shadow: none !important;
-            border-radius: 6px !important;
-            padding: 10px !important;
+            background: #ffffff !important; border: 1px solid #cbd5e1 !important; color: #0f172a !important;
+            box-shadow: none !important; border-radius: 6px !important; padding: 10px !important;
           }
           .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 { color: #0f172a !important; }
           .text-teal-400, .text-amber-400, .text-rose-400 { color: #0f172a !important; font-weight: bold !important; }
@@ -319,7 +309,6 @@ export default function HSIntelligencePhase2() {
         }
       `}} />
 
-      {/* DASHBOARD CONTROL BAR */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-800 pb-4 gap-4 non-printable">
         <div>
           <h1 className="text-xl font-bold tracking-tight text-white flex items-center gap-2">
@@ -337,9 +326,6 @@ export default function HSIntelligencePhase2() {
         </button>
       </div>
 
-      {/* ============================================================================
-          INTERACTIVE DENSE ANALYTICAL KPI BLOCK
-      ============================================================================ */}
       <div className="space-y-2">
         <div className="text-[10px] font-bold text-slate-500 tracking-wider uppercase">Interactive Core Aggregation Matrices</div>
         <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-7 gap-3">
@@ -381,7 +367,6 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
-      {/* SECONDARY HIGH-DENSITY KPI CONTROLS OVERVIEW */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-[11px] bg-slate-900/60 border border-slate-800 p-3 rounded-lg">
         <div><span className="text-slate-500">Highest Growth HS:</span> <strong className="text-slate-200">HS {forensicAnalytics.highestGrowthHS}</strong> <span className="text-teal-400 font-bold">↑ Temporal Shift</span></div>
         <div><span className="text-slate-500">HS Diversity Index:</span> <strong className="text-slate-200">{forensicAnalytics.diversityIndex.toFixed(2)} pts</strong></div>
@@ -389,10 +374,8 @@ export default function HSIntelligencePhase2() {
         <div><span className="text-slate-500">Market Concentration Ratio:</span> <strong className="text-amber-400">{forensicAnalytics.concentrationRatio.toFixed(1)}% Share</strong></div>
       </div>
 
-      {/* MAIN DATA LANDSCAPE SPLIT CONFIGURATION */}
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 items-start">
         
-        {/* SIDEBAR: INVESTIGATION FILTERS PANEL (SYNCED WITH SCREENSHOT 1) */}
         <div className="xl:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-4">
           <div className="flex justify-between items-center border-b border-slate-800 pb-2">
             <span className="text-xs font-bold tracking-wider text-slate-300 uppercase">Investigation Filters</span>
@@ -423,18 +406,16 @@ export default function HSIntelligencePhase2() {
                 className={`w-full flex justify-between items-center p-2.5 rounded text-left transition text-xs ${activeInvestigationFilter === `HEADING_${chapter.code}` ? 'bg-slate-800 border border-slate-700 text-white font-bold' : 'bg-slate-950/40 text-slate-400 hover:bg-slate-800/30'}`}
               >
                 <span>Heading Prefix: {chapter.code}</span>
-                <span className="bg-slate-900 px-2 py-0.5 rounded text-[10px] text-slate-400 border border-slate-800">{chapter.shipmentCount}</span>
+                <span className="bg-slate-900 px-2 py-0.5 rounded text-[10px] text-slate-400 border border-slate-800">{chapter.count}</span>
               </button>
             ))}
           </div>
         </div>
 
-        {/* WORKSPACE MIDDLE PANELS: ZONE 2 & 3 OVERVIEW MAPPING (SYNCED WITH SCREENSHOT 2) */}
         <div className="xl:col-span-3 space-y-6">
           <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">Zone 2 & 3: Landscape & Forensic Anomalies</div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* NOMENCLATURE RISK CARD */}
             <div className="bg-slate-900 border border-slate-700/60 p-4 rounded-xl shadow-md flex justify-between items-center">
               <div>
                 <div className="text-[10px] text-slate-400 uppercase font-medium tracking-wider">Nomenclature Risk Value</div>
@@ -447,7 +428,6 @@ export default function HSIntelligencePhase2() {
               </div>
             </div>
 
-            {/* DETECTED SHIFTS CARD */}
             <div className="bg-slate-900 border border-slate-700/60 p-4 rounded-xl shadow-md flex justify-between items-center">
               <div>
                 <div className="text-[10px] text-slate-400 uppercase font-medium tracking-wider">Detected Classification Shifts</div>
@@ -462,7 +442,6 @@ export default function HSIntelligencePhase2() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* ANOMALY DEVIATION MATRIX ROW CHARTS */}
             <div className="bg-slate-900 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3">
               <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-rose-500"></span> Anomaly Matrix: Deviation From Baseline
@@ -475,11 +454,13 @@ export default function HSIntelligencePhase2() {
                 </div>
                 
                 {forensicAnalytics.chapters.slice(0, 3).map((ch, idx) => {
-                  const weightPct = forensicAnalytics.globalMismatchedValue > 0 ? (ch.totalValue / forensicAnalytics.globalMismatchedValue) * 100 : 0;
+                  const weightPct = forensicAnalytics.globalMismatchedValue > 0 ? (ch.value / forensicAnalytics.globalMismatchedValue) * 100 : 0;
+                  const displayTitle = ch.title || `Chapter ${ch.code}`;
+                  
                   return (
                     <div key={idx} className="space-y-1">
                       <div className="flex justify-between text-xs text-slate-300 font-medium">
-                        <span>{ch.title.length > 28 ? ch.title.substring(0,28)+'...' : ch.title || 'Declared Undisclosed / ?'}</span>
+                        <span>{displayTitle.length > 28 ? displayTitle.substring(0,28)+'...' : displayTitle}</span>
                         <span className="text-rose-400 font-bold">{Math.min(weightPct, 100).toFixed(0)}% Anomaly Weight</span>
                       </div>
                       <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
@@ -491,7 +472,6 @@ export default function HSIntelligencePhase2() {
               </div>
             </div>
 
-            {/* RISK CORRIDORS VECTOR LIST */}
             <div className="bg-slate-900 border border-slate-700/60 p-4 rounded-xl shadow-md space-y-3">
               <div className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
                 <span className="w-2 h-2 rounded-full bg-amber-500"></span> Risk Corridors by Anomaly Volume
@@ -511,9 +491,6 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
-      {/* ============================================================================
-          INTERACTIVE HIERARCHY ANALYSIS BREADCRUMBS (UPGRADE 3)
-      ============================================================================ */}
       <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3">
         <div className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
           <Layers size={14} className="text-teal-400"/>
@@ -530,7 +507,7 @@ export default function HSIntelligencePhase2() {
             onChange={(e) => setActiveHierarchyDrill(prev => ({ ...prev, chapter: e.target.value || null, heading: null }))}
           >
             <option value="">-- View All Active Chapters --</option>
-            {forensicAnalytics.chapters.map(c => <option key={c.code} value={c.code}>Chapter ${c.code} ({c.title.substring(0, 25)})</option>)}
+            {forensicAnalytics.chapters.map(c => <option key={c.code} value={c.code}>Chapter {c.code}</option>)}
           </select>
           
           {activeHierarchyDrill.chapter && (
@@ -551,14 +528,10 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
-      {/* ============================================================================
-          MAIN TARIFF EXPLORER LEDGER WITH MULTI-OPTION FLAG FILTERING
-      ============================================================================ */}
       <div className="space-y-3">
         <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 border-b border-slate-800 pb-2">
           <div className="text-xs font-bold tracking-widest text-slate-400 uppercase">Zone 4: Forensic Ledger Operational Space</div>
           
-          {/* UPGRADE 15: MULTI-SELECT FLAG DROPDOWN FILTER */}
           <div className="relative non-printable">
             <button 
               onClick={() => setIsMultiFilterOpen(!isMultiFilterOpen)}
@@ -600,7 +573,6 @@ export default function HSIntelligencePhase2() {
           </div>
         </div>
 
-        {/* ACTIVE FILTER CHIPS MATRIX */}
         {(selectedAuditFlags.length > 0 || activeKpiFilter || activeHierarchyDrill.chapter) && (
           <div className="flex flex-wrap gap-2 items-center bg-slate-900/40 p-2 rounded-lg border border-slate-800 non-printable">
             <span className="text-[10px] text-slate-500 uppercase font-bold">Active Targets:</span>
@@ -622,7 +594,6 @@ export default function HSIntelligencePhase2() {
           </div>
         )}
 
-        {/* MASTER FORENSIC CUSTOMS TABLE */}
         <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl overflow-hidden shadow-xl">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
@@ -670,9 +641,6 @@ export default function HSIntelligencePhase2() {
                         </td>
                       </tr>
 
-                      {/* ============================================================================
-                          UPGRADE 16: ADVANCED DENSE EXPANDABLE EVIDENCE DRAWER
-                      ============================================================================ */}
                       {expandedRowId === rec.id && (
                         <tr className="bg-slate-950/70 border-b border-slate-800">
                           <td colSpan={7} className="p-4">
@@ -686,7 +654,6 @@ export default function HSIntelligencePhase2() {
                               
                               <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                 
-                                {/* IP & IDENTITY DEEP CONTEXT */}
                                 <div className="bg-slate-950 border border-slate-850 p-3 rounded-lg space-y-1.5">
                                   <div className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
                                     <Tag size={11} className="text-purple-400"/> IP / Asset Intelligence
@@ -698,7 +665,6 @@ export default function HSIntelligencePhase2() {
                                   </div>
                                 </div>
 
-                                {/* ENTITY TOPOLOGY & REMEDY GRAPH */}
                                 <div className="bg-slate-950 border border-slate-850 p-3 rounded-lg space-y-1.5">
                                   <div className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
                                     <Network size={11} className="text-blue-400"/> Entity Route Topology
@@ -710,7 +676,6 @@ export default function HSIntelligencePhase2() {
                                   </div>
                                 </div>
 
-                                {/* UPGRADE 6: CUSTOMS RISK ASSESSMENTS */}
                                 <div className="bg-slate-950 border border-slate-850 p-3 rounded-lg space-y-1.5">
                                   <div className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
                                     <Cpu size={11} className="text-amber-400"/> Upgrade 6: Customs Risks Evidence
@@ -728,7 +693,6 @@ export default function HSIntelligencePhase2() {
                                   </div>
                                 </div>
 
-                                {/* UPGRADE 7: TRADE REMEDY REMINISCENCE PATTERNS */}
                                 <div className="bg-slate-950 border border-slate-850 p-3 rounded-lg space-y-1.5">
                                   <div className="text-[10px] font-bold text-slate-400 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
                                     <ShieldCheck size={11} className="text-rose-400"/> Upgrade 7: Trade Remedy Indicators
@@ -748,7 +712,6 @@ export default function HSIntelligencePhase2() {
 
                               </div>
 
-                              {/* PARSED UNBIASED SYSTEM EVIDENCE BLOCK */}
                               <div className="bg-slate-950 p-2.5 rounded border border-slate-850 text-[11px] text-slate-400 leading-normal flex items-start gap-2">
                                 <Info size={14} className="text-teal-400 mt-0.5 flex-shrink-0" />
                                 <div>
