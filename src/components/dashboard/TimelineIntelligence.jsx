@@ -1,21 +1,22 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useTradeData } from '../../context/TradeDataContext.jsx';
 import { 
   ShieldAlert, AlertTriangle, Clock, FileText, BarChart3, 
   Layers, Filter, Calendar, TrendingUp, Activity, DollarSign,
-  Zap, Flame, Plus, Trash2, ArrowUpRight, ArrowDownRight, Globe
+  Zap, Flame, Plus, Trash2, ArrowUpRight, ArrowDownRight, Globe,
+  Play, Pause, SkipForward, SkipBack, X, Search, Map
 } from 'lucide-react';
 
 export default function ChronologicalIntelligence() {
   const contextData = useTradeData();
   const tradeData = contextData && contextData.tradeData ? contextData.tradeData : [];
   
-  // Existing & New State Management
+  // State Management
   const [activeTemporalFilter, setActiveTemporalFilter] = useState('ALL_ANOMALIES');
-  const [activeMetric, setActiveMetric] = useState('SHIPMENTS'); // 'SHIPMENTS' | 'VALUE'
-  const [selectedHeatmapCell, setSelectedHeatmapCell] = useState(null); // { year, month }
+  const [activeMetric, setActiveMetric] = useState('SHIPMENTS'); 
+  const [selectedHeatmapCell, setSelectedHeatmapCell] = useState(null); 
   
-  // Upgrade 6: Event Correlation Framework State
+  // Event Correlation Framework State
   const [events, setEvents] = useState([
     { id: 'evt-1', date: '2025-07-01', title: 'Anti-Dumping Action Notice', category: 'REGULATORY' },
     { id: 'evt-2', date: '2025-10-15', title: 'Tariff Rate Adjustment', category: 'TARIFF' }
@@ -25,6 +26,13 @@ export default function ChronologicalIntelligence() {
   const [newEventDate, setNewEventDate] = useState('');
   const [newEventCategory, setNewEventCategory] = useState('INVESTIGATION');
   const [showAddEvent, setShowAddEvent] = useState(false);
+
+  // Phase 3: Case Timeline & Investigation Drawer State
+  const [selectedIncident, setSelectedIncident] = useState(null);
+
+  // Phase 3: Investigative Time Machine State
+  const [isTimeMachinePlaying, setIsTimeMachinePlaying] = useState(false);
+  const [playbackSpeed, setPlaybackSpeed] = useState(1500); // ms per step
 
   // ============================================================================
   // TEMPORAL METRICS & VELOCITY ENGINE
@@ -64,7 +72,6 @@ export default function ChronologicalIntelligence() {
 
     sortedDates.sort((a, b) => a - b);
 
-    // Calculate Average Shipment Interval & Burst Activity (Upgrade 5)
     let totalIntervalDays = 0;
     let burstActivityCount = 0;
     for (let i = 1; i < sortedDates.length; i++) {
@@ -78,7 +85,6 @@ export default function ChronologicalIntelligence() {
     const avgMonthlyShipments = tradeData.length / monthsAnalysed;
     const avgMonthlyValue = totalValue / monthsAnalysed;
 
-    // Highest/Lowest Activity Periods
     let highestMonth = { key: 'N/A', shipments: 0 };
     Object.entries(monthlyData).forEach(([key, data]) => {
       if (data.shipments > highestMonth.shipments) {
@@ -86,7 +92,6 @@ export default function ChronologicalIntelligence() {
       }
     });
 
-    // Momentum Score Calculation (0-100) based on burst ratio & dataset velocity
     const burstRatio = sortedDates.length > 0 ? (burstActivityCount / sortedDates.length) : 0;
     const momentumScore = Math.min(100, Math.round(burstRatio * 100 + (avgMonthlyShipments > 20 ? 30 : 15)));
 
@@ -111,18 +116,19 @@ export default function ChronologicalIntelligence() {
   // TIMELINE HEAT MAP ENGINE (Annual / Monthly Matrix)
   // ============================================================================
   const heatmapData = useMemo(() => {
-    if (!tradeData.length) return { years: [], matrix: {} };
+    if (!tradeData.length) return { years: [], matrix: {}, activePeriods: [] };
 
     const matrix = {};
     const yearSet = new Set();
     let maxVal = 0;
+    const activePeriodsSet = new Set();
 
     tradeData.forEach(row => {
       const d = new Date(row.Date);
       if (isNaN(d.getTime())) return;
 
       const year = d.getFullYear();
-      const month = d.getMonth(); // 0 - 11
+      const month = d.getMonth(); 
       yearSet.add(year);
 
       if (!matrix[year]) matrix[year] = Array(12).fill(0);
@@ -131,12 +137,61 @@ export default function ChronologicalIntelligence() {
       matrix[year][month] += metricIncrement;
 
       if (matrix[year][month] > maxVal) maxVal = matrix[year][month];
+      
+      // Track periods that have data for the Time Machine
+      activePeriodsSet.add(`${year}-${month}`);
     });
 
     const years = Array.from(yearSet).sort((a, b) => b - a);
+    
+    // Sort active periods chronologically for playback
+    const activePeriods = Array.from(activePeriodsSet)
+      .map(p => { const [y, m] = p.split('-'); return { year: parseInt(y), month: parseInt(m) }; })
+      .sort((a, b) => a.year === b.year ? a.month - b.month : a.year - b.year);
 
-    return { years, matrix, maxVal: maxVal || 1 };
+    return { years, matrix, maxVal: maxVal || 1, activePeriods };
   }, [tradeData, activeMetric]);
+
+  // ============================================================================
+  // INVESTIGATIVE TIME MACHINE ENGINE
+  // ============================================================================
+  useEffect(() => {
+    let interval;
+    if (isTimeMachinePlaying && heatmapData.activePeriods.length > 0) {
+      interval = setInterval(() => {
+        setSelectedHeatmapCell(current => {
+          if (!current) return heatmapData.activePeriods[0];
+          const currentIndex = heatmapData.activePeriods.findIndex(
+            p => p.year === current.year && p.month === current.month
+          );
+          if (currentIndex === -1 || currentIndex === heatmapData.activePeriods.length - 1) {
+            setIsTimeMachinePlaying(false);
+            return current; // Stop at end
+          }
+          return heatmapData.activePeriods[currentIndex + 1];
+        });
+      }, playbackSpeed);
+    }
+    return () => clearInterval(interval);
+  }, [isTimeMachinePlaying, heatmapData.activePeriods, playbackSpeed]);
+
+  const handleTimeMachineStep = (direction) => {
+    if (!selectedHeatmapCell && direction === 1 && heatmapData.activePeriods.length > 0) {
+      setSelectedHeatmapCell(heatmapData.activePeriods[0]);
+      return;
+    }
+    
+    const currentIndex = heatmapData.activePeriods.findIndex(
+      p => p.year === selectedHeatmapCell?.year && p.month === selectedHeatmapCell?.month
+    );
+    
+    if (currentIndex !== -1) {
+      const nextIndex = currentIndex + direction;
+      if (nextIndex >= 0 && nextIndex < heatmapData.activePeriods.length) {
+        setSelectedHeatmapCell(heatmapData.activePeriods[nextIndex]);
+      }
+    }
+  };
 
   // ============================================================================
   // EVENT CORRELATION IMPACT ANALYSIS
@@ -148,7 +203,7 @@ export default function ChronologicalIntelligence() {
     const eventTime = new Date(selectedEvent.date).getTime();
     if (isNaN(eventTime)) return null;
 
-    const windowMs = 60 * 24 * 60 * 60 * 1000; // 60-day window before and after
+    const windowMs = 60 * 24 * 60 * 60 * 1000; 
 
     let beforeShipments = 0, afterShipments = 0;
     let beforeValue = 0, afterValue = 0;
@@ -181,7 +236,7 @@ export default function ChronologicalIntelligence() {
   }, [events, selectedEventId, tradeData]);
 
   // ============================================================================
-  // ORIGINAL ANOMALY & FORENSIC REROUTING ENGINE (Preserved)
+  // FORENSIC REROUTING ENGINE
   // ============================================================================
   const chronologicalAnalysis = useMemo(() => {
     let volumeSpikes = 0;
@@ -257,7 +312,8 @@ export default function ChronologicalIntelligence() {
         anomalyType,
         insightMessage,
         isMissingHS,
-        isNomenclatureShift
+        isNomenclatureShift,
+        id: `inc-${index}`
       };
     });
 
@@ -295,11 +351,9 @@ export default function ChronologicalIntelligence() {
     };
   }, [temporalMetrics, chronologicalAnalysis, eventImpactAnalysis]);
 
-  // Apply Heatmap & Sidebar Filters
   const filteredRecords = useMemo(() => {
     let records = chronologicalAnalysis.records;
 
-    // Heatmap Cell Filter
     if (selectedHeatmapCell) {
       records = records.filter(r => {
         const d = new Date(r.Date);
@@ -307,7 +361,6 @@ export default function ChronologicalIntelligence() {
       });
     }
 
-    // Temporal Category Filter
     if (activeTemporalFilter === 'ALL_ANOMALIES') return records.filter(r => r.anomalyType !== 'CLEAN_PASS');
     if (activeTemporalFilter === 'VOLUME_SPIKES') return records.filter(r => r.anomalyType === 'VOLUME_SPIKE');
     if (activeTemporalFilter === 'REROUTING') return records.filter(r => r.anomalyType === 'REROUTING_CLUSTER');
@@ -315,7 +368,6 @@ export default function ChronologicalIntelligence() {
     return records;
   }, [chronologicalAnalysis.records, activeTemporalFilter, selectedHeatmapCell]);
 
-  // Handle Event Creation
   const handleAddEvent = (e) => {
     e.preventDefault();
     if (!newEventTitle || !newEventDate) return;
@@ -335,7 +387,7 @@ export default function ChronologicalIntelligence() {
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   return (
-    <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section">
+    <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section relative">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           .non-printable { display: none !important; }
@@ -405,7 +457,7 @@ export default function ChronologicalIntelligence() {
         </div>
       )}
 
-      {/* AI Executive Dynamic Narrative */}
+      {/* Dynamic Temporal Intelligence Narrative */}
       <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-3">
         <div className="flex justify-between items-center">
           <h2 className="text-xs font-bold tracking-widest text-cyan-400 font-mono uppercase flex items-center gap-2">
@@ -420,7 +472,7 @@ export default function ChronologicalIntelligence() {
         </div>
       </div>
 
-      {/* TIMELINE HEAT MAP MATRIX */}
+      {/* TIMELINE HEAT MAP MATRIX (Redesigned with explicit Grid Columns) */}
       <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4 non-printable">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700/60 pb-3">
           <div>
@@ -440,7 +492,6 @@ export default function ChronologicalIntelligence() {
               </button>
             )}
 
-            {/* Upgrade 3 Metric Switcher */}
             <div className="flex items-center bg-slate-900/80 p-1 rounded-lg border border-slate-700/60 font-mono text-xs font-semibold">
               <button
                 onClick={() => setActiveMetric('SHIPMENTS')}
@@ -458,17 +509,18 @@ export default function ChronologicalIntelligence() {
           </div>
         </div>
 
-        {/* Heat Map Grid */}
+        {/* Fixed Heat Map Grid Layout */}
         <div className="overflow-x-auto pt-2">
           <div className="min-w-[700px] space-y-2">
-            <div className="grid grid-cols-13 gap-1 text-center font-mono text-xs font-semibold text-slate-400 pb-1">
-              <span>Year</span>
+            {/* Header Row using absolute arbitrary col sizing */}
+            <div className="grid grid-cols-[60px_repeat(12,1fr)] gap-1 text-center font-mono text-xs font-semibold text-slate-400 pb-1">
+              <span className="text-left pl-2">Year</span>
               {monthNames.map(m => <span key={m}>{m}</span>)}
             </div>
 
             {heatmapData.years.map(year => (
-              <div key={year} className="grid grid-cols-13 gap-1 items-center font-mono text-xs">
-                <span className="font-bold text-slate-300 text-center">{year}</span>
+              <div key={year} className="grid grid-cols-[60px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
+                <span className="font-bold text-slate-300 text-left pl-2">{year}</span>
                 {heatmapData.matrix[year].map((val, mIdx) => {
                   const intensity = Math.min(100, Math.round((val / heatmapData.maxVal) * 100));
                   const isSelected = selectedHeatmapCell?.year === year && selectedHeatmapCell?.month === mIdx;
@@ -497,6 +549,56 @@ export default function ChronologicalIntelligence() {
             ))}
           </div>
         </div>
+
+        {/* INVESTIGATIVE TIME MACHINE CONTROLS */}
+        <div className="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 border-r border-slate-700/60 pr-4">
+              <button 
+                onClick={() => handleTimeMachineStep(-1)}
+                className="p-1.5 text-slate-400 hover:text-cyan-400 transition cursor-pointer"
+                title="Previous Active Month"
+              >
+                <SkipBack size={16} />
+              </button>
+              
+              <button 
+                onClick={() => setIsTimeMachinePlaying(!isTimeMachinePlaying)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded text-xs font-bold font-mono transition cursor-pointer ${
+                  isTimeMachinePlaying 
+                    ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' 
+                    : 'bg-cyan-600 hover:bg-cyan-500 text-slate-950'
+                }`}
+              >
+                {isTimeMachinePlaying ? <><Pause size={14} /> PAUSE TIMELINE</> : <><Play size={14} /> PLAY TIMELINE</>}
+              </button>
+
+              <button 
+                onClick={() => handleTimeMachineStep(1)}
+                className="p-1.5 text-slate-400 hover:text-cyan-400 transition cursor-pointer"
+                title="Next Active Month"
+              >
+                <SkipForward size={16} />
+              </button>
+            </div>
+            <div className="text-xs font-mono text-slate-300">
+              Active Focus: {selectedHeatmapCell ? <span className="font-bold text-cyan-400">{monthNames[selectedHeatmapCell.month]} {selectedHeatmapCell.year}</span> : 'Global View'}
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+            Speed:
+            <select 
+              value={playbackSpeed}
+              onChange={(e) => setPlaybackSpeed(Number(e.target.value))}
+              className="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 outline-none cursor-pointer"
+            >
+              <option value={2500}>0.5x</option>
+              <option value={1500}>1.0x</option>
+              <option value={750}>2.0x</option>
+            </select>
+          </div>
+        </div>
       </div>
 
       {/* EVENT CORRELATION FRAMEWORK */}
@@ -518,7 +620,6 @@ export default function ChronologicalIntelligence() {
           </button>
         </div>
 
-        {/* Custom Event Creator Form */}
         {showAddEvent && (
           <form onSubmit={handleAddEvent} className="bg-slate-900/90 p-4 rounded-xl border border-slate-700/80 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs">
             <div>
@@ -566,9 +667,7 @@ export default function ChronologicalIntelligence() {
           </form>
         )}
 
-        {/* Event Impact Selector & Metrics */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-          {/* Milestone Selector List */}
           <div className="space-y-2 lg:col-span-1">
             <span className="text-xs font-semibold text-slate-400 font-mono uppercase block">Active Milestones</span>
             <div className="space-y-2 max-h-[160px] overflow-y-auto pr-1">
@@ -598,7 +697,6 @@ export default function ChronologicalIntelligence() {
             </div>
           </div>
 
-          {/* Event Before vs After Delta Analysis */}
           {eventImpactAnalysis ? (
             <div className="lg:col-span-2 bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 grid grid-cols-1 md:grid-cols-2 gap-4 font-mono">
               <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
@@ -638,79 +736,6 @@ export default function ChronologicalIntelligence() {
               Select or add a milestone event to compute trade impact deltas.
             </div>
           )}
-        </div>
-      </div>
-
-      {/* TECHNICAL RISK DOSSIER: CHRONOLOGICAL FLOW ANOMALY MATRICES (Preserved) */}
-      <div className="space-y-4">
-        <h3 className="text-xs font-bold tracking-widest text-cyan-400 font-mono uppercase flex items-center gap-2">
-          <span className="text-cyan-500 text-sm">ⓘ</span> Technical Risk Dossier: Chronological Flow Anomaly Matrices
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm space-y-2">
-            <h4 className="text-xs font-semibold font-mono tracking-wider text-slate-200 uppercase">1. Quantity Structuring Tempo</h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-mono">
-              High-frequency concurrent monthly transaction batches indicate structural planning. Adjusting commercial weight lines via multi-batch delivery schedules allows entities to maintain a profile under standard baseline monitoring.
-            </p>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm space-y-2 ring-1 ring-cyan-500/30">
-            <h4 className="text-xs font-semibold font-mono tracking-wider text-cyan-400 uppercase flex items-center justify-between">
-              <span>2. {chronologicalAnalysis.topProduct} Shifts</span>
-              <span className="bg-cyan-500/10 px-2 py-0.5 rounded text-xs tracking-widest text-cyan-300 font-semibold">DYNAMIC CAPTURE</span>
-            </h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-mono">
-              Declaring trade logs for <span className="text-amber-400 font-bold">{chronologicalAnalysis.topProduct}</span> across variable or unverified tariff chapters breaks down dynamic mass-balance audits and customs verification.
-            </p>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm space-y-2">
-            <h4 className="text-xs font-semibold font-mono tracking-wider text-slate-200 uppercase">3. High-Intensity Corridor Risk</h4>
-            <p className="text-xs text-slate-300 leading-relaxed font-mono">
-              The <span className="text-rose-400 font-bold">{chronologicalAnalysis.topCorridor}</span> channel functions as a major logistics artery for this product type. Applying alternative classifications obscures the tracking trail.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Counters Tiles Row (Preserved) */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold tracking-wider text-slate-300 block uppercase">Sudden Volume Spikes</span>
-            <div className="text-lg font-bold font-mono flex items-center gap-2">
-              <span className="text-amber-400">{chronologicalAnalysis.metrics.volumeSpikes}</span>
-              <span className="text-xs text-slate-400 font-medium">Triggers</span>
-            </div>
-          </div>
-          <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-amber-400">
-            <BarChart3 size={16} />
-          </div>
-        </div>
-
-        <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold tracking-wider text-slate-300 block uppercase">Evasive Rerouting Clusters</span>
-            <div className="text-lg font-bold font-mono flex items-center gap-2">
-              <span className="text-rose-400">{chronologicalAnalysis.metrics.reroutingClusters}</span>
-              <span className="text-xs text-slate-400 font-medium">Identified</span>
-            </div>
-          </div>
-          <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-rose-400">
-            <ShieldAlert size={16} />
-          </div>
-        </div>
-
-        <div className="bg-slate-800/80 border border-slate-700/60 p-4 rounded-xl shadow-sm flex items-center justify-between">
-          <div className="space-y-1">
-            <span className="text-xs font-semibold tracking-wider text-slate-300 block uppercase">Suspicious Timing Patterns</span>
-            <div className="text-lg font-bold font-mono flex items-center gap-2">
-              <span className="text-cyan-400">{chronologicalAnalysis.metrics.suspiciousTiming}</span>
-              <span className="text-xs text-slate-400 font-medium">Batches</span>
-            </div>
-          </div>
-          <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-cyan-400">
-            <Clock size={16} />
-          </div>
         </div>
       </div>
 
@@ -776,16 +801,22 @@ export default function ChronologicalIntelligence() {
         </div>
 
         {/* Dynamic Cards Stack Display */}
-        <div className="space-y-4 lg:col-span-3 print:border-none">
+        <div className="space-y-4 lg:col-span-3 print:border-none relative">
           <div className="flex justify-between items-center text-xs font-mono text-slate-300 px-1 non-printable font-semibold">
             <span>CHRONOLOGICAL VELOCITY OUTLIERS ({filteredRecords.length} SCANNED INCIDENTS)</span>
             <span className="text-xs text-slate-400 tracking-widest">REAL-TIME DELTA SORTING ENABLED</span>
           </div>
 
-          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible">
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible relative">
             {filteredRecords.length > 0 ? (
-              filteredRecords.map((rec, idx) => (
-                <div key={rec.id || idx} className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 break-inside-avoid shadow-sm">
+              filteredRecords.map((rec) => (
+                <div 
+                  key={rec.id}
+                  onClick={() => setSelectedIncident(rec)}
+                  className={`bg-slate-800/80 border rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 break-inside-avoid shadow-sm transition cursor-pointer hover:border-cyan-500/50 hover:bg-slate-800 ${
+                    selectedIncident?.id === rec.id ? 'border-cyan-500 ring-1 ring-cyan-500/50' : 'border-slate-700/60'
+                  }`}
+                >
                   <div className="space-y-3 flex-1 font-mono">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="bg-slate-900/80 px-2.5 py-1 rounded text-xs text-slate-200 font-bold border border-slate-700/60">
@@ -809,16 +840,10 @@ export default function ChronologicalIntelligence() {
                           Cargo Manifest: <span className="text-slate-100 font-bold">{rec.Product || 'UNKNOWN'}</span> 
                           <span className="text-slate-400 ml-1.5">(HS: {rec.HSCode || '?'})</span>
                         </div>
-                        <div>
-                          Brand Designation: <span className={rec.Brand && rec.Brand !== 'NOT DECLARED' ? 'text-emerald-400 font-bold' : 'text-slate-400'}>
-                            {rec.Brand || 'Not Declared'}
-                          </span>
-                        </div>
                       </div>
                     </div>
                   </div>
 
-                  {/* Country Nodes Block */}
                   <div className="flex flex-col justify-between items-end text-right min-w-[220px] bg-slate-900/80 p-3.5 rounded-lg border border-slate-700/60 font-mono shadow-inner">
                     <div className="text-xs font-bold text-slate-200">
                       Value: <span className="text-emerald-400">${rec.Amount ? Number(rec.Amount).toLocaleString(undefined, { minimumFractionDigits: 2 }) : '0.00'}</span>
@@ -826,14 +851,14 @@ export default function ChronologicalIntelligence() {
                     
                     <div className="text-xs space-y-1 mt-3 w-full border-t border-slate-700/60 pt-2 text-left md:text-right">
                       <div className="truncate text-slate-300 font-medium">
-                        EXPORTER: <span className="text-slate-100 font-bold font-sans text-xs">{rec.Exporter || 'UNVERIFIED_TRF'}</span>
+                        EXP: <span className="text-slate-100 font-bold font-sans text-xs">{rec.Exporter || 'UNVERIFIED_TRF'}</span>
                       </div>
                       <div className="truncate text-slate-300 font-medium">
-                        IMPORTER: <span className="text-slate-100 font-bold font-sans text-xs">{rec.Importer || 'SECURE_NODE_SL'}</span>
+                        IMP: <span className="text-slate-100 font-bold font-sans text-xs">{rec.Importer || 'SECURE_NODE_SL'}</span>
                       </div>
-                      <div className="text-cyan-400 font-bold tracking-widest uppercase mt-1">
-                        {rec.OriginCountry || 'UNKNOWN'} → {rec.DestinationCountry || 'UNKNOWN'}
-                      </div>
+                    </div>
+                    <div className="mt-2 text-[10px] text-cyan-500/80 font-bold uppercase tracking-widest flex items-center gap-1">
+                       <Search size={10} /> View Dossier
                     </div>
                   </div>
                 </div>
@@ -845,8 +870,113 @@ export default function ChronologicalIntelligence() {
             )}
           </div>
         </div>
-
       </div>
+
+      {/* CASE TIMELINE & INVESTIGATION DRAWER */}
+      {selectedIncident && (
+        <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-slate-900/95 backdrop-blur-md border-l border-slate-700/80 shadow-2xl z-50 flex flex-col font-mono transform transition-transform duration-300 ease-in-out">
+          
+          <div className="p-5 border-b border-slate-700/80 flex justify-between items-start bg-slate-800/50">
+            <div>
+              <span className="text-[10px] text-cyan-400 font-bold tracking-widest uppercase block mb-1">Incident Profile Drawer</span>
+              <h3 className="text-sm text-slate-100 font-bold leading-snug">
+                {selectedIncident.anomalyType.replace('_', ' ')} EVENT
+              </h3>
+              <p className="text-xs text-slate-400 mt-1">Ref: {selectedIncident.id.toUpperCase()}-{selectedIncident.Date.replace(/\D/g,'')}</p>
+            </div>
+            <button 
+              onClick={() => setSelectedIncident(null)}
+              className="text-slate-400 hover:text-white bg-slate-800 hover:bg-rose-500/20 hover:border-rose-500/50 border border-slate-700 p-1.5 rounded transition"
+            >
+              <X size={16} />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto p-5 space-y-6">
+            
+            {/* Core Entity Block */}
+            <div className="space-y-3">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700/60 pb-1 flex items-center gap-2">
+                <ShieldAlert size={12} className="text-amber-400" /> Operational Matrix
+              </h4>
+              <div className="bg-slate-950/50 p-3 rounded-lg border border-slate-800 space-y-2 text-xs">
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-slate-500">Date Logged:</span>
+                  <span className="col-span-2 text-slate-200 font-bold">{selectedIncident.Date}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-slate-500">Gross Value:</span>
+                  <span className="col-span-2 text-emerald-400 font-bold">${Number(selectedIncident.Amount || 0).toLocaleString()}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <span className="text-slate-500">Commodity:</span>
+                  <span className="col-span-2 text-slate-200 font-bold">{selectedIncident.Product || 'Unknown'} (HS: {selectedIncident.HSCode || '?'})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Geographical Diversion Map */}
+            <div className="space-y-3">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700/60 pb-1 flex items-center gap-2">
+                <Map size={12} className="text-cyan-400" /> Routing Topography
+              </h4>
+              <div className="flex items-center gap-3 bg-slate-950/50 p-4 rounded-lg border border-slate-800">
+                <div className="flex-1 text-center">
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Origin Node</span>
+                  <span className="block text-xs font-bold text-slate-200 truncate">{selectedIncident.OriginCountry || 'UNKNOWN'}</span>
+                  <span className="block text-[10px] text-slate-400 truncate">{selectedIncident.Exporter || 'Undefined Exp'}</span>
+                </div>
+                <div className="px-2 text-cyan-500 font-black">→</div>
+                <div className="flex-1 text-center">
+                  <span className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Terminal Node</span>
+                  <span className="block text-xs font-bold text-slate-200 truncate">{selectedIncident.DestinationCountry || 'UNKNOWN'}</span>
+                  <span className="block text-[10px] text-slate-400 truncate">{selectedIncident.Importer || 'Undefined Imp'}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Intelligence Briefing */}
+            <div className="space-y-3">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700/60 pb-1 flex items-center gap-2">
+                <AlertTriangle size={12} className="text-rose-400" /> System Findings
+              </h4>
+              <div className="bg-rose-950/20 p-3 rounded-lg border border-rose-900/50 text-xs text-rose-200/90 leading-relaxed font-sans">
+                {selectedIncident.insightMessage}
+                {selectedIncident.isMissingHS && " Mandatory HS Tariff verification fails structural compliance checks."}
+                {selectedIncident.anomalyType === 'REROUTING_CLUSTER' && " Importer history reveals previously established corridors bypassing this intermediate zone."}
+              </div>
+            </div>
+
+            {/* Recommended Actions */}
+            <div className="space-y-3">
+              <h4 className="text-[11px] font-bold text-slate-400 uppercase tracking-widest border-b border-slate-700/60 pb-1 flex items-center gap-2">
+                <Activity size={12} className="text-emerald-400" /> Recommended Actions
+              </h4>
+              <ul className="space-y-2 text-xs font-sans text-slate-300">
+                <li className="flex gap-2">
+                  <span className="text-emerald-400 mt-0.5">•</span> 
+                  Issue formal Request for Information (RFI) to {selectedIncident.Importer || 'Importer'} requiring original commercial invoices.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-emerald-400 mt-0.5">•</span> 
+                  Trigger secondary mass-balance audit across {selectedIncident.OriginCountry || 'Origin'} customs manifest logs.
+                </li>
+                <li className="flex gap-2">
+                  <span className="text-emerald-400 mt-0.5">•</span> 
+                  Cross-reference beneficiary banking nodes for {selectedIncident.Exporter || 'Exporter'}.
+                </li>
+              </ul>
+            </div>
+
+          </div>
+          
+          <div className="p-4 border-t border-slate-700/80 bg-slate-900 text-center">
+             <button className="w-full bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold py-2.5 rounded text-xs transition cursor-pointer uppercase tracking-widest">
+               Flag for Field Investigation
+             </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
