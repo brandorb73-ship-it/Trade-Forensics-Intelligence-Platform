@@ -1,29 +1,27 @@
-import React, { useState, useMemo, useEffect, createContext, useContext } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   TrendingUp, TrendingDown, AlertTriangle, ShieldAlert, DollarSign,
   Scale, Layers, FileText, Search, Filter, Eye, ArrowRight,
   BarChart2, LineChart, Activity, Info, CheckCircle2,
   X, Database, Building2, Globe, Tag, Box, Clock, Printer
 } from 'lucide-react';
-
-// ==========================================
-// GLOBAL CONTEXT & OBJECT
-// ==========================================
-export const TradeDataContext = createContext();
+// 1. IMPORT SHARED GLOBAL CONTEXT HOOK
+import { useTradeData } from '../../context/TradeDataContext';
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function PriceForensicsIntelligence(props) {
-  // 1. DYNAMIC DATA INGESTION: Aggressively hunt for the CSV data from the parent
-  const contextData = useContext(TradeDataContext);
+export default function PriceForensics(props) {
+  // 2. DYNAMIC DATA INGESTION: Connect to the global app context
+  // Fallback to empty object if hook fails to ensure safe destructuring
+  const { tradeData } = useTradeData() || {}; 
   
   const extractedData = 
     props.data || 
     props.parsedData || 
     props.csvData || 
     props.transactions || 
-    (Array.isArray(contextData) ? contextData : contextData?.data) || 
+    tradeData || 
     [];
 
   // Ensure it is a valid array to prevent downstream crashes
@@ -48,7 +46,7 @@ export default function PriceForensicsIntelligence(props) {
     const hsCounts = {};
     data.forEach(row => {
       const hs = row.hsCode || row.HSCode || row.hs_code || 'UNKNOWN';
-      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || 0);
+      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || row.Amount || 0); // Added row.Amount fallback
       if (!hsAverages[hs]) { hsAverages[hs] = 0; hsCounts[hs] = 0; }
       hsAverages[hs] += price;
       hsCounts[hs] += 1;
@@ -65,12 +63,12 @@ export default function PriceForensicsIntelligence(props) {
       const brand = row.brand || row.Brand || 'Generic';
       const product = row.product || row.Product || row.description || 'Unspecified Product';
       const hsCode = row.hsCode || row.HSCode || row.hs_code || 'UNKNOWN';
-      const country = row.country || row.Origin || row.Country || row.origin || 'Unknown';
-      const destination = row.destination || row.Destination || 'Unknown';
+      const country = row.country || row.OriginCountry || row.Origin || row.Country || row.origin || 'Unknown';
+      const destination = row.destination || row.DestinationCountry || row.Destination || 'Unknown';
       const route = row.route || row.Route || `${country} -> ${destination}`;
       const date = row.date || row.Date || new Date().toISOString().split('T')[0];
       
-      const unitPrice = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || 0);
+      const unitPrice = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || row.Amount || 0);
       const qty = parseFloat(row.qty || row.Quantity || row.Volume || row.quantity || 1);
       const tradeValue = parseFloat(row.tradeValue || row.TotalValue || row.value || (unitPrice * qty));
       
