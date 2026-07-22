@@ -4,7 +4,8 @@ import {
   ShieldAlert, AlertTriangle, Clock, FileText, BarChart3, 
   Layers, Filter, Calendar, TrendingUp, Activity, DollarSign,
   Zap, Flame, Plus, Trash2, ArrowUpRight, ArrowDownRight, Globe,
-  Play, Pause, SkipForward, SkipBack, X, Search, Map
+  Play, Pause, SkipForward, SkipBack, X, Search, Map, HelpCircle,
+  Info, CheckCircle2
 } from 'lucide-react';
 
 export default function ChronologicalIntelligence() {
@@ -27,10 +28,10 @@ export default function ChronologicalIntelligence() {
   const [newEventCategory, setNewEventCategory] = useState('INVESTIGATION');
   const [showAddEvent, setShowAddEvent] = useState(false);
 
-  // Phase 3: Case Timeline & Investigation Drawer State
+  // Case Timeline & Investigation Drawer State
   const [selectedIncident, setSelectedIncident] = useState(null);
 
-  // Phase 3: Investigative Time Machine State
+  // Investigative Time Machine State
   const [isTimeMachinePlaying, setIsTimeMachinePlaying] = useState(false);
   const [playbackSpeed, setPlaybackSpeed] = useState(1500); // ms per step
 
@@ -93,7 +94,30 @@ export default function ChronologicalIntelligence() {
     });
 
     const burstRatio = sortedDates.length > 0 ? (burstActivityCount / sortedDates.length) : 0;
-    const momentumScore = Math.min(100, Math.round(burstRatio * 100 + (avgMonthlyShipments > 20 ? 30 : 15)));
+    const rawScore = Math.min(100, Math.round(burstRatio * 100 + (avgMonthlyShipments > 20 ? 30 : 15)));
+
+    // VELOCITY SCORE INDEX & THRESHOLD RATING
+    let velocityTier = 'LOW';
+    let velocityColor = 'text-emerald-400';
+    let velocityBg = 'bg-emerald-500/10 border-emerald-500/30';
+    let velocityDescription = 'Baseline Trading Cadence';
+
+    if (rawScore > 80) {
+      velocityTier = 'CRITICAL SURGE';
+      velocityColor = 'text-rose-400';
+      velocityBg = 'bg-rose-500/20 border-rose-500/40';
+      velocityDescription = 'High-Risk Burst Dispatching / Tariff Front-Running';
+    } else if (rawScore > 60) {
+      velocityTier = 'HIGH RISK';
+      velocityColor = 'text-amber-400';
+      velocityBg = 'bg-amber-500/20 border-amber-500/40';
+      velocityDescription = 'Accelerated Batch Frequency Detected';
+    } else if (rawScore > 30) {
+      velocityTier = 'MODERATE';
+      velocityColor = 'text-cyan-300';
+      velocityBg = 'bg-cyan-500/20 border-cyan-500/40';
+      velocityDescription = 'Elevated Dispatch Frequency';
+    }
 
     return {
       totalShipments: tradeData.length,
@@ -107,7 +131,11 @@ export default function ChronologicalIntelligence() {
       activeEntities: entities.size,
       avgIntervalDays,
       burstActivityCount,
-      momentumScore,
+      momentumScore: rawScore,
+      velocityTier,
+      velocityColor,
+      velocityBg,
+      velocityDescription,
       monthlyData
     };
   }, [tradeData]);
@@ -116,11 +144,13 @@ export default function ChronologicalIntelligence() {
   // TIMELINE HEAT MAP ENGINE (Annual / Monthly Matrix)
   // ============================================================================
   const heatmapData = useMemo(() => {
-    if (!tradeData.length) return { years: [], matrix: {}, activePeriods: [] };
+    if (!tradeData.length) return { years: [], shipmentMatrix: {}, valueMatrix: {}, maxShipments: 1, maxValue: 1, activePeriods: [] };
 
-    const matrix = {};
+    const shipmentMatrix = {};
+    const valueMatrix = {};
     const yearSet = new Set();
-    let maxVal = 0;
+    let maxShipments = 0;
+    let maxValue = 0;
     const activePeriodsSet = new Set();
 
     tradeData.forEach(row => {
@@ -131,26 +161,34 @@ export default function ChronologicalIntelligence() {
       const month = d.getMonth(); 
       yearSet.add(year);
 
-      if (!matrix[year]) matrix[year] = Array(12).fill(0);
+      if (!shipmentMatrix[year]) shipmentMatrix[year] = Array(12).fill(0);
+      if (!valueMatrix[year]) valueMatrix[year] = Array(12).fill(0);
 
-      const metricIncrement = activeMetric === 'SHIPMENTS' ? 1 : (Number(row.Amount) || 0);
-      matrix[year][month] += metricIncrement;
+      const val = Number(row.Amount) || 0;
+      shipmentMatrix[year][month] += 1;
+      valueMatrix[year][month] += val;
 
-      if (matrix[year][month] > maxVal) maxVal = matrix[year][month];
+      if (shipmentMatrix[year][month] > maxShipments) maxShipments = shipmentMatrix[year][month];
+      if (valueMatrix[year][month] > maxValue) maxValue = valueMatrix[year][month];
       
-      // Track periods that have data for the Time Machine
       activePeriodsSet.add(`${year}-${month}`);
     });
 
     const years = Array.from(yearSet).sort((a, b) => b - a);
     
-    // Sort active periods chronologically for playback
     const activePeriods = Array.from(activePeriodsSet)
       .map(p => { const [y, m] = p.split('-'); return { year: parseInt(y), month: parseInt(m) }; })
       .sort((a, b) => a.year === b.year ? a.month - b.month : a.year - b.year);
 
-    return { years, matrix, maxVal: maxVal || 1, activePeriods };
-  }, [tradeData, activeMetric]);
+    return { 
+      years, 
+      shipmentMatrix, 
+      valueMatrix, 
+      maxShipments: maxShipments || 1, 
+      maxValue: maxValue || 1, 
+      activePeriods 
+    };
+  }, [tradeData]);
 
   // ============================================================================
   // INVESTIGATIVE TIME MACHINE ENGINE
@@ -166,7 +204,7 @@ export default function ChronologicalIntelligence() {
           );
           if (currentIndex === -1 || currentIndex === heatmapData.activePeriods.length - 1) {
             setIsTimeMachinePlaying(false);
-            return current; // Stop at end
+            return current;
           }
           return heatmapData.activePeriods[currentIndex + 1];
         });
@@ -221,8 +259,27 @@ export default function ChronologicalIntelligence() {
       }
     });
 
-    const shipmentDeltaPct = beforeShipments === 0 ? 100 : Math.round(((afterShipments - beforeShipments) / beforeShipments) * 100);
-    const valueDeltaPct = beforeValue === 0 ? 100 : Math.round(((afterValue - beforeValue) / beforeValue) * 100);
+    const shipmentDeltaPct = beforeShipments === 0 ? (afterShipments > 0 ? 100 : 0) : Math.round(((afterShipments - beforeShipments) / beforeShipments) * 100);
+    const valueDeltaPct = beforeValue === 0 ? (afterValue > 0 ? 100 : 0) : Math.round(((afterValue - beforeValue) / beforeValue) * 100);
+
+    // CORRELATION SHIFT INDEX & ASSESSMENT
+    let shiftSeverity = 'NOMINAL DRIFT';
+    let shiftBadgeColor = 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
+    let shiftInterpretation = 'Trade volume remains consistent before and after the event milestone.';
+
+    const maxDelta = Math.max(Math.abs(shipmentDeltaPct), Math.abs(valueDeltaPct));
+    
+    if (maxDelta > 40) {
+      shiftSeverity = 'CRITICAL SHIFT / HIGH POLICY SENSITIVITY';
+      shiftBadgeColor = 'text-rose-400 bg-rose-500/20 border-rose-500/40';
+      shiftInterpretation = shipmentDeltaPct > 0 
+        ? 'Massive post-event surge detected. Likely stockpiling, front-running tariff enforcement, or panic import behavior.'
+        : 'Sharp post-event volume collapse. Likely trade diversion to alternative transshipment nodes or undeclared routes.';
+    } else if (maxDelta > 15) {
+      shiftSeverity = 'MODERATE CORRELATION SHIFT';
+      shiftBadgeColor = 'text-amber-400 bg-amber-500/20 border-amber-500/40';
+      shiftInterpretation = 'Noticeable operational adjustment aligned with the event milestone.';
+    }
 
     return {
       event: selectedEvent,
@@ -231,7 +288,10 @@ export default function ChronologicalIntelligence() {
       shipmentDeltaPct,
       beforeValue,
       afterValue,
-      valueDeltaPct
+      valueDeltaPct,
+      shiftSeverity,
+      shiftBadgeColor,
+      shiftInterpretation
     };
   }, [events, selectedEventId, tradeData]);
 
@@ -333,12 +393,18 @@ export default function ChronologicalIntelligence() {
   }, [tradeData]);
 
   // ============================================================================
-  // ENRICHED TIMELINE INTELLIGENCE OBJECT
+  // ENRICHED TIMELINE INTELLIGENCE OBJECT WITH VELOCITY IMPLICATIONS
   // ============================================================================
   const intelligenceObject = useMemo(() => {
     if (!temporalMetrics) return null;
     
-    const dynamicNarrative = `The dataset spans ${temporalMetrics.monthsAnalysed} months of trading activity from ${temporalMetrics.earliestShipment} to ${temporalMetrics.latestShipment}. Total trade volume encompasses ${temporalMetrics.totalShipments} dispatches valued at $${temporalMetrics.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}. Shipment velocity displays an average interval of ${temporalMetrics.avgIntervalDays} days between dispatches, with ${temporalMetrics.burstActivityCount} burst incidents detected. High-density activity peaked during ${temporalMetrics.highestMonth}. Cross-corridor behavior highlights primary asset flow across ${chronologicalAnalysis.topCorridor}, driven predominantly by ${chronologicalAnalysis.topProduct}.`;
+    const dynamicNarrative = `The dataset spans ${temporalMetrics.monthsAnalysed} months of trade history from ${temporalMetrics.earliestShipment} to ${temporalMetrics.latestShipment}, encompassing ${temporalMetrics.totalShipments} dispatches valued at $${temporalMetrics.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}. 
+
+VELOCITY SCORE SIGNIFICANCE (${temporalMetrics.momentumScore}/100 - ${temporalMetrics.velocityTier}):
+The Velocity Score measures dispatch frequency compression and burst batch clustering relative to historical norms. With an average dispatch gap of ${temporalMetrics.avgIntervalDays} days and ${temporalMetrics.burstActivityCount} burst incidents logged, the current score indicates "${temporalMetrics.velocityDescription}". 
+
+REAL-WORLD RISK IMPLICATIONS:
+High velocity scores (>60) strongly correlate with trade evasion tactics, such as front-loading shipments ahead of scheduled tariff increases or regulatory enforcement notices. Compressed batching can also signal artificial trade splitting to remain beneath border audit thresholds or circumvent anti-dumping duties. Primary volume corridors revolve around ${chronologicalAnalysis.topCorridor}, dominated by ${chronologicalAnalysis.topProduct}.`;
 
     return {
       section: "Timeline Intelligence",
@@ -386,18 +452,79 @@ export default function ChronologicalIntelligence() {
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+  // Helper render for Heat Map Grids (Used for both Screen and Dual Print output)
+  const renderHeatmapGrid = (title, mode) => {
+    const isShipmentMode = mode === 'SHIPMENTS';
+    const matrix = isShipmentMode ? heatmapData.shipmentMatrix : heatmapData.valueMatrix;
+    const maxVal = isShipmentMode ? heatmapData.maxShipments : heatmapData.maxValue;
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <span className="text-xs font-bold text-cyan-300 font-mono uppercase tracking-wider">{title}</span>
+        </div>
+        <div className="overflow-x-auto pt-1">
+          <div className="min-w-[680px] space-y-1.5">
+            <div className="grid grid-cols-[55px_repeat(12,1fr)] gap-1 text-center font-mono text-[11px] font-semibold text-slate-400 pb-1">
+              <span className="text-left pl-1">Year</span>
+              {monthNames.map(m => <span key={m}>{m}</span>)}
+            </div>
+
+            {heatmapData.years.map(year => (
+              <div key={year} className="grid grid-cols-[55px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
+                <span className="font-bold text-slate-300 text-left pl-1">{year}</span>
+                {matrix[year].map((val, mIdx) => {
+                  const intensity = Math.min(100, Math.round((val / maxVal) * 100));
+                  const isSelected = selectedHeatmapCell?.year === year && selectedHeatmapCell?.month === mIdx;
+
+                  let bgColor = 'bg-slate-900/40 text-slate-500 border-slate-800';
+                  if (val > 0) {
+                    if (intensity > 75) bgColor = 'bg-cyan-500 text-slate-950 font-bold border-cyan-400';
+                    else if (intensity > 40) bgColor = 'bg-cyan-700/60 text-cyan-100 border-cyan-600/50';
+                    else bgColor = 'bg-cyan-950/60 text-cyan-300 border-cyan-800/40';
+                  }
+
+                  return (
+                    <button
+                      key={mIdx}
+                      onClick={() => setSelectedHeatmapCell({ year, month: mIdx })}
+                      title={`${monthNames[mIdx]} ${year}: ${isShipmentMode ? val + ' shipments' : '$' + val.toLocaleString()}`}
+                      className={`h-8 rounded border flex items-center justify-center font-semibold text-[11px] transition cursor-pointer ${bgColor} ${
+                        isSelected ? 'ring-2 ring-amber-400 border-amber-400 scale-105 z-10' : 'hover:scale-105'
+                      }`}
+                    >
+                      {val > 0 ? (isShipmentMode ? val : `$${(val/1000).toFixed(0)}k`) : '-'}
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section relative">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           .non-printable { display: none !important; }
+          .print-only-block { display: block !important; }
           .print\\:max-h-none { max-height: none !important; }
           .print\\:overflow-visible { overflow: visible !important; }
           .print\\:border-none { border: none !important; }
-          .id-print-section { max-width: 100% !important; padding: 0 !important; background: transparent !important; }
-          body { background: #0b1329 !important; color: #f1f5f9 !important; }
-          div { height: auto !important; max-height: none !important; overflow: visible !important; }
+          .id-print-section { max-width: 100% !important; padding: 0 !important; background: transparent !important; color: #000 !important; }
+          body { background: #ffffff !important; color: #0f172a !important; }
+          div, span, p, h1, h2, h3 { color: #0f172a !important; text-shadow: none !important; }
+          .bg-slate-800\\/80, .bg-slate-900\\/80, .bg-slate-950 { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+          .text-cyan-400, .text-cyan-300 { color: #0284c7 !important; }
+          .text-amber-400 { color: #d97706 !important; }
+          .text-rose-400 { color: #e11d48 !important; }
+          .text-emerald-400 { color: #16a34a !important; }
+          .grid { page-break-inside: avoid; }
         }
+        .print-only-block { display: none; }
       `}} />
 
       {/* Action Header Panel */}
@@ -418,41 +545,59 @@ export default function ChronologicalIntelligence() {
             className="flex items-center gap-2 px-4 py-2 bg-slate-800/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-xs font-semibold font-mono text-slate-200 transition shadow-md cursor-pointer"
           >
             <FileText size={14} className="text-cyan-400" />
-            <span>Export Timeline Dossier</span>
+            <span>Export Print Dossier</span>
           </button>
         )}
       </div>
 
-      {/* Executive Dashboard & Shipment Velocity Indicators */}
+      {/* Executive Dashboard & Shipment Velocity Indicators (ALWAYS PRINTED) */}
       {temporalMetrics && (
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 non-printable">
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Calendar size={13}/> Start Date</span>
-            <span className="text-xs font-bold text-slate-100">{temporalMetrics.earliestShipment}</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Calendar size={13}/> End Date</span>
-            <span className="text-xs font-bold text-slate-100">{temporalMetrics.latestShipment}</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Activity size={13}/> Duration</span>
-            <span className="text-xs font-bold text-slate-100">{temporalMetrics.monthsAnalysed} Months</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Layers size={13}/> Avg Monthly</span>
-            <span className="text-xs font-bold text-slate-100">{Math.round(temporalMetrics.avgMonthlyShipments)} Shipments</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Clock size={13}/> Dispatch Gap</span>
-            <span className="text-xs font-bold text-amber-400">{temporalMetrics.avgIntervalDays} Days</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
-            <span className="text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Zap size={13}/> Burst Batches</span>
-            <span className="text-xs font-bold text-rose-400">{temporalMetrics.burstActivityCount} Events</span>
-          </div>
-          <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center ring-1 ring-cyan-500/30">
-            <span className="text-xs font-semibold text-cyan-400 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Flame size={13}/> Velocity Score</span>
-            <span className="text-xs font-bold text-cyan-300">{temporalMetrics.momentumScore} / 100</span>
+        <div className="space-y-3">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Calendar size={13}/> Start Date</span>
+              <span className="text-xs font-bold text-slate-100">{temporalMetrics.earliestShipment}</span>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Calendar size={13}/> End Date</span>
+              <span className="text-xs font-bold text-slate-100">{temporalMetrics.latestShipment}</span>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Activity size={13}/> Duration</span>
+              <span className="text-xs font-bold text-slate-100">{temporalMetrics.monthsAnalysed} Months</span>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Layers size={13}/> Avg Monthly</span>
+              <span className="text-xs font-bold text-slate-100">{Math.round(temporalMetrics.avgMonthlyShipments)} Shipments</span>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Clock size={13}/> Dispatch Gap</span>
+              <span className="text-xs font-bold text-amber-400">{temporalMetrics.avgIntervalDays} Days</span>
+            </div>
+            <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
+              <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Zap size={13}/> Burst Batches</span>
+              <span className="text-xs font-bold text-rose-400">{temporalMetrics.burstActivityCount} Events</span>
+            </div>
+
+            {/* Velocity Score Card with Index & Threshold */}
+            <div className={`bg-slate-800/80 p-3 rounded-xl border flex flex-col justify-center relative ${temporalMetrics.velocityBg}`}>
+              <div className="flex justify-between items-center mb-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-slate-300">
+                  <Flame size={12} className={temporalMetrics.velocityColor} /> Velocity Score
+                </span>
+                <span className={`text-[9px] font-extrabold px-1.5 py-0.5 rounded border uppercase tracking-widest ${temporalMetrics.velocityBg} ${temporalMetrics.velocityColor}`}>
+                  {temporalMetrics.velocityTier}
+                </span>
+              </div>
+              <div className="flex items-baseline justify-between">
+                <span className={`text-base font-black ${temporalMetrics.velocityColor}`}>
+                  {temporalMetrics.momentumScore} <span className="text-xs font-normal text-slate-400">/ 100</span>
+                </span>
+              </div>
+              <span className="text-[9px] text-slate-400 font-medium truncate mt-0.5" title={temporalMetrics.velocityDescription}>
+                {temporalMetrics.velocityDescription}
+              </span>
+            </div>
           </div>
         </div>
       )}
@@ -463,16 +608,16 @@ export default function ChronologicalIntelligence() {
           <h2 className="text-xs font-bold tracking-widest text-cyan-400 font-mono uppercase flex items-center gap-2">
             <FileText size={15} className="text-cyan-400" /> Dynamic Temporal Intelligence Narrative
           </h2>
-          <span className="text-xs bg-slate-900/80 px-2.5 py-1 rounded border border-slate-700/60 text-slate-300 font-medium">CALCULATED EVIDENCE</span>
+          <span className="text-[10px] bg-slate-900/80 px-2.5 py-1 rounded border border-slate-700/60 text-slate-300 font-mono font-medium">COMPUTED EVIDENCE</span>
         </div>
         <div className="bg-slate-900/60 p-4 rounded-lg border border-slate-700/60">
-          <p className="text-xs font-medium text-slate-200 leading-relaxed font-sans">
+          <p className="text-xs font-medium text-slate-200 leading-relaxed font-sans whitespace-pre-line">
             {intelligenceObject?.executiveSummary || "Compiling temporal intelligence narratives..."}
           </p>
         </div>
       </div>
 
-      {/* TIMELINE HEAT MAP MATRIX (Redesigned with explicit Grid Columns) */}
+      {/* TEMPORAL DENSITY MATRIX (SCREEN INTERACTIVE VIEW) */}
       <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4 non-printable">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700/60 pb-3">
           <div>
@@ -509,46 +654,10 @@ export default function ChronologicalIntelligence() {
           </div>
         </div>
 
-        {/* Fixed Heat Map Grid Layout */}
-        <div className="overflow-x-auto pt-2">
-          <div className="min-w-[700px] space-y-2">
-            {/* Header Row using absolute arbitrary col sizing */}
-            <div className="grid grid-cols-[60px_repeat(12,1fr)] gap-1 text-center font-mono text-xs font-semibold text-slate-400 pb-1">
-              <span className="text-left pl-2">Year</span>
-              {monthNames.map(m => <span key={m}>{m}</span>)}
-            </div>
-
-            {heatmapData.years.map(year => (
-              <div key={year} className="grid grid-cols-[60px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
-                <span className="font-bold text-slate-300 text-left pl-2">{year}</span>
-                {heatmapData.matrix[year].map((val, mIdx) => {
-                  const intensity = Math.min(100, Math.round((val / heatmapData.maxVal) * 100));
-                  const isSelected = selectedHeatmapCell?.year === year && selectedHeatmapCell?.month === mIdx;
-
-                  let bgColor = 'bg-slate-900/40 text-slate-500 border-slate-800';
-                  if (val > 0) {
-                    if (intensity > 75) bgColor = 'bg-cyan-500 text-slate-950 font-bold border-cyan-400';
-                    else if (intensity > 40) bgColor = 'bg-cyan-700/60 text-cyan-100 border-cyan-600/50';
-                    else bgColor = 'bg-cyan-950/60 text-cyan-300 border-cyan-800/40';
-                  }
-
-                  return (
-                    <button
-                      key={mIdx}
-                      onClick={() => setSelectedHeatmapCell({ year, month: mIdx })}
-                      title={`${monthNames[mIdx]} ${year}: ${activeMetric === 'VALUE' ? '$' + val.toLocaleString() : val + ' shipments'}`}
-                      className={`h-9 rounded border flex items-center justify-center font-semibold text-xs transition cursor-pointer ${bgColor} ${
-                        isSelected ? 'ring-2 ring-amber-400 border-amber-400 scale-105 z-10' : 'hover:scale-105'
-                      }`}
-                    >
-                      {val > 0 ? (activeMetric === 'VALUE' ? `$${(val/1000).toFixed(0)}k` : val) : '-'}
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-        </div>
+        {renderHeatmapGrid(
+          activeMetric === 'SHIPMENTS' ? "Shipment Volume Matrix" : "Trade Value Matrix ($ USD)",
+          activeMetric
+        )}
 
         {/* INVESTIGATIVE TIME MACHINE CONTROLS */}
         <div className="flex items-center justify-between bg-slate-900/60 p-3 rounded-lg border border-slate-700/60">
@@ -601,8 +710,19 @@ export default function ChronologicalIntelligence() {
         </div>
       </div>
 
-      {/* EVENT CORRELATION FRAMEWORK */}
-      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4 non-printable">
+      {/* TEMPORAL DENSITY MATRIX (PRINT-ONLY BOTH SHIPMENTS & VALUE DUAL DISPLAY) */}
+      <div className="print-only-block bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-6">
+        <h3 className="text-xs font-bold tracking-widest text-slate-200 font-mono uppercase">
+          Temporal Density Matrices (Full Audit Record)
+        </h3>
+        {renderHeatmapGrid("1. Shipment Volume Matrix", 'SHIPMENTS')}
+        <div className="border-t border-slate-700/60 pt-4">
+          {renderHeatmapGrid("2. Trade Value Matrix ($ USD)", 'VALUE')}
+        </div>
+      </div>
+
+      {/* EVENT CORRELATION FRAMEWORK & EXPLAINER PANEL */}
+      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700/60 pb-3">
           <div>
             <h3 className="text-xs font-bold tracking-widest text-slate-200 font-mono uppercase flex items-center gap-2">
@@ -613,7 +733,7 @@ export default function ChronologicalIntelligence() {
 
           <button
             onClick={() => setShowAddEvent(!showAddEvent)}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-xs font-semibold font-mono text-cyan-300 transition cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900/80 hover:bg-slate-700 border border-slate-700/60 rounded-lg text-xs font-semibold font-mono text-cyan-300 transition cursor-pointer non-printable"
           >
             <Plus size={14} />
             <span>Add Event Milestone</span>
@@ -621,7 +741,7 @@ export default function ChronologicalIntelligence() {
         </div>
 
         {showAddEvent && (
-          <form onSubmit={handleAddEvent} className="bg-slate-900/90 p-4 rounded-xl border border-slate-700/80 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs">
+          <form onSubmit={handleAddEvent} className="bg-slate-900/90 p-4 rounded-xl border border-slate-700/80 grid grid-cols-1 md:grid-cols-4 gap-3 font-mono text-xs non-printable">
             <div>
               <label className="block text-slate-300 font-semibold mb-1">Event Title</label>
               <input
@@ -688,7 +808,7 @@ export default function ChronologicalIntelligence() {
                       e.stopPropagation();
                       setEvents(events.filter(item => item.id !== evt.id));
                     }}
-                    className="text-slate-500 hover:text-rose-400 transition"
+                    className="text-slate-500 hover:text-rose-400 transition non-printable"
                   >
                     <Trash2 size={13} />
                   </button>
@@ -698,36 +818,52 @@ export default function ChronologicalIntelligence() {
           </div>
 
           {eventImpactAnalysis ? (
-            <div className="lg:col-span-2 bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 grid grid-cols-1 md:grid-cols-2 gap-4 font-mono">
-              <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-slate-800 pb-1">
-                  Volume Impact (60-Day Delta)
-                </span>
-                <div className="flex justify-between items-center pt-1">
-                  <div>
-                    <span className="text-xs text-slate-400 block">Pre-Event: {eventImpactAnalysis.beforeShipments}</span>
-                    <span className="text-xs text-slate-200 block font-bold">Post-Event: {eventImpactAnalysis.afterShipments}</span>
+            <div className="lg:col-span-2 bg-slate-900/60 p-4 rounded-xl border border-slate-700/60 space-y-4 font-mono">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-slate-800 pb-1">
+                    Volume Impact (60-Day Delta)
+                  </span>
+                  <div className="flex justify-between items-center pt-1">
+                    <div>
+                      <span className="text-xs text-slate-400 block">Pre-Event: {eventImpactAnalysis.beforeShipments}</span>
+                      <span className="text-xs text-slate-200 block font-bold">Post-Event: {eventImpactAnalysis.afterShipments}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 font-bold text-sm ${eventImpactAnalysis.shipmentDeltaPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {eventImpactAnalysis.shipmentDeltaPct >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                      <span>{eventImpactAnalysis.shipmentDeltaPct}%</span>
+                    </div>
                   </div>
-                  <div className={`flex items-center gap-1 font-bold text-sm ${eventImpactAnalysis.shipmentDeltaPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {eventImpactAnalysis.shipmentDeltaPct >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                    <span>{eventImpactAnalysis.shipmentDeltaPct}%</span>
+                </div>
+
+                <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
+                  <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-slate-800 pb-1">
+                    Trade Value Impact (60-Day Delta)
+                  </span>
+                  <div className="flex justify-between items-center pt-1">
+                    <div>
+                      <span className="text-xs text-slate-400 block">Pre: ${eventImpactAnalysis.beforeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                      <span className="text-xs text-slate-200 block font-bold">Post: ${eventImpactAnalysis.afterValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+                    </div>
+                    <div className={`flex items-center gap-1 font-bold text-sm ${eventImpactAnalysis.valueDeltaPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
+                      {eventImpactAnalysis.valueDeltaPct >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
+                      <span>{eventImpactAnalysis.valueDeltaPct}%</span>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider block border-b border-slate-800 pb-1">
-                  Trade Value Impact (60-Day Delta)
-                </span>
-                <div className="flex justify-between items-center pt-1">
-                  <div>
-                    <span className="text-xs text-slate-400 block">Pre: ${eventImpactAnalysis.beforeValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
-                    <span className="text-xs text-slate-200 block font-bold">Post: ${eventImpactAnalysis.afterValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span>
+              {/* Live Event Correlation Assessment Banner */}
+              <div className="bg-slate-950 p-3 rounded-lg border border-slate-800 flex items-start gap-2.5">
+                <Info size={16} className="text-cyan-400 mt-0.5 shrink-0" />
+                <div className="text-xs font-sans space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-slate-200">Correlation Shift Index:</span>
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded border ${eventImpactAnalysis.shiftBadgeColor}`}>
+                      {eventImpactAnalysis.shiftSeverity}
+                    </span>
                   </div>
-                  <div className={`flex items-center gap-1 font-bold text-sm ${eventImpactAnalysis.valueDeltaPct >= 0 ? 'text-emerald-400' : 'text-rose-400'}`}>
-                    {eventImpactAnalysis.valueDeltaPct >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
-                    <span>{eventImpactAnalysis.valueDeltaPct}%</span>
-                  </div>
+                  <p className="text-slate-300">{eventImpactAnalysis.shiftInterpretation}</p>
                 </div>
               </div>
             </div>
@@ -736,6 +872,38 @@ export default function ChronologicalIntelligence() {
               Select or add a milestone event to compute trade impact deltas.
             </div>
           )}
+        </div>
+
+        {/* INVESTIGATION CORRELATION ENGINE: CONTEXT, INTERPRETATION & THRESHOLD GUIDE */}
+        <div className="mt-4 bg-slate-900/90 border border-slate-700/80 p-4 rounded-xl space-y-3 font-sans text-xs">
+          <div className="flex items-center gap-2 text-cyan-400 font-mono font-bold uppercase tracking-wider text-xs">
+            <HelpCircle size={15} /> Event Correlation Engine: Purpose, Methodology & Threshold Guide
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-300">
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">1. Context & Operational Purpose</span>
+              <p className="text-[11px] leading-relaxed">
+                Evaluates trading pattern behavior across a <strong>60-day window centered on key policy events</strong> (e.g., anti-dumping duties, sanction announcements, tariff rate adjustments). It isolates whether market shifts were organic or event-driven.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">2. Real-World Risk Interpretation</span>
+              <p className="text-[11px] leading-relaxed">
+                <strong>Positive Surges (+40%+)</strong> highlight front-loading and stockpiling to bypass impending duties. <strong>Negative Drops (-40%+)</strong> indicate rerouting through third-party jurisdictions or transshipment points.
+              </p>
+            </div>
+
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+              <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">3. Correlation Shift Scoring Tiers</span>
+              <ul className="text-[11px] space-y-1 font-mono">
+                <li className="text-emerald-400"><strong>±0% – ±15%:</strong> Nominal Drift (Standard)</li>
+                <li className="text-amber-400"><strong>±15% – ±40%:</strong> Moderate Adaptation</li>
+                <li className="text-rose-400"><strong>&gt; ±40%:</strong> Severe Policy Evasion Risk</li>
+              </ul>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -857,7 +1025,7 @@ export default function ChronologicalIntelligence() {
                         IMP: <span className="text-slate-100 font-bold font-sans text-xs">{rec.Importer || 'SECURE_NODE_SL'}</span>
                       </div>
                     </div>
-                    <div className="mt-2 text-[10px] text-cyan-500/80 font-bold uppercase tracking-widest flex items-center gap-1">
+                    <div className="mt-2 text-[10px] text-cyan-500/80 font-bold uppercase tracking-widest flex items-center gap-1 non-printable">
                        <Search size={10} /> View Dossier
                     </div>
                   </div>
@@ -874,7 +1042,7 @@ export default function ChronologicalIntelligence() {
 
       {/* CASE TIMELINE & INVESTIGATION DRAWER */}
       {selectedIncident && (
-        <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-slate-900/95 backdrop-blur-md border-l border-slate-700/80 shadow-2xl z-50 flex flex-col font-mono transform transition-transform duration-300 ease-in-out">
+        <div className="fixed inset-y-0 right-0 w-full md:w-[450px] bg-slate-900/95 backdrop-blur-md border-l border-slate-700/80 shadow-2xl z-50 flex flex-col font-mono transform transition-transform duration-300 ease-in-out non-printable">
           
           <div className="p-5 border-b border-slate-700/80 flex justify-between items-start bg-slate-800/50">
             <div>
