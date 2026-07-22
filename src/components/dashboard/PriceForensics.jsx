@@ -5,15 +5,54 @@ import {
   BarChart2, LineChart, Activity, Info, CheckCircle2,
   X, Database, Building2, Globe, Tag, Box, Clock, Printer
 } from 'lucide-react';
-// 1. IMPORT SHARED GLOBAL CONTEXT HOOK
 import { useTradeData } from '../../context/TradeDataContext';
+
+// ==========================================
+// TOOLTIP INTELLIGENCE DICTIONARY
+// ==========================================
+const kpiTooltips = {
+  "Avg Unit Price": {
+    meaning: "The arithmetic mean of all unit prices.",
+    interpretation: "Indicates the general pricing level across the dataset.",
+    threshold: "N/A - Contextual baseline.",
+    significance: "Used as a baseline to detect systemic under- or over-valuation."
+  },
+  "Median Price": {
+    meaning: "The middle value separating higher and lower halves.",
+    interpretation: "Less affected by extreme outliers than the mean.",
+    threshold: "Deviations >20% from mean suggest heavy skew.",
+    significance: "Better representation of 'typical' commercial pricing in skewed datasets."
+  },
+  "Total Value": {
+    meaning: "Sum of all transaction trade values.",
+    interpretation: "Overall economic footprint of the filtered dataset.",
+    threshold: "N/A",
+    significance: "Assesses revenue exposure, potential duty impact, and materiality."
+  },
+  "Variance (CV)": {
+    meaning: "Coefficient of Variation (Std Dev / Mean).",
+    interpretation: "Measures relative volatility and pricing dispersion.",
+    threshold: ">15% indicates moderate volatility; >30% high volatility.",
+    significance: "High variance often flags related-party shifting or inconsistent valuation."
+  },
+  "Price Outliers": {
+    meaning: "Transactions deviating significantly from market average.",
+    interpretation: "Identifies anomalies requiring immediate review.",
+    threshold: ">40% variance from HS/Brand benchmark.",
+    significance: "Direct targets for anti-dumping, fraud, or transfer pricing audits."
+  },
+  "Stability Index": {
+    meaning: "Inverse of the Coefficient of Variation (100 - CV).",
+    interpretation: "Higher score indicates tighter, more consistent pricing.",
+    threshold: "<70 indicates potential risk; <50 indicates severe pricing chaos.",
+    significance: "Helps customs/auditors quickly gauge if pricing appears commercially normal."
+  }
+};
 
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
 export default function PriceForensics(props) {
-  // 2. DYNAMIC DATA INGESTION: Connect to the global app context
-  // Fallback to empty object if hook fails to ensure safe destructuring
   const { tradeData } = useTradeData() || {}; 
   
   const extractedData = 
@@ -24,7 +63,6 @@ export default function PriceForensics(props) {
     tradeData || 
     [];
 
-  // Ensure it is a valid array to prevent downstream crashes
   const data = Array.isArray(extractedData) ? extractedData : [];
 
   const [activeTab, setActiveTab] = useState('overview'); 
@@ -36,17 +74,15 @@ export default function PriceForensics(props) {
 
   // ==========================================
   // DYNAMIC DATA ENRICHMENT ENGINE
-  // Analyzes uploaded CSV to generate missing forensic metrics dynamically
   // ==========================================
   const enrichedData = useMemo(() => {
     if (!data || data.length === 0) return [];
 
-    // Step 1: Calculate market averages per HS Code from the uploaded dataset
     const hsAverages = {};
     const hsCounts = {};
     data.forEach(row => {
       const hs = row.hsCode || row.HSCode || row.hs_code || 'UNKNOWN';
-      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || row.Amount || 0); // Added row.Amount fallback
+      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || row.Amount || 0); 
       if (!hsAverages[hs]) { hsAverages[hs] = 0; hsCounts[hs] = 0; }
       hsAverages[hs] += price;
       hsCounts[hs] += 1;
@@ -55,7 +91,6 @@ export default function PriceForensics(props) {
       hsAverages[hs] = hsAverages[hs] / hsCounts[hs];
     });
 
-    // Step 2: Map and enrich every row with forensic indicators
     return data.map((row, index) => {
       const id = row.id || row.shipmentID || row.shipment_id || `SHP-${10000 + index}`;
       const exporter = row.exporter || row.Exporter || row.shipper || 'Unknown Exporter';
@@ -77,14 +112,12 @@ export default function PriceForensics(props) {
       
       const riskScore = Math.min(Math.round(Math.abs(variance) * 1.5), 100);
       
-      // Dynamically assign flags based on dataset behaviour
       const flags = [];
       if (variance < -40) flags.push("Price Outlier", "Customs Valuation Indicator");
       if (variance < -25) flags.push("Dumping Indicator", "Persistent Low Pricing");
       if (variance > 30) flags.push("Premium Pricing");
       if (Math.abs(variance) <= 15) flags.push("Normal Market Range");
       
-      // Naive related party check (if names share common words)
       const expWords = exporter.toLowerCase().split(' ');
       const impWords = importer.toLowerCase().split(' ');
       const relatedParty = row.relatedParty !== undefined 
@@ -150,7 +183,6 @@ export default function PriceForensics(props) {
     };
   }, [filteredTransactions]);
 
-  // Set Global Intel Object
   useEffect(() => {
     if (stats.count) {
       setIntelligenceObject({
@@ -175,12 +207,36 @@ export default function PriceForensics(props) {
     <>
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #0f172a !important; color: white !important; }
-          .print-avoid-break { break-inside: avoid; page-break-inside: avoid; margin-bottom: 24px; }
-          .print-force-show { display: block !important; }
+          /* Force Light Mode for Printing to ensure visibility */
+          body { background-color: #ffffff !important; color: #000000 !important; }
+          * {
+            -webkit-print-color-adjust: exact !important; 
+            print-color-adjust: exact !important;
+            box-shadow: none !important;
+          }
+          /* Strip dark backgrounds to pure white */
+          div[class*="bg-slate-"] { 
+            background-color: #ffffff !important; 
+            border-color: #cbd5e1 !important; 
+          }
+          /* Force text to black */
+          span[class*="text-slate-"], div[class*="text-slate-"], p[class*="text-slate-"], h1, h2, h3, th, td, .text-white { 
+            color: #000000 !important; 
+          }
+          /* Keep semantic colors but ensure they are dark enough for paper */
+          .text-rose-400 { color: #e11d48 !important; }
+          .text-blue-400 { color: #2563eb !important; }
+          .text-emerald-400 { color: #16a34a !important; }
+          .text-amber-400 { color: #d97706 !important; }
+          .text-cyan-400 { color: #0891b2 !important; }
+          
+          /* Pagination and structural constraints */
+          .print-avoid-break { break-inside: avoid; page-break-inside: avoid; margin-bottom: 24px; display: block; }
           .hide-on-print { display: none !important; }
           .print-page-break-before { page-break-before: always; }
-          h2, h3 { break-after: avoid; page-break-after: avoid; }
+          
+          /* Fix cropped tables */
+          .overflow-x-auto, .overflow-y-auto { overflow: visible !important; }
         }
       `}} />
 
@@ -244,12 +300,12 @@ export default function PriceForensics(props) {
           <>
             {/* EXECUTIVE DASHBOARD */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 print-avoid-break">
-              <KpiCard label="Avg Unit Price" value={`$${stats.mean || 0}`} subText={`Wtd: $${stats.weightedMean || 0}`} icon={DollarSign} active={selectedKpiFilter === 'AVG'} onClick={() => handleKpiClick('AVG')} accent="blue" />
-              <KpiCard label="Median Price" value={`$${stats.median || 0}`} subText={`Range: $${stats.min} - $${stats.max}`} icon={BarChart2} active={selectedKpiFilter === 'MEDIAN'} onClick={() => handleKpiClick('MEDIAN')} accent="indigo" />
-              <KpiCard label="Total Value" value={`$${((stats.totalVal || 0) / 1000).toFixed(1)}k`} subText={`Qty: ${stats.totalQty?.toLocaleString()}`} icon={Activity} accent="emerald" />
-              <KpiCard label="Variance (CV)" value={`${stats.cv || 0}%`} subText={`Std Dev: ±$${stats.stdDev || 0}`} icon={LineChart} accent="amber" />
-              <KpiCard label="Price Outliers" value={stats.outliers || 0} subText="High risk price gaps" icon={AlertTriangle} active={selectedKpiFilter === 'OUTLIERS'} onClick={() => handleKpiClick('OUTLIERS')} accent="rose" alert />
-              <KpiCard label="Stability Index" value={`${stats.stabilityIndex || 0}/100`} subText="Based on Coefficient" icon={ShieldAlert} accent="cyan" />
+              <KpiCard label="Avg Unit Price" value={`$${stats.mean || 0}`} subText={`Wtd: $${stats.weightedMean || 0}`} icon={DollarSign} active={selectedKpiFilter === 'AVG'} onClick={() => handleKpiClick('AVG')} accent="blue" tooltip={kpiTooltips["Avg Unit Price"]} />
+              <KpiCard label="Median Price" value={`$${stats.median || 0}`} subText={`Range: $${stats.min} - $${stats.max}`} icon={BarChart2} active={selectedKpiFilter === 'MEDIAN'} onClick={() => handleKpiClick('MEDIAN')} accent="indigo" tooltip={kpiTooltips["Median Price"]} />
+              <KpiCard label="Total Value" value={`$${((stats.totalVal || 0) / 1000).toFixed(1)}k`} subText={`Qty: ${stats.totalQty?.toLocaleString()}`} icon={Activity} accent="emerald" tooltip={kpiTooltips["Total Value"]} />
+              <KpiCard label="Variance (CV)" value={`${stats.cv || 0}%`} subText={`Std Dev: ±$${stats.stdDev || 0}`} icon={LineChart} accent="amber" tooltip={kpiTooltips["Variance (CV)"]} />
+              <KpiCard label="Price Outliers" value={stats.outliers || 0} subText="High risk price gaps" icon={AlertTriangle} active={selectedKpiFilter === 'OUTLIERS'} onClick={() => handleKpiClick('OUTLIERS')} accent="rose" alert tooltip={kpiTooltips["Price Outliers"]} />
+              <KpiCard label="Stability Index" value={`${stats.stabilityIndex || 0}/100`} subText="Based on Coefficient" icon={ShieldAlert} accent="cyan" tooltip={kpiTooltips["Stability Index"]} />
             </div>
 
             {/* AI EXECUTIVE SUMMARY */}
@@ -287,42 +343,44 @@ export default function PriceForensics(props) {
             </div>
 
             <div className="space-y-8">
-              <div className={`${activeTab === 'overview' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
+              {/* NOTE: Using `print:block` forces all tabs to show up sequentially when printed */}
+              
+              <div className={`${activeTab === 'overview' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8`}>
                 <SectionHeader title="Dashboard Matrix" />
                 <OverviewTab transactions={filteredTransactions} onSelect={setSelectedDrawerItem} />
               </div>
 
-              <div className={`${activeTab === 'distribution' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
+              <div className={`${activeTab === 'distribution' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8`}>
                 <SectionHeader title="Distribution & Dynamic Bands" />
                 <DistributionTab stats={stats} transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'behaviour' ? 'block' : 'hidden'} print-force-show print-avoid-break print-page-break-before`}>
+              <div className={`${activeTab === 'behaviour' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8 print-page-break-before`}>
                 <SectionHeader title="Entity Pricing Intelligence" />
                 <BehaviourTab transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'brand_hs' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
+              <div className={`${activeTab === 'brand_hs' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8`}>
                 <SectionHeader title="Brand & HS Intelligence" />
                 <BrandHsTab transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'geographic' ? 'block' : 'hidden'} print-force-show print-avoid-break print-page-break-before`}>
+              <div className={`${activeTab === 'geographic' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8 print-page-break-before`}>
                 <SectionHeader title="Geographic & Lane Arbitrage" />
                 <GeographicTab transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'timeline' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
+              <div className={`${activeTab === 'timeline' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8`}>
                 <SectionHeader title="Price Timeline & Volatility" />
                 <TimelineTab transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'remedies' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
+              <div className={`${activeTab === 'remedies' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8`}>
                 <SectionHeader title="Customs & Trade Remedies" />
                 <RemediesTab transactions={filteredTransactions} />
               </div>
 
-              <div className={`${activeTab === 'evidence' ? 'block' : 'hidden'} print-force-show print-avoid-break print-page-break-before`}>
+              <div className={`${activeTab === 'evidence' ? 'block' : 'hidden print:block'} print-avoid-break print:mb-8 print-page-break-before`}>
                 <SectionHeader title="Evidence Repository" />
                 <EvidenceTab transactions={filteredTransactions} onSelect={setSelectedDrawerItem} />
               </div>
@@ -348,9 +406,25 @@ function SectionHeader({ title }) {
   );
 }
 
-function KpiCard({ label, value, subText, icon: Icon, active, onClick, accent, alert }) {
+function KpiCard({ label, value, subText, icon: Icon, active, onClick, accent, alert, tooltip }) {
   return (
-    <div onClick={onClick} className={`bg-slate-800/80 border rounded-lg p-3 cursor-pointer transition-all ${active ? 'border-blue-500 bg-slate-800 shadow-md ring-1 ring-blue-500' : 'border-slate-700/60 hover:border-slate-600'}`}>
+    <div onClick={onClick} className={`group relative bg-slate-800/80 border rounded-lg p-3 cursor-pointer transition-all ${active ? 'border-blue-500 bg-slate-800 shadow-md ring-1 ring-blue-500' : 'border-slate-700/60 hover:border-slate-600'}`}>
+      
+      {/* HOVER TOOLTIP */}
+      {tooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 bg-slate-900 text-slate-200 text-[10px] rounded-lg p-3 opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all z-50 border border-slate-600 shadow-xl pointer-events-none text-left hide-on-print">
+          <div className="font-bold text-white mb-2 border-b border-slate-700 pb-1 text-xs">{label} Insights</div>
+          <div className="grid grid-cols-[65px_1fr] gap-x-2 gap-y-1.5">
+            <span className="text-slate-400 font-semibold">Meaning:</span> <span>{tooltip.meaning}</span>
+            <span className="text-slate-400 font-semibold">Interpret:</span> <span>{tooltip.interpretation}</span>
+            <span className="text-amber-400 font-semibold">Threshold:</span> <span className="text-amber-100">{tooltip.threshold}</span>
+            <span className="text-blue-400 font-semibold">Real World:</span> <span className="text-blue-100">{tooltip.significance}</span>
+          </div>
+          {/* Arrow pointer */}
+          <div className="absolute top-full left-1/2 -translate-x-1/2 border-4 border-transparent border-t-slate-600" />
+        </div>
+      )}
+
       <div className="flex items-center justify-between text-slate-400 mb-1"><span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{label}</span><Icon className={`w-4 h-4 ${alert ? 'text-rose-400' : 'text-slate-400'}`} /></div>
       <div className="text-lg font-bold text-white font-mono tracking-tight">{value}</div>
       <div className="text-[10px] text-slate-400 mt-1 font-medium">{subText}</div>
@@ -546,12 +620,13 @@ function TimelineTab({ transactions }) {
     <div className="bg-slate-800/80 border border-slate-700/60 rounded-lg p-4">
       <h3 className="text-xs font-semibold text-slate-200 uppercase mb-3 border-b border-slate-700/60 pb-2"><Clock className="w-4 h-4 inline mr-1 text-emerald-400"/> Price Timeline & Volatility</h3>
       <div className="space-y-2">
+        {/* Enforce strict grid constraints for perfectly vertical alignment */}
         {sorted.map(t => (
-          <div key={t.id} className="flex justify-between items-center bg-slate-900/60 p-2 rounded text-xs border border-slate-700/50 print-avoid-break">
+          <div key={t.id} className="grid grid-cols-[110px_1fr_100px_90px] gap-3 items-center bg-slate-900/60 p-2 rounded text-xs border border-slate-700/50 print-avoid-break">
             <span className="font-mono text-slate-400">{t.date}</span>
-            <span className="font-medium text-slate-200">{t.product}</span>
-            <span className="font-mono text-white">${t.unitPrice.toFixed(2)}</span>
-            <span className={`text-[10px] px-1.5 py-0.5 rounded ${t.variance < -40 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-400'}`}>Var: {t.variance.toFixed(1)}%</span>
+            <span className="font-medium text-slate-200 truncate" title={t.product}>{t.product}</span>
+            <span className="font-mono text-white text-right">${t.unitPrice.toFixed(2)}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded text-right whitespace-nowrap ${t.variance < -40 ? 'bg-rose-500/10 text-rose-400' : 'bg-slate-800 text-slate-400'}`}>Var: {t.variance.toFixed(1)}%</span>
           </div>
         ))}
       </div>
