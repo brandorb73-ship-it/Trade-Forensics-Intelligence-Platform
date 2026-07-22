@@ -14,7 +14,21 @@ export const TradeDataContext = createContext();
 // ==========================================
 // MAIN COMPONENT
 // ==========================================
-export default function PriceForensicsIntelligence({ data = [] }) {
+export default function PriceForensicsIntelligence(props) {
+  // 1. DYNAMIC DATA INGESTION: Aggressively hunt for the CSV data from the parent
+  const contextData = useContext(TradeDataContext);
+  
+  const extractedData = 
+    props.data || 
+    props.parsedData || 
+    props.csvData || 
+    props.transactions || 
+    (Array.isArray(contextData) ? contextData : contextData?.data) || 
+    [];
+
+  // Ensure it is a valid array to prevent downstream crashes
+  const data = Array.isArray(extractedData) ? extractedData : [];
+
   const [activeTab, setActiveTab] = useState('overview'); 
   const [selectedKpiFilter, setSelectedKpiFilter] = useState(null);
   const [activeFlagFilter, setActiveFlagFilter] = useState('ALL');
@@ -33,8 +47,8 @@ export default function PriceForensicsIntelligence({ data = [] }) {
     const hsAverages = {};
     const hsCounts = {};
     data.forEach(row => {
-      const hs = row.hsCode || row.HSCode || 'UNKNOWN';
-      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || 0);
+      const hs = row.hsCode || row.HSCode || row.hs_code || 'UNKNOWN';
+      const price = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || 0);
       if (!hsAverages[hs]) { hsAverages[hs] = 0; hsCounts[hs] = 0; }
       hsAverages[hs] += price;
       hsCounts[hs] += 1;
@@ -45,20 +59,20 @@ export default function PriceForensicsIntelligence({ data = [] }) {
 
     // Step 2: Map and enrich every row with forensic indicators
     return data.map((row, index) => {
-      const id = row.id || row.shipmentID || `SHP-${10000 + index}`;
-      const exporter = row.exporter || row.Exporter || 'Unknown Exporter';
-      const importer = row.importer || row.Importer || 'Unknown Importer';
+      const id = row.id || row.shipmentID || row.shipment_id || `SHP-${10000 + index}`;
+      const exporter = row.exporter || row.Exporter || row.shipper || 'Unknown Exporter';
+      const importer = row.importer || row.Importer || row.consignee || 'Unknown Importer';
       const brand = row.brand || row.Brand || 'Generic';
-      const product = row.product || row.Product || 'Unspecified Product';
-      const hsCode = row.hsCode || row.HSCode || 'UNKNOWN';
-      const country = row.country || row.Origin || row.Country || 'Unknown';
+      const product = row.product || row.Product || row.description || 'Unspecified Product';
+      const hsCode = row.hsCode || row.HSCode || row.hs_code || 'UNKNOWN';
+      const country = row.country || row.Origin || row.Country || row.origin || 'Unknown';
       const destination = row.destination || row.Destination || 'Unknown';
       const route = row.route || row.Route || `${country} -> ${destination}`;
       const date = row.date || row.Date || new Date().toISOString().split('T')[0];
       
-      const unitPrice = parseFloat(row.unitPrice || row.UnitPrice || row.Price || 0);
-      const qty = parseFloat(row.qty || row.Quantity || row.Volume || 1);
-      const tradeValue = parseFloat(row.tradeValue || row.TotalValue || (unitPrice * qty));
+      const unitPrice = parseFloat(row.unitPrice || row.UnitPrice || row.Price || row.price || 0);
+      const qty = parseFloat(row.qty || row.Quantity || row.Volume || row.quantity || 1);
+      const tradeValue = parseFloat(row.tradeValue || row.TotalValue || row.value || (unitPrice * qty));
       
       const marketAvg = hsAverages[hsCode] || unitPrice;
       const variance = marketAvg > 0 ? ((unitPrice - marketAvg) / marketAvg) * 100 : 0;
@@ -161,7 +175,6 @@ export default function PriceForensicsIntelligence({ data = [] }) {
 
   return (
     <>
-      {/* Print-specific styles for the Dossier Layout */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body { -webkit-print-color-adjust: exact; print-color-adjust: exact; background-color: #0f172a !important; color: white !important; }
@@ -169,7 +182,6 @@ export default function PriceForensicsIntelligence({ data = [] }) {
           .print-force-show { display: block !important; }
           .hide-on-print { display: none !important; }
           .print-page-break-before { page-break-before: always; }
-          /* Ensure headers stay at the top of pages */
           h2, h3 { break-after: avoid; page-break-after: avoid; }
         }
       `}} />
@@ -200,7 +212,6 @@ export default function PriceForensicsIntelligence({ data = [] }) {
             >
               <Printer className="w-4 h-4" /> Print Multi-Lens Dossier
             </button>
-            {/* Global Module Navigation Tabs */}
             <div className="flex flex-wrap items-center justify-end gap-1 bg-slate-800/90 p-1 rounded-lg border border-slate-700/60 text-[11px] font-medium">
               {[
                 { id: 'overview', label: 'Dashboard' },
@@ -277,11 +288,6 @@ export default function PriceForensicsIntelligence({ data = [] }) {
               </div>
             </div>
 
-            {/* 
-              DYNAMIC TAB ROUTING WITH PRINT DOSSIER OVERRIDE 
-              The classes ensure that on screen, only active tabs show. 
-              On print, ALL tabs show, split gracefully using break-inside-avoid.
-            */}
             <div className="space-y-8">
               <div className={`${activeTab === 'overview' ? 'block' : 'hidden'} print-force-show print-avoid-break`}>
                 <SectionHeader title="Dashboard Matrix" />
@@ -326,7 +332,6 @@ export default function PriceForensicsIntelligence({ data = [] }) {
           </>
         )}
 
-        {/* INVESTIGATION DRAWER */}
         {selectedDrawerItem && <InvestigationDrawer item={selectedDrawerItem} onClose={() => setSelectedDrawerItem(null)} />}
       </div>
     </>
@@ -387,7 +392,7 @@ function OverviewTab({ transactions, onSelect }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800 text-xs font-medium text-slate-300">
-            {transactions.slice(0, 50).map(t => ( // Limit to 50 for performance/print safety
+            {transactions.slice(0, 50).map(t => (
               <tr key={t.id} onClick={() => onSelect(t)} className="hover:bg-slate-700/40 transition cursor-pointer group print-avoid-break">
                 <td className="py-2.5 px-3 text-blue-400 font-mono text-[11px]">{t.id}</td>
                 <td className="py-2.5 px-3">{t.exporter}</td>
@@ -592,7 +597,6 @@ function EvidenceTab({ transactions, onSelect }) {
   );
 }
 
-// INVESTIGATION DRAWER (Hidden entirely during print)
 function InvestigationDrawer({ item, onClose }) {
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex justify-end hide-on-print">
