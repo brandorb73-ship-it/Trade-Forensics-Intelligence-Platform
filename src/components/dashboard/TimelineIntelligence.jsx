@@ -100,23 +100,23 @@ export default function ChronologicalIntelligence() {
     let velocityTier = 'LOW';
     let velocityColor = 'text-emerald-400';
     let velocityBg = 'bg-emerald-500/10 border-emerald-500/30';
-    let velocityDescription = 'Baseline Trading Cadence';
+    let velocityDescription = 'Baseline / Normal Trading Pace';
 
     if (rawScore > 80) {
       velocityTier = 'CRITICAL SURGE';
       velocityColor = 'text-rose-400';
       velocityBg = 'bg-rose-500/20 border-rose-500/40';
-      velocityDescription = 'High-Risk Burst Dispatching / Tariff Front-Running';
+      velocityDescription = 'Abnormal Frequency / Evasion & Tariff Front-Running Risk';
     } else if (rawScore > 60) {
       velocityTier = 'HIGH RISK';
       velocityColor = 'text-amber-400';
       velocityBg = 'bg-amber-500/20 border-amber-500/40';
-      velocityDescription = 'Accelerated Batch Frequency Detected';
+      velocityDescription = 'Rapid Burst Dispatches / Potential Front-Loading';
     } else if (rawScore > 30) {
       velocityTier = 'MODERATE';
       velocityColor = 'text-cyan-300';
       velocityBg = 'bg-cyan-500/20 border-cyan-500/40';
-      velocityDescription = 'Elevated Dispatch Frequency';
+      velocityDescription = 'Accelerated Batching / Operational Acceleration';
     }
 
     return {
@@ -452,36 +452,67 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
 
   const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-  // Helper render for Heat Map Grids (Used for both Screen and Dual Print output)
-  const renderHeatmapGrid = (title, mode) => {
+  // Helper render for Heat Map Grids (Screen Interactive + Print Optimized Static Displays)
+  const renderHeatmapGrid = (title, mode, isPrintMode = false) => {
     const isShipmentMode = mode === 'SHIPMENTS';
     const matrix = isShipmentMode ? heatmapData.shipmentMatrix : heatmapData.valueMatrix;
     const maxVal = isShipmentMode ? heatmapData.maxShipments : heatmapData.maxValue;
 
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 print-break-inside-avoid">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-cyan-300 font-mono uppercase tracking-wider">{title}</span>
+          <span className="text-xs font-bold text-cyan-400 font-mono uppercase tracking-wider">{title}</span>
         </div>
-        <div className="overflow-x-auto pt-1">
-          <div className="min-w-[680px] space-y-1.5">
-            <div className="grid grid-cols-[55px_repeat(12,1fr)] gap-1 text-center font-mono text-[11px] font-semibold text-slate-400 pb-1">
+        
+        {/* Render Container */}
+        <div className={isPrintMode ? "w-full pt-1" : "overflow-x-auto pt-1"}>
+          <div className={isPrintMode ? "w-full space-y-1" : "min-w-[680px] space-y-1.5"}>
+            
+            {/* Header Months Row */}
+            <div className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 text-center font-mono text-[10px] sm:text-[11px] font-semibold text-slate-400 pb-1">
               <span className="text-left pl-1">Year</span>
               {monthNames.map(m => <span key={m}>{m}</span>)}
             </div>
 
+            {/* Matrix Data Rows */}
             {heatmapData.years.map(year => (
-              <div key={year} className="grid grid-cols-[55px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
+              <div key={year} className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
                 <span className="font-bold text-slate-300 text-left pl-1">{year}</span>
                 {matrix[year].map((val, mIdx) => {
                   const intensity = Math.min(100, Math.round((val / maxVal) * 100));
                   const isSelected = selectedHeatmapCell?.year === year && selectedHeatmapCell?.month === mIdx;
 
-                  let bgColor = 'bg-slate-900/40 text-slate-500 border-slate-800';
+                  // Print-Safe Color Map
+                  let bgColorClass = 'bg-slate-900/40 text-slate-500 border-slate-800';
+                  let printBgStyle = {};
+
                   if (val > 0) {
-                    if (intensity > 75) bgColor = 'bg-cyan-500 text-slate-950 font-bold border-cyan-400';
-                    else if (intensity > 40) bgColor = 'bg-cyan-700/60 text-cyan-100 border-cyan-600/50';
-                    else bgColor = 'bg-cyan-950/60 text-cyan-300 border-cyan-800/40';
+                    if (intensity > 75) {
+                      bgColorClass = 'bg-cyan-500 text-slate-950 font-bold border-cyan-400';
+                      printBgStyle = { backgroundColor: '#06b6d4', color: '#090d16', borderColor: '#22d3ee' };
+                    } else if (intensity > 40) {
+                      bgColorClass = 'bg-cyan-700/60 text-cyan-100 border-cyan-600/50';
+                      printBgStyle = { backgroundColor: '#0e7490', color: '#ffffff', borderColor: '#0891b2' };
+                    } else {
+                      bgColorClass = 'bg-cyan-950/60 text-cyan-300 border-cyan-800/40';
+                      printBgStyle = { backgroundColor: '#164e63', color: '#67e8f9', borderColor: '#155e75' };
+                    }
+                  } else {
+                    printBgStyle = { backgroundColor: '#f1f5f9', color: '#94a3b8', borderColor: '#cbd5e1' };
+                  }
+
+                  const cellText = val > 0 ? (isShipmentMode ? val : `$${(val/1000).toFixed(0)}k`) : '-';
+
+                  if (isPrintMode) {
+                    return (
+                      <div
+                        key={mIdx}
+                        style={printBgStyle}
+                        className="h-7 rounded border flex items-center justify-center font-semibold text-[10px] print:text-[10px] text-center"
+                      >
+                        {cellText}
+                      </div>
+                    );
                   }
 
                   return (
@@ -489,11 +520,11 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
                       key={mIdx}
                       onClick={() => setSelectedHeatmapCell({ year, month: mIdx })}
                       title={`${monthNames[mIdx]} ${year}: ${isShipmentMode ? val + ' shipments' : '$' + val.toLocaleString()}`}
-                      className={`h-8 rounded border flex items-center justify-center font-semibold text-[11px] transition cursor-pointer ${bgColor} ${
+                      className={`h-8 rounded border flex items-center justify-center font-semibold text-[11px] transition cursor-pointer ${bgColorClass} ${
                         isSelected ? 'ring-2 ring-amber-400 border-amber-400 scale-105 z-10' : 'hover:scale-105'
                       }`}
                     >
-                      {val > 0 ? (isShipmentMode ? val : `$${(val/1000).toFixed(0)}k`) : '-'}
+                      {cellText}
                     </button>
                   );
                 })}
@@ -509,20 +540,40 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section relative">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
           .non-printable { display: none !important; }
           .print-only-block { display: block !important; }
           .print\\:max-h-none { max-height: none !important; }
           .print\\:overflow-visible { overflow: visible !important; }
           .print\\:border-none { border: none !important; }
-          .id-print-section { max-width: 100% !important; padding: 0 !important; background: transparent !important; color: #000 !important; }
+          .id-print-section { max-width: 100% !important; padding: 0 !important; background: #ffffff !important; color: #0f172a !important; }
           body { background: #ffffff !important; color: #0f172a !important; }
           div, span, p, h1, h2, h3 { color: #0f172a !important; text-shadow: none !important; }
-          .bg-slate-800\\/80, .bg-slate-900\\/80, .bg-slate-950 { background: #f8fafc !important; border-color: #cbd5e1 !important; }
+          .bg-slate-800\\/80, .bg-slate-900\\/80, .bg-slate-900\\/90, .bg-slate-950, .bg-slate-900\\/60, .bg-slate-900\\/70 { 
+            background: #f8fafc !important; 
+            border-color: #cbd5e1 !important; 
+          }
           .text-cyan-400, .text-cyan-300 { color: #0284c7 !important; }
           .text-amber-400 { color: #d97706 !important; }
           .text-rose-400 { color: #e11d48 !important; }
           .text-emerald-400 { color: #16a34a !important; }
-          .grid { page-break-inside: avoid; }
+
+          /* Explicit Page Break & Page Boundaries */
+          .print-break-inside-avoid,
+          .bg-slate-800\\/80,
+          .bg-slate-900\\/80,
+          .bg-slate-900\\/90,
+          .bg-slate-950,
+          .border {
+            break-inside: avoid !important;
+            page-break-inside: avoid !important;
+          }
+          .grid {
+            page-break-inside: avoid !important;
+          }
         }
         .print-only-block { display: none; }
       `}} />
@@ -552,7 +603,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
 
       {/* Executive Dashboard & Shipment Velocity Indicators (ALWAYS PRINTED) */}
       {temporalMetrics && (
-        <div className="space-y-3">
+        <div className="space-y-3 print-break-inside-avoid">
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
             <div className="bg-slate-800/80 border border-slate-700/60 p-3.5 rounded-xl shadow-sm flex flex-col justify-center">
               <span className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5"><Calendar size={13}/> Start Date</span>
@@ -599,11 +650,43 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
               </span>
             </div>
           </div>
+
+          {/* Velocity Score Index & Threshold Rating Legend Panel */}
+          <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 font-mono text-xs">
+            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-emerald-500/20">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+              <div>
+                <span className="text-emerald-400 font-bold block text-[11px]">Low (0–30)</span>
+                <span className="text-[10px] text-slate-300 font-sans block leading-tight">Baseline / Normal Trading Pace</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-cyan-500/20">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0"></span>
+              <div>
+                <span className="text-cyan-300 font-bold block text-[11px]">Moderate (31–60)</span>
+                <span className="text-[10px] text-slate-300 font-sans block leading-tight">Accelerated Batching / Operational Acceleration</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-amber-500/20">
+              <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+              <div>
+                <span className="text-amber-400 font-bold block text-[11px]">High Risk (61–80)</span>
+                <span className="text-[10px] text-slate-300 font-sans block leading-tight">Rapid Burst Dispatches / Potential Front-Loading</span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-rose-500/20">
+              <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0"></span>
+              <div>
+                <span className="text-rose-400 font-bold block text-[11px]">Critical Surge (81–100)</span>
+                <span className="text-[10px] text-slate-300 font-sans block leading-tight">Abnormal Frequency / Evasion Risk</span>
+              </div>
+            </div>
+          </div>
         </div>
       )}
 
       {/* Dynamic Temporal Intelligence Narrative */}
-      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-3">
+      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-3 print-break-inside-avoid">
         <div className="flex justify-between items-center">
           <h2 className="text-xs font-bold tracking-widest text-cyan-400 font-mono uppercase flex items-center gap-2">
             <FileText size={15} className="text-cyan-400" /> Dynamic Temporal Intelligence Narrative
@@ -656,7 +739,8 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
 
         {renderHeatmapGrid(
           activeMetric === 'SHIPMENTS' ? "Shipment Volume Matrix" : "Trade Value Matrix ($ USD)",
-          activeMetric
+          activeMetric,
+          false
         )}
 
         {/* INVESTIGATIVE TIME MACHINE CONTROLS */}
@@ -710,19 +794,19 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
         </div>
       </div>
 
-      {/* TEMPORAL DENSITY MATRIX (PRINT-ONLY BOTH SHIPMENTS & VALUE DUAL DISPLAY) */}
-      <div className="print-only-block bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-6">
+      {/* TEMPORAL DENSITY MATRIX (PRINT-ONLY DUAL DISPLAY WITH STATIC PRINT CELLS) */}
+      <div className="print-only-block bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-6 print-break-inside-avoid">
         <h3 className="text-xs font-bold tracking-widest text-slate-200 font-mono uppercase">
           Temporal Density Matrices (Full Audit Record)
         </h3>
-        {renderHeatmapGrid("1. Shipment Volume Matrix", 'SHIPMENTS')}
+        {renderHeatmapGrid("1. Shipment Volume Matrix", 'SHIPMENTS', true)}
         <div className="border-t border-slate-700/60 pt-4">
-          {renderHeatmapGrid("2. Trade Value Matrix ($ USD)", 'VALUE')}
+          {renderHeatmapGrid("2. Trade Value Matrix ($ USD)", 'VALUE', true)}
         </div>
       </div>
 
       {/* EVENT CORRELATION FRAMEWORK & EXPLAINER PANEL */}
-      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4">
+      <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-4 print-break-inside-avoid">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-700/60 pb-3">
           <div>
             <h3 className="text-xs font-bold tracking-widest text-slate-200 font-mono uppercase flex items-center gap-2">
@@ -875,27 +959,27 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
         </div>
 
         {/* INVESTIGATION CORRELATION ENGINE: CONTEXT, INTERPRETATION & THRESHOLD GUIDE */}
-        <div className="mt-4 bg-slate-900/90 border border-slate-700/80 p-4 rounded-xl space-y-3 font-sans text-xs">
+        <div className="mt-4 bg-slate-900/90 border border-slate-700/80 p-4 rounded-xl space-y-3 font-sans text-xs print-break-inside-avoid">
           <div className="flex items-center gap-2 text-cyan-400 font-mono font-bold uppercase tracking-wider text-xs">
             <HelpCircle size={15} /> Event Correlation Engine: Purpose, Methodology & Threshold Guide
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-slate-300">
-            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800 print-break-inside-avoid">
               <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">1. Context & Operational Purpose</span>
               <p className="text-[11px] leading-relaxed">
                 Evaluates trading pattern behavior across a <strong>60-day window centered on key policy events</strong> (e.g., anti-dumping duties, sanction announcements, tariff rate adjustments). It isolates whether market shifts were organic or event-driven.
               </p>
             </div>
 
-            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800 print-break-inside-avoid">
               <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">2. Real-World Risk Interpretation</span>
               <p className="text-[11px] leading-relaxed">
                 <strong>Positive Surges (+40%+)</strong> highlight front-loading and stockpiling to bypass impending duties. <strong>Negative Drops (-40%+)</strong> indicate rerouting through third-party jurisdictions or transshipment points.
               </p>
             </div>
 
-            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800">
+            <div className="space-y-1.5 bg-slate-950 p-3 rounded-lg border border-slate-800 print-break-inside-avoid">
               <span className="font-bold text-slate-100 block font-mono text-[11px] text-cyan-300">3. Correlation Shift Scoring Tiers</span>
               <ul className="text-[11px] space-y-1 font-mono">
                 <li className="text-emerald-400"><strong>±0% – ±15%:</strong> Nominal Drift (Standard)</li>
@@ -981,7 +1065,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
                 <div 
                   key={rec.id}
                   onClick={() => setSelectedIncident(rec)}
-                  className={`bg-slate-800/80 border rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 break-inside-avoid shadow-sm transition cursor-pointer hover:border-cyan-500/50 hover:bg-slate-800 ${
+                  className={`bg-slate-800/80 border rounded-xl p-4 flex flex-col md:flex-row justify-between gap-4 print-break-inside-avoid shadow-sm transition cursor-pointer hover:border-cyan-500/50 hover:bg-slate-800 ${
                     selectedIncident?.id === rec.id ? 'border-cyan-500 ring-1 ring-cyan-500/50' : 'border-slate-700/60'
                   }`}
                 >
