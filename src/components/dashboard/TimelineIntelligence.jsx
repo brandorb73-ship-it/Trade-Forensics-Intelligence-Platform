@@ -2,10 +2,10 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTradeData } from '../../context/TradeDataContext.jsx';
 import { 
   ShieldAlert, AlertTriangle, Clock, FileText, BarChart3, 
-  Layers, Filter, Calendar, TrendingUp, Activity, DollarSign,
+  Layers, Filter, Calendar, Activity,
   Zap, Flame, Plus, Trash2, ArrowUpRight, ArrowDownRight, Globe,
   Play, Pause, SkipForward, SkipBack, X, Search, Map, HelpCircle,
-  Info, CheckCircle2
+  Info
 } from 'lucide-react';
 
 export default function ChronologicalIntelligence() {
@@ -328,7 +328,6 @@ export default function ChronologicalIntelligence() {
 
     const topProduct = Object.entries(productCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'CARGO ASSETS';
     const topCorridor = Object.entries(corridorCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'GLOBAL CORRIDOR';
-    const topBrand = Object.entries(brandCounts).sort((a, b) => b[1] - a[1])[0]?.[0] || 'STANDARD NON-POROUS';
 
     const analyzedRecords = tradeData.map((row, index) => {
       const hsString = String(row.HSCode || '').trim();
@@ -382,7 +381,6 @@ export default function ChronologicalIntelligence() {
     return {
       topProduct,
       topCorridor,
-      topBrand,
       records: analyzedRecords,
       metrics: {
         volumeSpikes,
@@ -393,7 +391,7 @@ export default function ChronologicalIntelligence() {
   }, [tradeData]);
 
   // ============================================================================
-  // ENRICHED TIMELINE INTELLIGENCE OBJECT WITH VELOCITY IMPLICATIONS
+  // ENRICHED TIMELINE INTELLIGENCE OBJECT
   // ============================================================================
   const intelligenceObject = useMemo(() => {
     if (!temporalMetrics) return null;
@@ -461,7 +459,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
     return (
       <div className="space-y-2 print-break-inside-avoid">
         <div className="flex justify-between items-center">
-          <span className="text-xs font-bold text-cyan-400 font-mono uppercase tracking-wider">{title}</span>
+          <span className="text-xs font-bold text-cyan-400 print:text-cyan-800 font-mono uppercase tracking-wider">{title}</span>
         </div>
         
         {/* Render Container */}
@@ -469,7 +467,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
           <div className={isPrintMode ? "w-full space-y-1" : "min-w-[680px] space-y-1.5"}>
             
             {/* Header Months Row */}
-            <div className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 text-center font-mono text-[10px] sm:text-[11px] font-semibold text-slate-400 pb-1">
+            <div className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 text-center font-mono text-[10px] sm:text-[11px] font-semibold text-slate-400 print:text-slate-700 pb-1">
               <span className="text-left pl-1">Year</span>
               {monthNames.map(m => <span key={m}>{m}</span>)}
             </div>
@@ -477,28 +475,27 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
             {/* Matrix Data Rows */}
             {heatmapData.years.map(year => (
               <div key={year} className="grid grid-cols-[45px_repeat(12,1fr)] gap-1 items-center font-mono text-xs">
-                <span className="font-bold text-slate-300 text-left pl-1">{year}</span>
+                <span className="font-bold text-slate-300 print:text-slate-900 text-left pl-1">{year}</span>
                 {matrix[year].map((val, mIdx) => {
                   const intensity = Math.min(100, Math.round((val / maxVal) * 100));
                   const isSelected = selectedHeatmapCell?.year === year && selectedHeatmapCell?.month === mIdx;
 
-                  // Print-Safe Color Map
                   let bgColorClass = 'bg-slate-900/40 text-slate-500 border-slate-800';
                   let printBgStyle = {};
 
                   if (val > 0) {
                     if (intensity > 75) {
                       bgColorClass = 'bg-cyan-500 text-slate-950 font-bold border-cyan-400';
-                      printBgStyle = { backgroundColor: '#06b6d4', color: '#090d16', borderColor: '#22d3ee' };
+                      printBgStyle = { backgroundColor: '#0284c7', color: '#ffffff', borderColor: '#0369a1' };
                     } else if (intensity > 40) {
                       bgColorClass = 'bg-cyan-700/60 text-cyan-100 border-cyan-600/50';
-                      printBgStyle = { backgroundColor: '#0e7490', color: '#ffffff', borderColor: '#0891b2' };
+                      printBgStyle = { backgroundColor: '#38bdf8', color: '#0f172a', borderColor: '#0284c7' };
                     } else {
                       bgColorClass = 'bg-cyan-950/60 text-cyan-300 border-cyan-800/40';
-                      printBgStyle = { backgroundColor: '#164e63', color: '#67e8f9', borderColor: '#155e75' };
+                      printBgStyle = { backgroundColor: '#e0f2fe', color: '#0369a1', borderColor: '#bae6fd' };
                     }
                   } else {
-                    printBgStyle = { backgroundColor: '#f1f5f9', color: '#94a3b8', borderColor: '#cbd5e1' };
+                    printBgStyle = { backgroundColor: '#f8fafc', color: '#94a3b8', borderColor: '#e2e8f0' };
                   }
 
                   const cellText = val > 0 ? (isShipmentMode ? val : `$${(val/1000).toFixed(0)}k`) : '-';
@@ -508,7 +505,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
                       <div
                         key={mIdx}
                         style={printBgStyle}
-                        className="h-7 rounded border flex items-center justify-center font-semibold text-[10px] print:text-[10px] text-center"
+                        className="h-7 rounded border flex items-center justify-center font-bold text-[10px] text-center"
                       >
                         {cellText}
                       </div>
@@ -540,38 +537,81 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto text-slate-100 font-sans id-print-section relative">
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          @page {
+            size: A4 portrait;
+            margin: 10mm;
+          }
+
           * {
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
           }
+
+          /* Force Pure White Printable Page Canvas (Eliminates Black Border / Frame) */
+          html, body, #root, main, .id-print-section {
+            background-color: #ffffff !important;
+            background: #ffffff !important;
+            color: #0f172a !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: 100% !important;
+            width: 100% !important;
+          }
+
           .non-printable { display: none !important; }
           .print-only-block { display: block !important; }
-          .print\\:max-h-none { max-height: none !important; }
-          .print\\:overflow-visible { overflow: visible !important; }
-          .print\\:border-none { border: none !important; }
-          .id-print-section { max-width: 100% !important; padding: 0 !important; background: #ffffff !important; color: #0f172a !important; }
-          body { background: #ffffff !important; color: #0f172a !important; }
-          div, span, p, h1, h2, h3 { color: #0f172a !important; text-shadow: none !important; }
-          .bg-slate-800\\/80, .bg-slate-900\\/80, .bg-slate-900\\/90, .bg-slate-950, .bg-slate-900\\/60, .bg-slate-900\\/70 { 
-            background: #f8fafc !important; 
-            border-color: #cbd5e1 !important; 
-          }
-          .text-cyan-400, .text-cyan-300 { color: #0284c7 !important; }
-          .text-amber-400 { color: #d97706 !important; }
-          .text-rose-400 { color: #e11d48 !important; }
-          .text-emerald-400 { color: #16a34a !important; }
 
-          /* Explicit Page Break & Page Boundaries */
+          /* Standardize High-Contrast Printable Panels with Thin Clean Borders */
+          .bg-slate-800\\/80, 
+          .bg-slate-900\\/80, 
+          .bg-slate-900\\/90, 
+          .bg-slate-950, 
+          .bg-slate-900\\/60, 
+          .bg-slate-900\\/70,
+          .bg-slate-950\\/60,
+          .bg-slate-950\\/50 { 
+            background-color: #ffffff !important; 
+            border: 1px solid #cbd5e1 !important;
+            border-radius: 8px !important;
+            color: #0f172a !important;
+          }
+
+          /* Lighten Scoring Threshold Legend Boxes Specifically in Print */
+          .scoring-legend-card {
+            background-color: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
+          }
+
+          .scoring-legend-card span, 
+          .scoring-legend-card p, 
+          .scoring-legend-card div {
+            color: #0f172a !important;
+          }
+
+          /* General Text Overrides for High Density Print Readability */
+          h1, h2, h3, h4, p, span, div, label, strong {
+            color: #0f172a !important;
+          }
+
+          .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 {
+            color: #1e293b !important;
+          }
+
+          /* Accent Badge Colors for Print Dossier */
+          .text-cyan-400, .text-cyan-300 { color: #0284c7 !important; }
+          .text-amber-400 { color: #b45309 !important; }
+          .text-rose-400 { color: #be123c !important; }
+          .text-emerald-400 { color: #15803d !important; }
+
+          /* Strict Box Break Rules */
           .print-break-inside-avoid,
           .bg-slate-800\\/80,
           .bg-slate-900\\/80,
           .bg-slate-900\\/90,
-          .bg-slate-950,
           .border {
             break-inside: avoid !important;
-            page-break-inside: avoid !important;
-          }
-          .grid {
             page-break-inside: avoid !important;
           }
         }
@@ -630,7 +670,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
               <span className="text-xs font-bold text-rose-400">{temporalMetrics.burstActivityCount} Events</span>
             </div>
 
-            {/* Velocity Score Card with Index & Threshold */}
+            {/* Velocity Score Card */}
             <div className={`bg-slate-800/80 p-3 rounded-xl border flex flex-col justify-center relative ${temporalMetrics.velocityBg}`}>
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[10px] font-bold uppercase tracking-wider flex items-center gap-1 text-slate-300">
@@ -651,33 +691,33 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
             </div>
           </div>
 
-          {/* Velocity Score Index & Threshold Rating Legend Panel */}
+          {/* Lightened Scoring & Threshold Legend Panel for Crisp Printing */}
           <div className="bg-slate-900/70 border border-slate-700/60 rounded-xl p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 font-mono text-xs">
-            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-emerald-500/20">
+            <div className="scoring-legend-card flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-emerald-500/20">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
               <div>
-                <span className="text-emerald-400 font-bold block text-[11px]">Low (0–30)</span>
+                <span className="text-emerald-400 print:text-emerald-700 font-bold block text-[11px]">Low (0–30)</span>
                 <span className="text-[10px] text-slate-300 font-sans block leading-tight">Baseline / Normal Trading Pace</span>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-cyan-500/20">
+            <div className="scoring-legend-card flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-cyan-500/20">
               <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0"></span>
               <div>
-                <span className="text-cyan-300 font-bold block text-[11px]">Moderate (31–60)</span>
+                <span className="text-cyan-300 print:text-cyan-700 font-bold block text-[11px]">Moderate (31–60)</span>
                 <span className="text-[10px] text-slate-300 font-sans block leading-tight">Accelerated Batching / Operational Acceleration</span>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-amber-500/20">
+            <div className="scoring-legend-card flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-amber-500/20">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
               <div>
-                <span className="text-amber-400 font-bold block text-[11px]">High Risk (61–80)</span>
+                <span className="text-amber-400 print:text-amber-700 font-bold block text-[11px]">High Risk (61–80)</span>
                 <span className="text-[10px] text-slate-300 font-sans block leading-tight">Rapid Burst Dispatches / Potential Front-Loading</span>
               </div>
             </div>
-            <div className="flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-rose-500/20">
+            <div className="scoring-legend-card flex items-center gap-2.5 p-2 bg-slate-950/60 rounded-lg border border-rose-500/20">
               <span className="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0"></span>
               <div>
-                <span className="text-rose-400 font-bold block text-[11px]">Critical Surge (81–100)</span>
+                <span className="text-rose-400 print:text-rose-700 font-bold block text-[11px]">Critical Surge (81–100)</span>
                 <span className="text-[10px] text-slate-300 font-sans block leading-tight">Abnormal Frequency / Evasion Risk</span>
               </div>
             </div>
@@ -688,8 +728,8 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
       {/* Dynamic Temporal Intelligence Narrative */}
       <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl shadow-md space-y-3 print-break-inside-avoid">
         <div className="flex justify-between items-center">
-          <h2 className="text-xs font-bold tracking-widest text-cyan-400 font-mono uppercase flex items-center gap-2">
-            <FileText size={15} className="text-cyan-400" /> Dynamic Temporal Intelligence Narrative
+          <h2 className="text-xs font-bold tracking-widest text-cyan-400 print:text-cyan-800 font-mono uppercase flex items-center gap-2">
+            <FileText size={15} /> Dynamic Temporal Intelligence Narrative
           </h2>
           <span className="text-[10px] bg-slate-900/80 px-2.5 py-1 rounded border border-slate-700/60 text-slate-300 font-mono font-medium">COMPUTED EVIDENCE</span>
         </div>
@@ -958,7 +998,7 @@ High velocity scores (>60) strongly correlate with trade evasion tactics, such a
           )}
         </div>
 
-        {/* INVESTIGATION CORRELATION ENGINE: CONTEXT, INTERPRETATION & THRESHOLD GUIDE */}
+        {/* INVESTIGATION CORRELATION ENGINE: EXPLAINER PANEL */}
         <div className="mt-4 bg-slate-900/90 border border-slate-700/80 p-4 rounded-xl space-y-3 font-sans text-xs print-break-inside-avoid">
           <div className="flex items-center gap-2 text-cyan-400 font-mono font-bold uppercase tracking-wider text-xs">
             <HelpCircle size={15} /> Event Correlation Engine: Purpose, Methodology & Threshold Guide
