@@ -502,7 +502,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Algorithmic composite rating of trade dataset audit readiness & threat severity.</span></div>
-              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">$\text{Completeness}(25\%) + \text{Anomaly Weight}(35\%) + \text{Coverage}(40\%)$</span></div>
+              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Completeness (25%) + Anomaly Weight (35%) + Coverage (40%)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-amber-400 font-semibold">{synthesizedMetrics.globalIntelligenceScore >= 75 ? 'HIGH RISK (ELEVATED)' : 'MODERATE RISK'}</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Determines depth of required customs compliance audit and target asset seizure thresholds.</span></div>
             </div>
@@ -525,7 +525,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Gross financial value across all declared cross-border cargo lines.</span></div>
-              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">$\sum (\text{Declared Amount} \lor \text{Unit Price} \times \text{Quantity})$</span></div>
+             <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">∑ (Declared Amount OR Unit Price × Quantity)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-emerald-400 font-semibold">FINANCIAL SCALE: LEVEL 5</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Establishes economic exposure for tariffs, duties, tax liability, and potential confiscation.</span></div>
             </div>
@@ -548,7 +548,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Total physical inventory units processed across trade channels.</span></div>
-              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">$\sum (\text{Shipment Quantity Units})$</span></div>
+             <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Count(Unique Dated Dispatch Clusters)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-amber-400 font-semibold">VOLUME RISK: {synthesizedMetrics.priceVarianceAlerts > 0 ? 'CRITICAL' : 'STABLE'}</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Measures physical market saturation, parallel market leakage, and gray-market supply.</span></div>
             </div>
@@ -571,7 +571,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Count of distinct jurisdiction-to-jurisdiction trade routes active.</span></div>
-              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">$\text{Count}(\text{Unique Origin Points}) \times \text{Count}(\text{Destination Ports})$</span></div>
+              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Count(Unique Origin Points) × Count(Destination Ports)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-blue-400 font-semibold">CORRIDOR RISK: HIGH DIVERSITY</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Identifies transshipment obfuscation and tariff evasion vector complexity.</span></div>
             </div>
@@ -594,7 +594,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Frequency and clustering velocity of cargo batches over time.</span></div>
-              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">$\text{Count}(\text{Unique Dated Dispatch Clusters})$</span></div>
+              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Count(Unique Dated Dispatch Clusters)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-purple-300 font-semibold">VELOCITY INDEX: 88/100</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Detects rapid stock accumulation, inventory dumping, and cyclical trade arbitrage.</span></div>
             </div>
@@ -1118,8 +1118,8 @@ export default function GlobalAnalyticsVisualHub() {
                 Integrates multi-lens vectors (Concentration, Pricing, Timeline, Network, Geography) into a single composite index. It flags systemic trade vulnerabilities across entities and corridors before customs filing.
               </div>
               <div>
-                <strong className="text-blue-400 font-mono block mb-1">What Confidence Level Means & Calculation:</strong>
-                Confidence ($89\% - 97\%$) represents statistical data completeness. Calculated via $\text{Confidence} = \frac{\text{Verified Data Matches}}{\text{Total Shipment Fields}} \times 100\%$. Higher confidence indicates direct cross-validation across bills of lading and corporate filings.
+               <strong className="text-blue-400 font-mono block mb-1">What Confidence Level Means & Calculation:</strong>
+Confidence (89% - 97%) represents statistical data completeness. Calculated via Confidence = (Verified Data Matches / Total Shipment Fields) × 100%. Higher confidence indicates direct cross-validation across bills of lading and corporate filings.
               </div>
               <div>
                 <strong className="text-emerald-400 font-mono block mb-1">Index Scoring Mechanics (0 - 100):</strong>
