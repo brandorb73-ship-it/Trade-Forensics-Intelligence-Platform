@@ -234,7 +234,7 @@ export default function BrandIntelligence() {
 
       if (finalHhi >= 2500) {
         highHhiCount++;
-        brandObj.riskFlags.add('Monopolized Intermediary Control (HHI ≥ 2,500)');
+        brandObj.riskFlags.add('Monopolized Intermediary Control (HHI >= 2,500)');
         if (finalHhi > maxHhiScore) {
           maxHhiScore = finalHhi;
           maxHhiBrand = b;
@@ -317,7 +317,7 @@ export default function BrandIntelligence() {
       }, {})
     };
 
-    // PHASE 4: Dynamic AI Narrative Generation (incorporating all intel and real-world significance inline)
+    // PHASE 4: Dynamic AI Narrative Generation
     const uniqueBrandsCount = processedBrandsList.length;
     const intermediaryCount = allHighRiskIntermediaries.size;
     const topBrandName = highestValueBrand.brand !== 'N/A' ? highestValueBrand.brand : 'No Dominant Brand';
@@ -330,9 +330,9 @@ export default function BrandIntelligence() {
     let evidentiaryFinding = `Evidentiary Finding: All scanned manifests reflect established direct shipping lanes with standard customs verification checkpoints.`;
 
     if (uniqueBrandsCount > 0 && intermediaryCount > 0) {
-      briefingText = `Algorithmic token analysis unmasked ${intermediaryCount} high-velocity intermediary hubs bypass-routing authentic IP lines across jurisdictions including ${topOrigins}. Specifically, peak commercial value is concentrated in "${topBrandName}" ($${(highestValueBrand.value / 1000000).toFixed(2)}M), while "${peakRiskBrandName}" registered the highest threat rating (${highestRiskBrandObj.score}/100). In a real-world enforcement scenario, ${highHhiCount > 0 ? `the presence of ${highHhiCount} brand segments with HHI concentration ratings ≥ 2,500 proves that parallel trade is controlled by structured intermediary syndicates rather than minor retail arbitrage, requiring immediate customs interdiction and distributor audits.` : `diverted volume remains highly fragmented across independent brokers, indicating widespread retail leakage rather than a centralized smuggling monopoly.`}`;
+      briefingText = `Algorithmic token analysis unmasked ${intermediaryCount} high-velocity intermediary hubs bypass-routing authentic IP lines across jurisdictions including ${topOrigins}. Specifically, peak commercial value is concentrated in "${topBrandName}" ($${(highestValueBrand.value / 1000000).toFixed(2)}M), while "${peakRiskBrandName}" registered the highest threat rating (${highestRiskBrandObj.score}/100). In a real-world enforcement scenario, ${highHhiCount > 0 ? `the presence of ${highHhiCount} brand segments with HHI concentration ratings >= 2,500 proves that parallel trade is controlled by structured intermediary syndicates rather than minor retail arbitrage, requiring immediate customs interdiction and distributor audits.` : `diverted volume remains highly fragmented across independent brokers, indicating widespread retail leakage rather than a centralized smuggling monopoly.`}`;
       
-      vectorText = `Dynamic pricing forensics across all panels isolated ${totalPriceAlertsAcrossBrands} severe unit price outliers exceeding the ±35% baseline threshold. Severe downward price variance (< -35%) indicates under-invoicing or unauthorized inventory dumping, whereas upward variance (> +35%) reveals premium grey market arbitrage across restricted territories. ${maxHhiScore >= 2500 ? `Peak supply risk is localized within the "${maxHhiBrand}" cluster, displaying an HHI concentration score of ${maxHhiScore}, proving a monopolized diversion pipeline.` : `Supply chain exposure is distributed across ${uniqueBrandsCount} brand asset vectors with low-to-intermediate structural convergence.`}`;
+      vectorText = `Dynamic pricing forensics across all panels isolated ${totalPriceAlertsAcrossBrands} severe unit price outliers exceeding the +/-35% baseline threshold. Severe downward price variance (< -35%) indicates under-invoicing or unauthorized inventory dumping, whereas upward variance (> +35%) reveals premium grey market arbitrage across restricted territories. ${maxHhiScore >= 2500 ? `Peak supply risk is localized within the "${maxHhiBrand}" cluster, displaying an HHI concentration score of ${maxHhiScore}, proving a monopolized diversion pipeline.` : `Supply chain exposure is distributed across ${uniqueBrandsCount} brand asset vectors with low-to-intermediate structural convergence.`}`;
       
       corridorSummary = `Logistical Context: Elevated structural routing exposure identified across ${uniqueBrandsCount} brand segments touching ${allRoutesSet.size} trade corridors. Layered supply legs reveal transshipment manipulation via ${intermediaryCount} unverified secondary hubs, with maximum channel monopolization verified at ${maxHhiScore} HHI within peak threat targets.`;
       
@@ -412,7 +412,7 @@ export default function BrandIntelligence() {
     if (score === 0) return { label: 'CLEAN PIPELINE', style: 'text-slate-300 border-slate-700 bg-slate-900/40' };
     if (score < 1500) return { label: 'LOW CONCENTRATION (<1,500)', style: 'text-emerald-400 border-emerald-800 bg-emerald-950/40' };
     if (score < 2500) return { label: 'INTERMEDIATE CONCENTRATION', style: 'text-amber-400 border-amber-800 bg-amber-950/40' };
-    return { label: 'HIGH CONCENTRATION (≥2,500)', style: 'text-[#ff0055] border-rose-900 bg-rose-950/40' };
+    return { label: 'HIGH CONCENTRATION (>=2,500)', style: 'text-[#ff0055] border-rose-900 bg-rose-950/40' };
   };
 
   const getRiskBadgeDetails = (score) => {
@@ -432,7 +432,6 @@ export default function BrandIntelligence() {
   return (
     <div className="space-y-6 text-slate-100 font-mono text-xs id-print-section">
       
-      {/* Print Stylesheet ensuring matrix table fits fully and blocks print cleanly */}
       <style>{`
         @media print {
           body {
@@ -494,7 +493,7 @@ export default function BrandIntelligence() {
         </div>
       </div>
 
-      {/* EXECUTIVE BRAND THREAT BRIEFING (NARRATIVE INCLUDES REAL WORLD SIGNIFICANCE) */}
+      {/* EXECUTIVE BRAND THREAT BRIEFING */}
       <div className="bg-[#090e1a] border border-slate-800/80 rounded-xl p-4 font-mono relative overflow-hidden printable-dossier-block">
         <div className="flex justify-between items-center mb-2">
           <h3 className="text-xs font-bold text-emerald-400 tracking-wider flex items-center gap-2">
@@ -614,11 +613,11 @@ export default function BrandIntelligence() {
               <div className="absolute right-0 bottom-6 z-50 bg-[#0d1424] border border-slate-700 p-4 rounded-xl w-96 text-[11px] font-mono shadow-2xl space-y-3 text-slate-100">
                 <div>
                   <span className="text-cyan-400 font-bold uppercase block mb-1">Herfindahl-Hirschman Index (HHI)</span>
-                  Calculated as $HHI = \sum (S_i)^2$, where $S_i$ is the percentage market share of each intermediary. Max score is 10,000.
+                  Calculated as HHI = Sum(S_i)^2, where S_i is the percentage market share of each intermediary. Max score is 10,000.
                 </div>
                 <div>
                   <span className="text-[#00ff9d] font-bold uppercase block mb-1">Dynamic Pricing Baselines</span>
-                  Establishes median unit price across transactions. Anomalies exceeding a ±35% variance indicate severe under-invoicing or grey market arbitrage.
+                  Establishes median unit price across transactions. Anomalies exceeding a +/-35% variance indicate severe under-invoicing or grey market arbitrage.
                 </div>
               </div>
             )}
@@ -642,7 +641,7 @@ export default function BrandIntelligence() {
         </div>
       </div>
 
-      {/* 360-DEGREE BRAND ECOSYSTEM NETWORK (WITH 'ALL BRANDS' SELECT OPTION) */}
+      {/* 360-DEGREE BRAND ECOSYSTEM NETWORK */}
       <div className="bg-[#0a0f1d] border border-slate-800/80 p-4 rounded-xl space-y-3 printable-dossier-block">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-800/80 pb-3 gap-3">
           <div>
@@ -696,7 +695,6 @@ export default function BrandIntelligence() {
               </div>
             </div>
 
-            {/* Entity Topology Grid */}
             <div className="bg-[#070b14] border border-slate-800/80 p-3 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px]">
               <div className="space-y-1.5">
                 <div className="text-cyan-400 font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-800 pb-1">
@@ -766,10 +764,10 @@ export default function BrandIntelligence() {
           </span>
           {[
             { id: 'ALL', label: 'All Brands' },
-            { id: 'HIGH_RISK', label: 'High Risk (Score ≥ 65)' },
+            { id: 'HIGH_RISK', label: 'High Risk (Score >= 65)' },
             { id: 'GREY_MARKET', label: 'High Grey Market Exposure (>40%)' },
-            { id: 'PRICE_FLAG', label: 'Price Outliers (> ±35%)' },
-            { id: 'TOP_VALUE', label: 'Top Market Share (≥ 5%)' }
+            { id: 'PRICE_FLAG', label: 'Price Outliers (> +/-35%)' },
+            { id: 'TOP_VALUE', label: 'Top Market Share (>= 5%)' }
           ].map(chip => (
             <button
               key={chip.id}
@@ -786,7 +784,7 @@ export default function BrandIntelligence() {
         </div>
       </div>
 
-      {/* CORE BRAND PROTECTION MATRIX TABLE WITH STRICT PRINT DOSSIER FORMATTING */}
+      {/* CORE BRAND PROTECTION MATRIX TABLE */}
       <div className="bg-[#0a0f1d] rounded-xl border border-slate-800/80 p-4 overflow-x-auto printable-dossier-block">
         <div className="text-xs font-bold text-white mb-3 uppercase tracking-wider flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -897,7 +895,6 @@ export default function BrandIntelligence() {
                     </td>
                   </tr>
 
-                  {/* Sub-Layer: Entity Intelligence Expanded Panel */}
                   {(isExpanded || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches)) && (
                     <tr>
                       <td colSpan="6" className="bg-[#070b14] p-3 border-b border-slate-800">
@@ -955,30 +952,28 @@ export default function BrandIntelligence() {
         </table>
       </div>
 
-      {/* COMPREHENSIVE RISK SCORING, THRESHOLDS & REAL WORLD SIGNIFICANCE DEFINITIONS */}
+      {/* COMPREHENSIVE RISK SCORING, THRESHOLDS & SIGNIFICANCE */}
       <div className="bg-[#070b14] p-4 rounded-xl border border-slate-800/80 text-[11px] printable-dossier-block space-y-4">
         <div className="text-white font-bold uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-800 pb-2">
           <Award size={15} className="text-cyan-400" /> ANALYTICAL THRESHOLDS, RISK INDEX CALCULATIONS & REAL-WORLD SIGNIFICANCE
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 text-slate-300 font-sans">
-          {/* HHI Index Thresholds */}
           <div className="bg-[#0a0f1d] border border-slate-800 p-3 rounded-lg space-y-1.5">
-            <span className="text-cyan-400 font-bold uppercase font-mono block text-[10px]">1. HHI Concentration Index ($0 - 10,000$)</span>
+            <span className="text-cyan-400 font-bold uppercase font-mono block text-[10px]">1. HHI Concentration Index (0 - 10,000)</span>
             <p className="text-[11px] text-slate-300 leading-normal">
-              Calculated as $HHI = \sum (S_i)^2$, summing the squared market share percentages ($S_i$) of unmasked intermediaries within a brand's distribution loop.
+              Calculated as HHI = Sum(S_i)^2, summing the squared market share percentages (S_i) of unmasked intermediaries within a brand's distribution loop.
             </p>
             <ul className="text-[10px] space-y-0.5 border-t border-slate-800 pt-1 font-mono">
               <li><span className="text-[#00ff9d] font-bold">Low (&lt;1,500):</span> Clean, decentralized distribution.</li>
               <li><span className="text-amber-400 font-bold">Intermediate (1,500 - 2,499):</span> Moderate consolidation.</li>
-              <li><span className="text-[#ff0055] font-bold">High (≥2,500):</span> Highly consolidated monopoly loop.</li>
+              <li><span className="text-[#ff0055] font-bold">High (&gt;=2,500):</span> Highly consolidated monopoly loop.</li>
             </ul>
             <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800/50">
-              *Significance: HHI ≥ 2,500 proves parallel trade is controlled by an organized syndicate rather than opportunistic arbitrage.
+              *Significance: HHI &gt;= 2,500 proves parallel trade is controlled by an organized syndicate rather than opportunistic arbitrage.
             </p>
           </div>
 
-          {/* Grey Market Exposure Thresholds */}
           <div className="bg-[#0a0f1d] border border-slate-800 p-3 rounded-lg space-y-1.5">
             <span className="text-amber-400 font-bold uppercase font-mono block text-[10px]">2. Grey Market Exposure Ratio</span>
             <p className="text-[11px] text-slate-300 leading-normal">
@@ -994,27 +989,25 @@ export default function BrandIntelligence() {
             </p>
           </div>
 
-          {/* Price Outlier Ratings */}
           <div className="bg-[#0a0f1d] border border-slate-800 p-3 rounded-lg space-y-1.5">
-            <span className="text-[#00ff9d] font-bold uppercase font-mono block text-[10px]">3. Price Outlier Ratings (±35% Spread)</span>
+            <span className="text-[#00ff9d] font-bold uppercase font-mono block text-[10px]">3. Price Outlier Ratings (+/-35% Spread)</span>
             <p className="text-[11px] text-slate-300 leading-normal">
-              Measures unit price variance against a brand's global median price: $\text{Variance} = \frac{\text{Price} - \text{Median}}{\text{Median}} \times 100$.
+              Measures unit price variance against a brand's global median price: Variance = ((Price - Median) / Median) * 100.
             </p>
             <ul className="text-[10px] space-y-0.5 border-t border-slate-800 pt-1 font-mono">
-              <li><span className="text-[#00ff9d] font-bold">Normal:</span> Within ±15% of median baseline.</li>
-              <li><span className="text-amber-400 font-bold">Intermediate:</span> ±15% to ±35% deviation.</li>
-              <li><span className="text-[#ff0055] font-bold">High Severity:</span> Exceeds ±35% variance.</li>
+              <li><span className="text-[#00ff9d] font-bold">Normal:</span> Within +/-15% of median baseline.</li>
+              <li><span className="text-amber-400 font-bold">Intermediate:</span> +/-15% to +/-35% deviation.</li>
+              <li><span className="text-[#ff0055] font-bold">High Severity:</span> Exceeds +/-35% variance.</li>
             </ul>
             <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800/50">
               *Significance: Drops &lt; -35% indicate under-invoicing/dumping; spikes &gt; +35% indicate premium territory arbitrage.
             </p>
           </div>
 
-          {/* Composite Risk Scoring Index */}
           <div className="bg-[#0a0f1d] border border-slate-800 p-3 rounded-lg space-y-1.5">
-            <span className="text-[#ff0055] font-bold uppercase font-mono block text-[10px]">4. Composite Risk Score ($0 - 100$)</span>
+            <span className="text-[#ff0055] font-bold uppercase font-mono block text-[10px]">4. Composite Risk Score (0 - 100)</span>
             <p className="text-[11px] text-slate-300 leading-normal">
-              Weighted index combining HHI concentration ($35\%$), Grey Market Exposure ($35\%$), Price Outliers ($20\%$), and Route Spreading ($10\%$).
+              Weighted index combining HHI concentration (35%), Grey Market Exposure (35%), Price Outliers (20%), and Route Spreading (10%).
             </p>
             <ul className="text-[10px] space-y-0.5 border-t border-slate-800 pt-1 font-mono">
               <li><span className="text-[#00ff9d] font-bold">Low Risk (0 - 34):</span> Compliant distribution network.</li>
@@ -1022,7 +1015,7 @@ export default function BrandIntelligence() {
               <li><span className="text-[#ff0055] font-bold">High Risk (65 - 100):</span> Urgent enforcement audit priority.</li>
             </ul>
             <p className="text-[10px] text-slate-400 italic pt-1 border-t border-slate-800/50">
-              *Significance: Scores ≥ 65 dictate immediate border interdiction holds and formal customs audit filings.
+              *Significance: Scores &gt;= 65 dictate immediate border interdiction holds and formal customs audit filings.
             </p>
           </div>
         </div>
@@ -1040,7 +1033,6 @@ export default function BrandIntelligence() {
       {selectedBrandForDrawer && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex justify-end transition-all non-printable">
           <div className="w-full max-w-2xl bg-[#0a0f1d] border-l border-slate-800 h-full overflow-y-auto p-6 font-mono text-slate-100 space-y-5 shadow-2xl">
-            {/* Drawer Header */}
             <div className="flex justify-between items-start border-b border-slate-800 pb-3">
               <div>
                 <span className="text-[10px] text-cyan-400 uppercase tracking-widest font-bold">Brand Intelligence Dossier</span>
@@ -1057,7 +1049,6 @@ export default function BrandIntelligence() {
               </button>
             </div>
 
-            {/* Drawer Tab Navigation */}
             <div className="flex border-b border-slate-800 gap-2">
               {[
                 { id: 'overview', label: 'Overview & Risk' },
@@ -1079,7 +1070,6 @@ export default function BrandIntelligence() {
               ))}
             </div>
 
-            {/* Tab 1: Overview & Risk Assessment */}
             {activeDrawerTab === 'overview' && (
               <div className="space-y-3 text-xs">
                 <div className="grid grid-cols-2 gap-3">
@@ -1100,7 +1090,7 @@ export default function BrandIntelligence() {
                   <p className="text-slate-300 leading-relaxed text-[11px]">
                     Brand "{selectedBrandForDrawer.brand}" represents {selectedBrandForDrawer.marketShare.toFixed(2)}% of total observed trade dataset value across {selectedBrandForDrawer.routes.size} corridors. 
                     {selectedBrandForDrawer.varianceAlertsCount > 0 
-                      ? ` ${selectedBrandForDrawer.varianceAlertsCount} shipments exhibit severe unit price variance exceeding the ±35% baseline, indicating grey market risk.`
+                      ? ` ${selectedBrandForDrawer.varianceAlertsCount} shipments exhibit severe unit price variance exceeding the +/-35% baseline, indicating grey market risk.`
                       : ' Pricing metrics remain consistent with baseline thresholds.'}
                   </p>
                 </div>
@@ -1121,7 +1111,6 @@ export default function BrandIntelligence() {
               </div>
             )}
 
-            {/* Tab 2: Entities & Corridors */}
             {activeDrawerTab === 'network' && (
               <div className="space-y-3 text-xs">
                 <div>
@@ -1150,7 +1139,6 @@ export default function BrandIntelligence() {
               </div>
             )}
 
-            {/* Tab 3: Pricing Forensics */}
             {activeDrawerTab === 'pricing' && (
               <div className="space-y-3 text-xs">
                 <div className="grid grid-cols-3 gap-2">
@@ -1170,7 +1158,6 @@ export default function BrandIntelligence() {
               </div>
             )}
 
-            {/* Tab 4: Evidence Log */}
             {activeDrawerTab === 'evidence' && (
               <div className="space-y-2 text-xs">
                 {selectedBrandForDrawer.evidenceList.map((ev, i) => (
@@ -1190,7 +1177,6 @@ export default function BrandIntelligence() {
               </div>
             )}
 
-            {/* Drawer Actions */}
             <div className="pt-3 border-t border-slate-800 flex justify-end gap-2">
               <button 
                 onClick={() => {
