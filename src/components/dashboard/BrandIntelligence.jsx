@@ -13,6 +13,7 @@ export default function BrandIntelligence() {
 
   // UI & Filter States
   const [expandedBrands, setExpandedBrands] = useState({});
+  const [expandAllRows, setExpandAllRows] = useState(false);
   const [showFormulaTooltip, setShowFormulaTooltip] = useState(false);
   const [selectedBrandForDrawer, setSelectedBrandForDrawer] = useState(null);
   const [activeDrawerTab, setActiveDrawerTab] = useState('overview');
@@ -474,7 +475,7 @@ export default function BrandIntelligence() {
       `}</style>
 
       {/* HEADER & ACTIONS BAR */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/80 pb-4 gap-4 non-printable">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/85 pb-4 gap-4 non-printable">
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-xl md:text-2xl font-mono font-black text-white tracking-tight flex items-center gap-2">
@@ -488,10 +489,19 @@ export default function BrandIntelligence() {
             Investigate distribution network vulnerabilities, track parallel trade diversion, monitor IP erosion, and enforce anti-dumping baselines.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+          <label className="flex items-center gap-2 text-[11px] text-slate-300 cursor-pointer select-none bg-[#0e172a] px-3 py-1.5 rounded border border-slate-700 hover:border-cyan-500 transition-all">
+            <input 
+              type="checkbox" 
+              checked={expandAllRows} 
+              onChange={(e) => setExpandAllRows(e.target.checked)}
+              className="rounded bg-[#0b1120] border-slate-600 text-cyan-500 focus:ring-0 cursor-pointer w-3.5 h-3.5"
+            />
+            <span className="font-mono">Expand all matrix nodes in print dossier</span>
+          </label>
           <button 
             onClick={() => window.print()} 
-            className="flex items-center gap-2 px-3 py-1.5 bg-[#0e172a] border border-emerald-500/60 text-emerald-400 hover:bg-emerald-950/40 rounded text-xs font-mono font-bold transition-all cursor-pointer shadow-sm shadow-emerald-950/50"
+            className="flex items-center gap-2 px-3.5 py-1.5 bg-[#0e172a] border border-emerald-500/60 text-emerald-400 hover:bg-emerald-950/40 rounded text-xs font-mono font-bold transition-all cursor-pointer shadow-sm shadow-emerald-950/50"
           >
             <FileText size={14} className="text-emerald-400" /> Export Brand Dossier
           </button>
@@ -504,13 +514,13 @@ export default function BrandIntelligence() {
           GLOBAL BRAND HEALTH & RISK METRICS
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 font-mono">
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">TOTAL BRANDS</span>
             <div className="text-2xl font-bold text-white mt-1">{Object.keys(brandAnalytics.brands).length}</div>
             <span className="text-[9px] text-slate-400 mt-1 block">Across {meta.uniqueCountriesCount} Jurisdictions</span>
           </div>
 
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">TOTAL TRADE VOLUME</span>
             <div className="text-2xl font-bold text-[#00ff9d] mt-1">
               ${(meta.globalTotalValue / 1000000).toFixed(2)}M
@@ -518,7 +528,7 @@ export default function BrandIntelligence() {
             <span className="text-[9px] text-slate-400 mt-1 block">{meta.globalTotalShipments.toLocaleString()} Total Shipments</span>
           </div>
 
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-amber-400 uppercase tracking-wider block font-semibold">GREY MARKET EXPOSURE</span>
             <div className="text-2xl font-bold text-amber-400 mt-1">
               ${(meta.highRiskIntermediaryValue / 1000000).toFixed(2)}M
@@ -526,7 +536,7 @@ export default function BrandIntelligence() {
             <span className="text-[9px] text-amber-300 mt-1 block">{meta.uniqueConsigneesCount} Unverified Hubs</span>
           </div>
 
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-semibold">HIGHEST VALUE BRAND</span>
             <div className="text-sm font-bold text-white mt-1 truncate">{meta.highestValueBrand.brand}</div>
             <span className="text-[9px] text-[#00ff9d] mt-1 block">
@@ -534,13 +544,13 @@ export default function BrandIntelligence() {
             </span>
           </div>
 
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-[#ff0055] uppercase tracking-wider block font-semibold">HIGHEST RISK PRIORITY</span>
             <div className="text-sm font-bold text-[#ff0055] mt-1 truncate">{meta.highestRiskBrandObj.brand}</div>
             <span className="text-[9px] text-rose-300 mt-1 block">Risk Score: {meta.highestRiskBrandObj.score}/100</span>
           </div>
 
-          <div className="bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl shadow-lg">
+          <div className="bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl shadow-lg">
             <span className="text-[10px] text-cyan-400 uppercase tracking-wider block font-semibold">ENTITY NETWORK</span>
             <div className="text-xl font-bold text-cyan-400 mt-1">
               {meta.uniqueExportersCount} Ex / {meta.uniqueImportersCount} Im
@@ -552,8 +562,8 @@ export default function BrandIntelligence() {
 
       {/* DYNAMIC AI CORRIDOR & PARALLEL TRADE LEAKAGE BLOCK */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 printable-dossier-block">
-        <div className="lg:col-span-2 bg-[#0e1528] border border-slate-700/80 p-4 rounded-xl space-y-2 shadow-lg">
-          <div className="flex justify-between items-center border-b border-slate-700/80 pb-2">
+        <div className="lg:col-span-2 bg-[#0e1528] border border-slate-700/85 p-4 rounded-xl space-y-2 shadow-lg">
+          <div className="flex justify-between items-center border-b border-slate-700/85 pb-2">
             <h3 className="text-xs font-bold text-cyan-400 uppercase flex items-center gap-2 tracking-wider">
               <Activity size={14}/> COMMERCIAL & CORRIDOR RISK CONTEXT
             </h3>
@@ -567,7 +577,7 @@ export default function BrandIntelligence() {
           </div>
         </div>
 
-        <div className="bg-[#0e1528] border border-slate-700/80 p-4 rounded-xl flex flex-col justify-between shadow-lg">
+        <div className="bg-[#0e1528] border border-slate-700/85 p-4 rounded-xl flex flex-col justify-between shadow-lg">
           <div>
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
               <Zap size={14} className="text-amber-400" /> PARALLEL TRADE LEAKAGE
@@ -583,8 +593,8 @@ export default function BrandIntelligence() {
       </div>
 
       {/* EXECUTIVE THREAT NARRATIVE & SUPPLY CHAIN INTELLIGENCE */}
-      <div className="bg-[#0e1528] border border-slate-700/80 p-4 rounded-xl space-y-3 printable-dossier-block shadow-lg">
-        <div className="border-b border-slate-700/80 pb-2 flex justify-between items-center">
+      <div className="bg-[#0e1528] border border-slate-700/85 p-4 rounded-xl space-y-3 printable-dossier-block shadow-lg">
+        <div className="border-b border-slate-700/85 pb-2 flex justify-between items-center">
           <div>
             <h3 className="text-xs font-bold text-white uppercase flex items-center gap-2 tracking-wider">
               <FileText size={14} className="text-cyan-400" /> EXECUTIVE AI THREAT NARRATIVE & SUPPLY CHAIN INTELLIGENCE
@@ -615,14 +625,14 @@ export default function BrandIntelligence() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 font-sans">
-          <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+          <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
             <h4 className="text-[11px] font-mono font-bold text-cyan-400 uppercase flex items-center gap-1">
               <Shield size={12}/> Strategic Threat Briefing
             </h4>
             <p className="text-xs text-slate-200 leading-relaxed">{meta.briefingText}</p>
           </div>
 
-          <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+          <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
             <h4 className="text-[11px] font-mono font-bold text-[#00ff9d] uppercase flex items-center gap-1">
               <TrendingUp size={12}/> Operational Vector & Pricing Analysis
             </h4>
@@ -632,8 +642,8 @@ export default function BrandIntelligence() {
       </div>
 
       {/* 360-DEGREE BRAND ECOSYSTEM NETWORK */}
-      <div className="bg-[#0e1528] border border-slate-700/80 p-4 rounded-xl space-y-3 printable-dossier-block shadow-lg">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/80 pb-3 gap-3">
+      <div className="bg-[#0e1528] border border-slate-700/85 p-4 rounded-xl space-y-3 printable-dossier-block shadow-lg">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/85 pb-3 gap-3">
           <div>
             <h3 className="text-xs font-bold text-white uppercase flex items-center gap-2 tracking-wider">
               <Globe className="text-cyan-400" size={15} /> 360° BRAND COMMERCIAL ECOSYSTEM NETWORK
@@ -658,25 +668,25 @@ export default function BrandIntelligence() {
         {ecosystemData && (
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-[11px]">
-              <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+              <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
                 <span className="text-slate-400 text-[10px] font-bold block uppercase">Market Share & Volume</span>
                 <div className="text-[#00ff9d] font-bold text-sm">${ecosystemData.value.toLocaleString()}</div>
                 <div className="text-slate-200 text-[10px]">{ecosystemData.marketShare.toFixed(2)}% Market Share ({ecosystemData.volume.toLocaleString()} units)</div>
               </div>
 
-              <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+              <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
                 <span className="text-slate-400 text-[10px] font-bold block uppercase">Pricing Forensic Median</span>
                 <div className="text-white font-bold text-sm">${ecosystemData.medianPrice.toFixed(2)} / unit</div>
                 <div className="text-amber-400 text-[10px]">Spread: ${ecosystemData.priceSpread.toFixed(2)} | {ecosystemData.varianceAlertsCount} Outliers</div>
               </div>
 
-              <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+              <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
                 <span className="text-slate-400 text-[10px] font-bold block uppercase">Geographic Reach</span>
                 <div className="text-cyan-400 font-bold text-sm">{ecosystemData.origins.size} Origins → {ecosystemData.destinations.size} Dest.</div>
                 <div className="text-slate-200 text-[10px]">{ecosystemData.routes.size} Unique Corridors</div>
               </div>
 
-              <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-lg space-y-1 shadow-inner">
+              <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-lg space-y-1 shadow-inner">
                 <span className="text-slate-400 text-[10px] font-bold block uppercase">Threat Risk Score</span>
                 <div className={`font-bold text-sm ${ecosystemData.riskScore >= 65 ? 'text-[#ff0055]' : ecosystemData.riskScore >= 35 ? 'text-amber-400' : 'text-[#00ff9d]'}`}>
                   {ecosystemData.riskScore} / 100
@@ -685,9 +695,9 @@ export default function BrandIntelligence() {
               </div>
             </div>
 
-            <div className="bg-[#0b1120] border border-slate-700/80 p-3 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] shadow-inner">
+            <div className="bg-[#0b1120] border border-slate-700/85 p-3 rounded-xl grid grid-cols-1 md:grid-cols-3 gap-3 text-[11px] shadow-inner">
               <div className="space-y-1.5">
-                <div className="text-cyan-400 font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/80 pb-1">
+                <div className="text-cyan-400 font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/85 pb-1">
                   <Building size={12}/> Connected Exporters ({Object.keys(ecosystemData.exporters).length})
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
@@ -701,7 +711,7 @@ export default function BrandIntelligence() {
               </div>
 
               <div className="space-y-1.5">
-                <div className="text-amber-400 font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/80 pb-1">
+                <div className="text-amber-400 font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/85 pb-1">
                   <UserX size={12}/> Key Importers & Secondary Hubs
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
@@ -718,7 +728,7 @@ export default function BrandIntelligence() {
               </div>
 
               <div className="space-y-1.5">
-                <div className="text-[#00ff9d] font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/80 pb-1">
+                <div className="text-[#00ff9d] font-bold uppercase text-[10px] flex items-center gap-1 border-b border-slate-700/85 pb-1">
                   <Tag size={12}/> HS Classifications ({Object.keys(ecosystemData.hsCodes).length})
                 </div>
                 <div className="space-y-1 max-h-36 overflow-y-auto pr-1">
@@ -736,7 +746,7 @@ export default function BrandIntelligence() {
       </div>
 
       {/* FILTER & SEARCH CONTROL BAR */}
-      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#0e1528] border border-slate-700/80 p-3 rounded-xl text-xs non-printable shadow-lg">
+      <div className="flex flex-col sm:flex-row justify-between items-center gap-3 bg-[#0e1528] border border-slate-700/85 p-3 rounded-xl text-xs non-printable shadow-lg">
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <Search size={14} className="text-slate-400" />
           <input 
@@ -775,7 +785,7 @@ export default function BrandIntelligence() {
       </div>
 
       {/* CORE BRAND PROTECTION MATRIX TABLE */}
-      <div className="bg-[#0e1528] rounded-xl border border-slate-700/80 p-4 overflow-x-auto printable-dossier-block shadow-lg">
+      <div className="bg-[#0e1528] rounded-xl border border-slate-700/85 p-4 overflow-x-auto printable-dossier-block shadow-lg">
         <div className="text-xs font-bold text-white mb-3 uppercase tracking-wider flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Layers size={14} className="text-cyan-400"/> BRAND PROTECTION & GREY MARKET MATRIX
@@ -787,7 +797,7 @@ export default function BrandIntelligence() {
 
         <table className="w-full text-left text-xs border-collapse font-mono">
           <thead>
-            <tr className="border-b border-slate-700/80 text-cyan-400 bg-[#0d1424] uppercase text-[10px] tracking-wider">
+            <tr className="border-b border-slate-700/85 text-cyan-400 bg-[#0d1424] uppercase text-[10px] tracking-wider">
               <th className="p-3 font-bold">BRAND DESIGNATION</th>
               <th className="p-3 font-bold">AUDITED VALUE</th>
               <th className="p-3 font-bold">QUANTITY / SHARE</th>
@@ -801,7 +811,7 @@ export default function BrandIntelligence() {
               const currentBrandData = brandAnalytics.brands[brand];
               const intermediaries = Object.values(currentBrandData.intermediariesMap);
               const channelsCount = intermediaries.length;
-              const isExpanded = !!expandedBrands[brand];
+              const isExpanded = !!expandedBrands[brand] || expandAllRows;
               const hhiDetails = getHhiBadgeDetails(currentBrandData.hhiScore);
               const riskDetails = getRiskBadgeDetails(currentBrandData.riskScore);
 
@@ -885,7 +895,7 @@ export default function BrandIntelligence() {
                     </td>
                   </tr>
 
-                  {(isExpanded || (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('print').matches)) && (
+                  {isExpanded && (
                     <tr>
                       <td colSpan="6" className="bg-[#0b1120] p-3 border-b border-slate-700">
                         <div className="space-y-2">
@@ -943,7 +953,7 @@ export default function BrandIntelligence() {
       </div>
 
       {/* COMPREHENSIVE RISK SCORING, THRESHOLDS & SIGNIFICANCE */}
-      <div className="bg-[#0e1528] p-4 rounded-xl border border-slate-700/80 text-[11px] printable-dossier-block space-y-4 shadow-lg">
+      <div className="bg-[#0e1528] p-4 rounded-xl border border-slate-700/85 text-[11px] printable-dossier-block space-y-4 shadow-lg">
         <div className="text-white font-bold uppercase tracking-wider flex items-center gap-1.5 border-b border-slate-700 pb-2">
           <Award size={15} className="text-cyan-400" /> ANALYTICAL THRESHOLDS, RISK INDEX CALCULATIONS & REAL-WORLD SIGNIFICANCE
         </div>
