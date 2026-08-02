@@ -4,7 +4,8 @@ import {
   Globe, ShieldAlert, FileText, Server, Info, ArrowRight, Printer, 
   AlertTriangle, CheckCircle2, Layers, Cpu, Filter, Hash, TrendingUp, 
   BarChart4, ShieldCheck, Activity, DollarSign, MapPin, Navigation, 
-  Compass, Share2, Eye, Database, FileSpreadsheet, Upload, PlusCircle
+  Compass, Share2, Eye, Database, FileSpreadsheet, Upload, PlusCircle,
+  HelpCircle, BookOpen
 } from 'lucide-react';
 
 // AUDITED CORE GEOCENTRIC COORDINATE REGISTRY
@@ -26,7 +27,7 @@ const BASE_JURISDICTION_COORDINATES = {
   'UNITED KINGDOM': [55.3781, -3.4360], 'UK': [55.3781, -3.4360], 'GB': [55.3781, -3.4360],
   'ITALY': [41.8719, 12.5674], 'IT': [41.8719, 12.5674],
   'SWITZERLAND': [46.8182, 8.2275], 'CH': [46.8182, 8.2275],
-  'DUBAI': [25.2048, 55.2708], 'UAE': [25.2048, 55.2708], 'AE': [25.2048, 55.2708],
+  'DUBAI': [25.2048, 55.2708], 'UNITED ARAB EMIRATES': [23.4240, 53.8478], 'UAE': [25.2048, 55.2708], 'AE': [25.2048, 55.2708],
   'TURKEY': [38.9637, 35.2433], 'TURKIYE': [38.9637, 35.2433], 'TR': [38.9637, 35.2433],
   'HONG KONG': [22.3193, 114.1694], 'HK': [22.3193, 114.1694],
   'CYPRUS': [35.1264, 33.4299], 'CY': [35.1264, 33.4299],
@@ -34,11 +35,14 @@ const BASE_JURISDICTION_COORDINATES = {
   'UNITED STATES': [37.0902, -95.7129], 'USA': [37.0902, -95.7129], 'US': [37.0902, -95.7129],
   'CANADA': [56.1304, -106.3468], 'CA': [56.1304, -106.3468],
   'CHINA': [35.8617, 104.1954], 'CN': [35.8617, 104.1954],
-  'AUSTRALIA': [-25.2744, 133.7751], 'AU': [-25.2744, 133.7751]
+  'AUSTRALIA': [-25.2744, 133.7751], 'AU': [-25.2744, 133.7751],
+  'ANDORRA': [42.5462, 1.6015],
+  'AFGHANISTAN': [33.9391, 67.7099],
+  'ANTIGUA AND BARBUDA': [17.0608, -61.7964]
 };
 
 const TRANSSHIPMENT_HUB_REGISTRY = [
-  'DUBAI', 'UAE', 'SINGAPORE', 'TURKEY', 'TURKIYE', 'HONG KONG', 'HK', 'CYPRUS', 'MALTA', 'OMAN', 'PANAMA'
+  'DUBAI', 'UAE', 'UNITED ARAB EMIRATES', 'SINGAPORE', 'TURKEY', 'TURKIYE', 'HONG KONG', 'HK', 'CYPRUS', 'MALTA', 'OMAN', 'PANAMA'
 ];
 
 // Geodesic distance approximation in kilometers (Haversine Formula)
@@ -70,6 +74,7 @@ export default function CountryRiskIntelligence() {
   // Custom uploaded jurisdiction coordinate registry state
   const [customCoordinates, setCustomCoordinates] = useState({});
   const [uploadFeedback, setUploadFeedback] = useState('');
+  const [showMethodologyPanel, setShowMethodologyPanel] = useState(false);
 
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -80,7 +85,8 @@ export default function CountryRiskIntelligence() {
     return { ...BASE_JURISDICTION_COORDINATES, ...customCoordinates };
   }, [customCoordinates]);
 
-  // Handle Custom Country Lat/Long File Upload (XLSX, CSV, JSON supported via text/json parser)
+  // ULTRA-FORGIVING MULTI-DELIMITER COORDINATE FILE UPLOAD PARSER
+  // Automatically skips header rows ("Country,Latitude,Longitude") and handles CSV, TSV, and JSON
   const handleCoordinateFileUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -99,14 +105,18 @@ export default function CountryRiskIntelligence() {
             }
           });
         } else {
-          // Parse standard CSV formatting: Country,Latitude,Longitude
+          // Robust CSV / TSV / Semicolon Parser with Automatic Header Skipping
           const lines = content.split(/\r?\n/);
           lines.forEach(line => {
-            const parts = line.split(',');
+            if (!line || !line.trim()) return;
+            // Split by comma, tab, or semicolon
+            const parts = line.split(/[,;\t]/).map(p => p.replace(/["']/g, '').trim());
             if (parts.length >= 3) {
-              const country = parts[0].replace(/["']/g, '').toUpperCase().trim();
+              const country = parts[0].toUpperCase();
               const lat = Number(parts[1]);
               const lng = Number(parts[2]);
+              
+              // Skip header rows where Lat/Lng evaluate to NaN (e.g., "Latitude", "Longitude")
               if (country && !isNaN(lat) && !isNaN(lng)) {
                 parsedNewCoords[country] = [lat, lng];
               }
@@ -117,12 +127,12 @@ export default function CountryRiskIntelligence() {
         const addedCount = Object.keys(parsedNewCoords).length;
         if (addedCount > 0) {
           setCustomCoordinates(prev => ({ ...prev, ...parsedNewCoords }));
-          setUploadFeedback(`Successfully imported ${addedCount} jurisdictional coordinates.`);
+          setUploadFeedback(`Success: Imported ${addedCount} jurisdictional coordinates from ${file.name}.`);
         } else {
-          setUploadFeedback('Upload failed: Please use valid format (Country,Latitude,Longitude).');
+          setUploadFeedback('Upload failed: Ensure file contains "Country, Latitude, Longitude" numeric rows.');
         }
       } catch (err) {
-        setUploadFeedback('Error reading coordinate file.');
+        setUploadFeedback('Error reading coordinate file. Please check file formatting.');
       }
     };
     reader.readAsText(file);
@@ -533,13 +543,22 @@ export default function CountryRiskIntelligence() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
+          {/* Methodology Toggle Button */}
+          <button
+            onClick={() => setShowMethodologyPanel(prev => !prev)}
+            className="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer transition-all shadow-sm text-slate-200"
+          >
+            <BookOpen size={14} className="text-emerald-400" />
+            <span>{showMethodologyPanel ? 'Hide Methodology Guide' : 'Statistical Methodology & Formulas'}</span>
+          </button>
+
           {/* Custom Jurisdiction Coordinate Upload Uploader */}
           <label className="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer transition-all shadow-sm">
             <Upload size={14} className="text-blue-400" />
-            <span className="text-slate-200">Upload Country Coordinates (XLSX/CSV)</span>
+            <span className="text-slate-200">Upload Coordinates (CSV/TSV)</span>
             <input 
               type="file" 
-              accept=".xlsx,.xls,.csv,.json" 
+              accept=".csv,.tsv,.txt,.json,.xlsx" 
               onChange={handleCoordinateFileUpload} 
               className="hidden" 
             />
@@ -588,6 +607,71 @@ export default function CountryRiskIntelligence() {
         <div className="bg-slate-800/80 border border-blue-500/50 p-2.5 rounded-lg text-xs font-medium text-blue-300 flex items-center gap-2 print:hidden">
           <Info size={15} className="text-blue-400" />
           <span>{uploadFeedback}</span>
+        </div>
+      )}
+
+      {/* DEDICATED FORENSIC STATISTICAL METHODOLOGY & RISK SCORING ARCHITECTURE PANEL */}
+      {showMethodologyPanel && (
+        <div className="bg-slate-900/95 border border-emerald-500/50 p-6 rounded-xl space-y-6 shadow-xl print:block">
+          <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <h2 className="text-sm font-bold text-emerald-400 uppercase tracking-wider flex items-center gap-2">
+              <BookOpen size={18} className="text-emerald-400" /> Forensic Statistical Methodology & Risk Scoring Architecture
+            </h2>
+            <span className="text-xs text-slate-400 font-semibold">Auditing Standard: ISO/IEC 27001 & WCO Trade Enforcement Guidelines</span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs leading-relaxed">
+            
+            {/* Column 1: Z-Score Statistical Framework */}
+            <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
+                <Activity size={14} className="text-blue-400" /> 1. Z-Score Valuation Outlier Engine
+              </h3>
+              <p className="text-slate-300">
+                Measures how many standard deviations ($\sigma$) a transaction's value is from the dataset's global mean ($\mu$):
+              </p>
+              <div className="bg-slate-950 p-2 rounded text-center text-emerald-300 font-mono text-xs border border-slate-800">
+                Z = (Value - Mean) / Standard Deviation
+              </div>
+              <ul className="space-y-1.5 pt-1 text-slate-300">
+                <li>• <strong className="text-white">|Z| &lt; 1.00 (Normal):</strong> Standard market pricing (~68% of commercial trade).</li>
+                <li>• <strong className="text-amber-300">1.00 &le; |Z| &lt; 1.96 (Elevated):</strong> Moderate statistical divergence; monitor for volume discounting.</li>
+                <li>• <strong className="text-rose-400">|Z| &ge; 1.96 (Critical Outlier):</strong> Exceeds the 95% confidence interval. Flags probable customs undervaluation or capital flight overvaluation.</li>
+              </ul>
+            </div>
+
+            {/* Column 2: Composite Risk Score Calculation */}
+            <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
+                <ShieldAlert size={14} className="text-rose-400" /> 2. Composite Risk Score (0–100)
+              </h3>
+              <p className="text-slate-300">
+                Every transaction and corridor receives an additive score combining four structural risk dimensions:
+              </p>
+              <ul className="space-y-1.5 pt-1 text-slate-300">
+                <li>• <strong className="text-white">Intrinsic Manifest Risk (+15 to +35):</strong> Base weight adjusted for complex strings or anomalous punctuation.</li>
+                <li>• <strong className="text-blue-300">Z-Score Valuation Bonus (+15 to +30):</strong> Added when transaction value breaches elevated or critical statistical thresholds.</li>
+                <li>• <strong className="text-amber-300">Transshipment Hub Exposure (+25):</strong> Added if Origin/Destination involves high-risk global transit gateways.</li>
+                <li>• <strong className="text-rose-400">Circuitous Waybill Syntax (+45):</strong> Added when split-routing symbols (&rarr;, VIA, FTZ) indicate multi-modal layering.</li>
+              </ul>
+            </div>
+
+            {/* Column 3: Index & Action Thresholds */}
+            <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
+              <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
+                <BarChart4 size={14} className="text-purple-400" /> 3. Risk Index & Audit Thresholds
+              </h3>
+              <p className="text-slate-300">
+                The dataset Composite Index aggregates individual scores into actionable audit classifications:
+              </p>
+              <ul className="space-y-1.5 pt-1 text-slate-300">
+                <li>• <strong className="text-emerald-400">Baseline Index (&lt; 35):</strong> Normal trade control group. No immediate customs audit required.</li>
+                <li>• <strong className="text-blue-300">Elevated Audit Corridor (35–64):</strong> Secondary review recommended. Inspect transfer pricing and hub dependency ratios.</li>
+                <li>• <strong className="text-rose-400">High Priority Investigation (&ge; 65):</strong> Immediate forensic audit required. Flags compound routing anomalies and trade-based money laundering (TBML) indicators.</li>
+              </ul>
+            </div>
+
+          </div>
         </div>
       )}
 
@@ -771,15 +855,15 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* LEAFLET CONTAINER MAP */}
-      <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:hidden">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch">
+      {/* LEAFLET CONTAINER MAP - UNMASKED FOR PRINT DOSSIER EXPORT */}
+      <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:block print:border-slate-400 print:bg-white print:break-inside-avoid">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch print:block">
           
-          <div className="lg:col-span-3 rounded-xl border border-slate-700/60 relative h-[450px] overflow-hidden z-10 bg-slate-950">
+          <div className="lg:col-span-3 rounded-xl border border-slate-700/60 relative h-[450px] overflow-hidden z-10 bg-slate-950 print:w-full print:h-[350px] print:border-slate-400">
             <div ref={mapContainerRef} className="w-full h-full" />
           </div>
 
-          <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-4">
+          <div className="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col justify-between space-y-4 print:hidden">
             <div className="space-y-4">
               <span className="text-[10px] font-bold text-blue-400 uppercase tracking-widest block">Spatial Corridor Presets</span>
               
@@ -940,7 +1024,7 @@ export default function CountryRiskIntelligence() {
 
       </div>
 
-      {/* HARDCOPY CSS PRINT OVERRIDES ENGINE - UNMASKED DOSSIER REPORTING */}
+      {/* HARDCOPY CSS PRINT OVERRIDES ENGINE - UNMASKED DOSSIER REPORTING & MAP EXPORT */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body, html {
@@ -953,6 +1037,7 @@ export default function CountryRiskIntelligence() {
           .print\\:block { display: block !important; }
           .print\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
           .print\\:w-full { width: 100% !important; }
+          .print\\:h-\\[350px\\] { height: 350px !important; }
           .print\\:bg-white { background-color: #ffffff !important; }
           .print\\:text-black { color: #000000 !important; }
           .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
@@ -964,6 +1049,14 @@ export default function CountryRiskIntelligence() {
           .print\\:text-blue-700 { color: #1d4ed8 !important; }
           .print\\:text-emerald-700 { color: #047857 !important; }
           .print\\:break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
+          /* Ensure Leaflet Container & Canvas Tiles Print Accurately */
+          .leaflet-container {
+            width: 100% !important;
+            height: 350px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            background: #ffffff !important;
+          }
           table { width: 100% !important; table-layout: auto !important; word-break: break-word !important; }
           div { overflow: visible !important; }
         }
