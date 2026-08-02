@@ -662,6 +662,18 @@ export default function CountryRiskIntelligence() {
     if (boundingPoints.length > 0 && mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(L.latLngBounds(boundingPoints), { padding: [50, 50], maxZoom: 4 });
     }
+
+    // FIX 1: Invalidate map size before printing to prevent tile displacement
+    const handleBeforePrint = () => {
+      if (mapInstanceRef.current && mapInstanceRef.current.invalidateSize) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('beforeprint', handleBeforePrint);
+
+    return () => {
+      window.removeEventListener('beforeprint', handleBeforePrint);
+    };
   }, [leafletReady, mapRoutesToRender, activeHighlightedRoute, activeCoordinatesRegistry]);
 
   return (
@@ -1158,11 +1170,11 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* LEAFLET CONTAINER MAP WITH REFIXED PRINT STACKING CONTEXT */}
-      <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:block print:border-slate-400 print:bg-white print-section-stack">
+      {/* LEAFLET CONTAINER MAP WITH DEDICATED ISOLATION FOR PRINT LAYOUT */}
+      <div className="map-print-panel bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:block print:border-slate-400 print:bg-white print-section-stack">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch print:block">
           
-          <div className="lg:col-span-3 rounded-xl border border-slate-700/60 relative h-[450px] overflow-hidden z-10 bg-slate-950 print:w-full print:h-[350px] print:border-slate-400">
+          <div className="lg:col-span-3 rounded-xl border border-slate-700/60 relative h-[450px] overflow-hidden z-10 bg-slate-950 print:w-full print:h-[380px] print:border-slate-400">
             <div ref={mapContainerRef} className="w-full h-full" />
           </div>
 
@@ -1274,6 +1286,18 @@ export default function CountryRiskIntelligence() {
                     </span>
                   </div>
 
+                  {/* FIX 2: Explicit Exporter / Shipper & Entity / Importer Dual-Entity Display */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 my-3 p-3 rounded-lg bg-slate-900/60 print:bg-slate-100 border border-slate-700/60 print:border-slate-300 text-xs">
+                    <div>
+                      <span className="text-[10px] text-slate-400 print:text-slate-600 uppercase font-bold tracking-wider block">Exporter / Shipper</span>
+                      <strong className="text-amber-400 print:text-amber-800 font-bold block mt-0.5 truncate">{ledgerRow.cleanExporter}</strong>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 print:text-slate-600 uppercase font-bold tracking-wider block">Entity / Importer</span>
+                      <strong className="text-blue-400 print:text-blue-800 font-bold block mt-0.5 truncate">{ledgerRow.cleanImporter}</strong>
+                    </div>
+                  </div>
+
                   <div className="text-xs text-slate-100 print:text-slate-900 leading-relaxed mb-4">
                     <strong className="text-white print:text-black font-bold uppercase text-[10px] tracking-widest block mb-1">Engine Structural Analysis:</strong> 
                     {ledgerRow.brief}
@@ -1375,7 +1399,7 @@ export default function CountryRiskIntelligence() {
         )}
       </div>
 
-      {/* STACKING PRINT CSS RULES ENGINE */}
+      {/* STACKING PRINT CSS RULES ENGINE (FIXED MAP ISOLATION & PAGE BREAKS) */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body, html {
@@ -1388,7 +1412,7 @@ export default function CountryRiskIntelligence() {
           .print\\:block { display: block !important; }
           .print\\:grid-cols-4 { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; }
           .print\\:w-full { width: 100% !important; }
-          .print\\:h-\\[350px\\] { height: 350px !important; }
+          .print\\:h-\\[380px\\] { height: 380px !important; }
           .print\\:bg-white { background-color: #ffffff !important; }
           .print\\:text-black { color: #000000 !important; }
           .print\\:bg-slate-100 { background-color: #f1f5f9 !important; }
@@ -1401,19 +1425,37 @@ export default function CountryRiskIntelligence() {
           .print\\:text-emerald-700 { color: #047857 !important; }
           .print\\:break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
           
-          /* FIX LEAFLET PRINT OVERLAY ISSUE */
+          /* FIX 1: ISOLATE MAP INTO AN EMPTY PRINT PANEL & PREVENT TILE OVERFLOW / OVERLAP */
+          .map-print-panel {
+            position: relative !important;
+            display: block !important;
+            width: 100% !important;
+            height: 420px !important;
+            max-height: 420px !important;
+            overflow: hidden !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            margin-bottom: 24px !important;
+            clear: both !important;
+            z-index: 1 !important;
+          }
           .leaflet-container {
             position: relative !important;
-            z-index: 1 !important;
+            display: block !important;
             width: 100% !important;
-            height: 350px !important;
+            height: 380px !important;
+            max-height: 380px !important;
+            overflow: hidden !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             clear: both !important;
             background: #ffffff !important;
+            z-index: 1 !important;
           }
           .leaflet-pane, .leaflet-tile-container, .leaflet-top, .leaflet-bottom, .leaflet-layer {
             z-index: 1 !important;
-            position: relative !important;
           }
           .leaflet-tile {
             print-color-adjust: exact !important;
@@ -1421,13 +1463,14 @@ export default function CountryRiskIntelligence() {
           }
           .print-section-stack {
             position: relative !important;
-            z-index: 10 !important;
+            display: block !important;
             clear: both !important;
             page-break-inside: avoid !important;
+            break-inside: avoid !important;
             margin-top: 24px !important;
+            z-index: 2 !important;
           }
           table { width: 100% !important; table-layout: auto !important; word-break: break-word !important; }
-          div { overflow: visible !important; }
         }
       `}} />
 
