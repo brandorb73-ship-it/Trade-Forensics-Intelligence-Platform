@@ -5,7 +5,8 @@ import {
   AlertTriangle, CheckCircle2, Layers, Cpu, Filter, Hash, TrendingUp, 
   BarChart4, ShieldCheck, Activity, DollarSign, MapPin, Navigation, 
   Compass, Share2, Eye, Database, FileSpreadsheet, Upload, PlusCircle,
-  HelpCircle, BookOpen, Building, Tag, Calendar, Package, Lightbulb
+  HelpCircle, BookOpen, Building, Tag, Calendar, Package, Lightbulb,
+  Check, Copy, Code, Send, Download, ExternalLink
 } from 'lucide-react';
 
 // AUDITED CORE GEOCENTRIC COORDINATE REGISTRY
@@ -74,6 +75,8 @@ export default function CountryRiskIntelligence() {
   const [customCoordinates, setCustomCoordinates] = useState({});
   const [uploadFeedback, setUploadFeedback] = useState('');
   const [showMethodologyPanel, setShowMethodologyPanel] = useState(false);
+  const [showPayloadBridge, setShowPayloadBridge] = useState(false);
+  const [copiedPayload, setCopiedPayload] = useState(false);
 
   const mapContainerRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -173,6 +176,7 @@ export default function CountryRiskIntelligence() {
       const rawOrigin = (row.OriginCountry || row.origin || '').toUpperCase().trim();
       const rawDest = (row.DestinationCountry || row.destination || '').toUpperCase().trim();
       const rawImporter = (row.Importer || row.importer || row.entity || '').toUpperCase().trim();
+      const rawExporter = (row.Exporter || row.exporter || row.supplier || row.shipper || '').toUpperCase().trim();
       
       const valAmount = Number(row.Amount) || Number(row.amount) || Number(row.Value) || Number(row.value) || 0;
 
@@ -226,7 +230,7 @@ export default function CountryRiskIntelligence() {
 
       // 4. LOGISTICS ROUTING ANOMALY ENGINE
       const routingCorridorContainsHub = TRANSSHIPMENT_HUB_REGISTRY.some(hub => 
-        rawOrigin.includes(hub) || rawDest.includes(hub) || rawImporter.includes(hub)
+        rawOrigin.includes(hub) || rawDest.includes(hub) || rawImporter.includes(hub) || rawExporter.includes(hub)
       );
       const containsComplexWaybills = rawOrigin.includes('→') || rawOrigin.includes('VIA') || rawOrigin.includes('FTZ');
 
@@ -280,6 +284,7 @@ export default function CountryRiskIntelligence() {
         cleanDestination,
         cleanProduct: rawProduct || 'BULK DISCOVERED MANIFEST FREIGHT',
         cleanImporter: rawImporter || 'UNSPECIFIED COMMERCIAL IMPORTER',
+        cleanExporter: rawExporter || 'UNSPECIFIED COMMERCIAL EXPORTER',
         Amount: valAmount,
         approxDistanceKm,
         valuePerKm,
@@ -313,6 +318,7 @@ export default function CountryRiskIntelligence() {
           totalDistanceKm: rec.approxDistanceKm,
           sectors: new Set(),
           importers: new Set(),
+          exporters: new Set(),
           maxAbsZScore: 0,
           compositeRiskScore: 0
         };
@@ -329,6 +335,7 @@ export default function CountryRiskIntelligence() {
       if (rec.containsComplexWaybills) entry.complexWaybillCount += 1;
       entry.sectors.add(rec.macroSector);
       if (rec.cleanImporter) entry.importers.add(rec.cleanImporter);
+      if (rec.cleanExporter) entry.exporters.add(rec.cleanExporter);
       if (Math.abs(rec.deviationZScore) > entry.maxAbsZScore) {
         entry.maxAbsZScore = Math.abs(rec.deviationZScore);
       }
@@ -351,6 +358,7 @@ export default function CountryRiskIntelligence() {
         ...c,
         sectorCount: c.sectors.size,
         importerCount: c.importers.size,
+        exporterCount: c.exporters.size,
         compositeRiskScore: compositeScore,
         investigativeTier,
         avgValuePerKm: c.totalValue / (c.totalDistanceKm || 1),
@@ -390,11 +398,12 @@ export default function CountryRiskIntelligence() {
     return filteredRecords.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
   }, [filteredRecords]);
 
-  // CROSS-DIMENSIONAL INTELLIGENCE NEXUS (ENTITY, BRAND, VOLUME, TIMELINE & PRICING)
+  // CROSS-DIMENSIONAL INTELLIGENCE NEXUS (ENTITY, EXPORTER, BRAND, VOLUME, TIMELINE & PRICING)
   const nexusIntelligence = useMemo(() => {
     if (!filteredRecords.length) return null;
 
     const entityFreq = {};
+    const exporterFreq = {};
     const brandFreq = {};
     let minVal = Infinity;
     let maxVal = -Infinity;
@@ -402,6 +411,7 @@ export default function CountryRiskIntelligence() {
 
     filteredRecords.forEach(r => {
       if (r.cleanImporter) entityFreq[r.cleanImporter] = (entityFreq[r.cleanImporter] || 0) + 1;
+      if (r.cleanExporter) exporterFreq[r.cleanExporter] = (exporterFreq[r.cleanExporter] || 0) + 1;
       if (r.cleanProduct) brandFreq[r.cleanProduct] = (brandFreq[r.cleanProduct] || 0) + 1;
       
       if (r.Amount < minVal) minVal = r.Amount;
@@ -411,6 +421,7 @@ export default function CountryRiskIntelligence() {
     });
 
     const topEntities = Object.entries(entityFreq).sort((a,b) => b[1] - a[1]).slice(0, 4);
+    const topExporters = Object.entries(exporterFreq).sort((a,b) => b[1] - a[1]).slice(0, 4);
     const topBrands = Object.entries(brandFreq).sort((a,b) => b[1] - a[1]).slice(0, 4);
     const avgVal = calculatedCapitalizationSum / (filteredRecords.length || 1);
     const totalDistSum = filteredRecords.reduce((acc, r) => acc + r.approxDistanceKm, 0);
@@ -418,6 +429,7 @@ export default function CountryRiskIntelligence() {
 
     return {
       topEntities,
+      topExporters,
       topBrands,
       minVal: minVal === Infinity ? 0 : minVal,
       maxVal: maxVal === -Infinity ? 0 : maxVal,
@@ -428,7 +440,7 @@ export default function CountryRiskIntelligence() {
     };
   }, [filteredRecords, calculatedCapitalizationSum]);
 
-  // REFIXED CORRECTIVE AI DYNAMIC BRIEFING SYNTHESIS PARAGRAPH & HYPOTHESES
+  // CORRECTIVE AI DYNAMIC BRIEFING SYNTHESIS PARAGRAPH
   const dynamicSummaryParagraph = useMemo(() => {
     if (filteredRecords.length === 0) return "No active logistics vectors correspond to chosen analytical configurations.";
     const total = filteredRecords.length;
@@ -510,6 +522,60 @@ export default function CountryRiskIntelligence() {
     };
   }, [parsedRecords]);
 
+  // GENERATED STRUCTURED INTELLIGENCE OBJECT PAYLOAD READY FOR EXPORT
+  const structuredIntelligencePayload = useMemo(() => {
+    return {
+      metadata: {
+        generatedAt: new Date().toISOString(),
+        systemVersion: "4.8-Enterprise-GeoAI",
+        complianceAuditStandard: "ISO/IEC 27001 & WCO Trade Enforcement Guidelines",
+        totalAnalyzedRecords: parsedRecords.length,
+        activeCorridorsCount: corridorIntelligence.length,
+        compositeRiskIndexScore: countersIndex.compositeIndexScore,
+        totalCapitalizationUSD: calculatedCapitalizationSum
+      },
+      corridorRiskMatrix: corridorIntelligence.map(c => ({
+        corridorId: c.corridorId,
+        compositeRiskScore: c.compositeRiskScore,
+        shipmentCount: c.shipmentCount,
+        totalPriceUSD: c.totalValue,
+        hubDependencyPercent: c.hubDependencyPercent,
+        circuitousIndexPercent: c.circuitousRatio,
+        valueDistanceRatioUSDPerKm: c.avgValuePerKm,
+        investigativeTier: c.investigativeTier
+      })),
+      crossDimensionalNexus: {
+        keyExporters: nexusIntelligence?.topExporters || [],
+        keyImporters: nexusIntelligence?.topEntities || [],
+        topCommodities: nexusIntelligence?.topBrands || [],
+        valuationSpread: {
+          minUSD: nexusIntelligence?.minVal || 0,
+          maxUSD: nexusIntelligence?.maxVal || 0,
+          meanUSD: nexusIntelligence?.avgVal || 0
+        },
+        globalPriceDensityUSDPerKm: nexusIntelligence?.globalAvgPriceKm || 0
+      },
+      aiDiagnosticBriefing: {
+        summary: dynamicSummaryParagraph,
+        hypotheses: dynamicHypotheses
+      },
+      activeFilteredManifest: filteredRecords.map(r => ({
+        id: r.id,
+        route: r.routePath,
+        exporter: r.cleanExporter,
+        importer: r.cleanImporter,
+        commodity: r.cleanProduct,
+        hsCode: r.hsCodeMatched,
+        sector: r.macroSector,
+        priceUSD: r.Amount,
+        distanceKm: r.approxDistanceKm,
+        riskScore: r.riskScore,
+        severity: r.severity,
+        briefing: r.brief
+      }))
+    };
+  }, [parsedRecords, corridorIntelligence, countersIndex, calculatedCapitalizationSum, nexusIntelligence, dynamicSummaryParagraph, dynamicHypotheses, filteredRecords]);
+
   // Leaflet Spatial Mapping Rendering Engine with Polyline Hover & Popup Interactivity
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current) return;
@@ -556,21 +622,22 @@ export default function CountryRiskIntelligence() {
         radius: isActiveNode ? 9 : 5, fillColor: '#10b981', color: isActiveNode ? '#ffffff' : '#0f172a', weight: isActiveNode ? 2 : 1, fillOpacity: 0.95
       }).bindPopup(`<b style="color:#0f172a">Destination Node: ${item.cleanDestination}</b><br/><span style="color:#334155">Sector: ${item.macroSector}</span>`);
 
-      // INTERACTIVE POLYLINE WITH HOVER & POPUP
+      // INTERACTIVE POLYLINE WITH EXPORTER, IMPORTER, BRAND, PRICE, AND ROUTE POPUP
       const structuralLine = L.polyline([sourceCoord, targetCoord], {
         color: polylineColor, weight: isActiveNode ? 6 : 3, opacity: isActiveNode ? 1.0 : 0.65, dashArray: isActiveNode ? '8, 5' : '4, 4'
       });
 
-      // Line Click Popup (Entities, Brand, Volume, Price, Sector)
+      // Line Click Popup (Includes Exporter/Shipper & Declared Price)
       structuralLine.bindPopup(`
         <div style="font-family: system-ui, sans-serif; font-size: 11px; color: #0f172a; padding: 2px; min-width: 220px;">
           <div style="font-weight: bold; color: #1e3a8a; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px;">
             ${item.cleanOrigin} ➔ ${item.cleanDestination}
           </div>
+          <div style="margin-bottom: 3px;"><b>Exporter / Shipper:</b> ${item.cleanExporter}</div>
           <div style="margin-bottom: 3px;"><b>Entity / Importer:</b> ${item.cleanImporter}</div>
           <div style="margin-bottom: 3px;"><b>Declared Commodity:</b> ${item.cleanProduct}</div>
           <div style="margin-bottom: 3px;"><b>Sector:</b> ${item.macroSector} (HS ${item.hsCodeMatched})</div>
-          <div style="margin-bottom: 3px;"><b>Declared Volume ($):</b> <span style="color: #047857; font-weight: bold;">$${item.Amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+          <div style="margin-bottom: 3px;"><b>Declared Price ($):</b> <span style="color: #047857; font-weight: bold;">$${item.Amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
           <div style="margin-bottom: 3px;"><b>Price / Distance:</b> $${item.valuePerKm.toFixed(2)} / km (${item.approxDistanceKm.toLocaleString()} km)</div>
           <div><b>Corridor Risk Score:</b> <span style="font-weight: bold; color: ${item.severity === 'HIGH' ? '#e11d48' : item.severity === 'MEDIUM' ? '#2563eb' : '#059669'};">${item.riskScore}/100 (${item.severity})</span></div>
         </div>
@@ -830,20 +897,35 @@ export default function CountryRiskIntelligence() {
         </div>
       </div>
 
-      {/* CROSS-DIMENSIONAL INTELLIGENCE NEXUS: ENTITY, BRAND, VOLUME, TIMELINE & PRICING */}
+      {/* CROSS-DIMENSIONAL INTELLIGENCE NEXUS: ENTITY, EXPORTER, BRAND, VOLUME, TIMELINE & PRICING */}
       {nexusIntelligence && (
         <div className="bg-slate-900/90 border border-slate-700/60 p-5 rounded-xl space-y-4 shadow-lg print:block">
           <div className="flex justify-between items-center border-b border-slate-700/60 pb-3">
             <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
-              <Building size={16} className="text-amber-400" /> Cross-Dimensional Intelligence Nexus: Entity, Brand, Volume, Timeline & Pricing
+              <Building size={16} className="text-amber-400" /> Cross-Dimensional Intelligence Nexus: Exporter, Entity, Brand, Volume, Timeline & Pricing
             </h3>
             <span className="text-xs text-slate-400 font-semibold">
               Active Scope: {filteredRecords.length} Transactions
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
-            {/* Top Entities */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 text-xs">
+            {/* Top Exporters / Shippers */}
+            <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
+                <Package size={14} className="text-amber-400" /> Key Exporters & Shippers
+              </div>
+              <ul className="space-y-1 text-slate-300">
+                {nexusIntelligence.topExporters.map(([exp, cnt]) => (
+                  <li key={exp} className="flex justify-between truncate">
+                    <span className="truncate text-slate-200">{exp}</span>
+                    <span className="font-bold text-amber-400 ml-2">{cnt} shp</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Top Importers / Entities */}
             <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
               <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
                 <Building size={14} className="text-blue-400" /> Key Importers & Entities
@@ -876,15 +958,15 @@ export default function CountryRiskIntelligence() {
             {/* Valuation & Volume Spread */}
             <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
               <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
-                <DollarSign size={14} className="text-purple-400" /> Valuation & Volume Spread
+                <DollarSign size={14} className="text-purple-400" /> Valuation & Price Spread
               </div>
               <div className="space-y-1 text-slate-300">
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Min Single Value:</span>
+                  <span className="text-slate-400">Min Single Price:</span>
                   <span className="font-bold text-white">${nexusIntelligence.minVal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-slate-400">Max Single Value:</span>
+                  <span className="text-slate-400">Max Single Price:</span>
                   <span className="font-bold text-amber-400">${nexusIntelligence.maxVal.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
@@ -966,7 +1048,7 @@ export default function CountryRiskIntelligence() {
               <tr className="border-b border-slate-700/60 text-slate-300 uppercase text-[10px] font-bold tracking-wider bg-slate-900/50">
                 <th className="p-3">Corridor Trajectory</th>
                 <th className="p-3">Risk Ranking</th>
-                <th className="p-3">Shipments / Total Volume ($USD)</th>
+                <th className="p-3">Shipments / Total Price ($USD)</th>
                 <th className="p-3">Hub Dependency</th>
                 <th className="p-3">Circuitous Index</th>
                 <th className="p-3">Value / Distance Ratio</th>
@@ -1197,13 +1279,17 @@ export default function CountryRiskIntelligence() {
                     {ledgerRow.brief}
                   </div>
 
-                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-3 border-t border-slate-700/60 print:border-slate-200 text-xs">
+                  <div className="grid grid-cols-2 md:grid-cols-6 gap-3 pt-3 border-t border-slate-700/60 print:border-slate-200 text-xs">
                     <div>
-                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Resolved Logistics Corridor</span>
-                      <span className="text-white print:text-black font-bold block mt-1">{ledgerRow.routePath}</span>
+                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Logistics Corridor</span>
+                      <span className="text-white print:text-black font-bold block mt-1 truncate">{ledgerRow.routePath}</span>
                     </div>
                     <div>
-                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Ingested Product String</span>
+                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Exporter / Shipper</span>
+                      <span className="text-amber-400 print:text-amber-800 font-semibold block truncate mt-1">{ledgerRow.cleanExporter}</span>
+                    </div>
+                    <div>
+                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Declared Commodity</span>
                       <span className="text-slate-100 print:text-slate-900 font-semibold block truncate mt-1">{ledgerRow.cleanProduct}</span>
                     </div>
                     <div>
@@ -1211,11 +1297,11 @@ export default function CountryRiskIntelligence() {
                       <span className="text-blue-400 print:text-blue-800 font-bold block truncate mt-1">{ledgerRow.macroSector}</span>
                     </div>
                     <div>
-                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Approx. Geodesic Distance</span>
+                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Approx. Distance</span>
                       <span className="text-purple-400 print:text-purple-800 font-bold block mt-1">{ledgerRow.approxDistanceKm.toLocaleString()} km</span>
                     </div>
                     <div>
-                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Declaration Amount</span>
+                      <span className="block text-[10px] text-slate-300 print:text-slate-600 uppercase font-bold tracking-wide">Declared Price ($)</span>
                       <span className="text-emerald-400 print:text-emerald-700 font-bold block mt-1">
                         ${ledgerRow.Amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
@@ -1232,6 +1318,61 @@ export default function CountryRiskIntelligence() {
           )}
         </div>
 
+      </div>
+
+      {/* COMPREHENSIVE REPORT HUB BRIDGE - DATA INTEROPERABILITY BANNER */}
+      <div className="bg-gradient-to-r from-slate-900 via-slate-900 to-blue-950/60 border border-blue-500/40 p-5 rounded-xl shadow-xl space-y-4 print:hidden">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Database className="text-blue-400" size={18} />
+              <h3 className="text-sm font-bold text-white uppercase tracking-wider">
+                Comprehensive Report Hub Bridge
+              </h3>
+              <span className="inline-flex items-center gap-1 bg-emerald-950/80 border border-emerald-500/50 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                <CheckCircle2 size={11} /> Synchronized
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 font-medium">
+              Generated structured Intelligence Object payload ready for export to Global Analytics Matrix and comprehensive Report hub.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => setShowPayloadBridge(prev => !prev)}
+              className="flex items-center gap-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-semibold px-3.5 py-2 rounded-lg transition-all"
+            >
+              <Code size={14} className="text-blue-400" />
+              <span>{showPayloadBridge ? 'Hide Structured Payload' : 'Inspect JSON Payload'}</span>
+            </button>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(JSON.stringify(structuredIntelligencePayload, null, 2));
+                setCopiedPayload(true);
+                setTimeout(() => setCopiedPayload(false), 2500);
+              }}
+              className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-2 rounded-lg transition-all shadow-md active:scale-95 border border-blue-500"
+            >
+              {copiedPayload ? <Check size={14} /> : <Copy size={14} />}
+              <span>{copiedPayload ? 'Payload Copied to Clipboard' : 'Copy Payload Object'}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Toggleable Structured Payload Viewer */}
+        {showPayloadBridge && (
+          <div className="bg-slate-950 p-4 rounded-lg border border-slate-800 space-y-2">
+            <div className="flex justify-between items-center text-[10px] font-bold text-slate-400 uppercase">
+              <span>Structured Payload Stream (Global Analytics Matrix Ready)</span>
+              <span>Size: {(JSON.stringify(structuredIntelligencePayload).length / 1024).toFixed(2)} KB</span>
+            </div>
+            <pre className="text-[11px] font-mono text-emerald-300 max-h-[220px] overflow-y-auto bg-slate-900 p-3 rounded border border-slate-800/80">
+              {JSON.stringify(structuredIntelligencePayload, null, 2)}
+            </pre>
+          </div>
+        )}
       </div>
 
       {/* STACKING PRINT CSS RULES ENGINE */}
