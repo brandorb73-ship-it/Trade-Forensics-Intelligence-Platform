@@ -5,7 +5,7 @@ import {
   AlertTriangle, CheckCircle2, Layers, Cpu, Filter, Hash, TrendingUp, 
   BarChart4, ShieldCheck, Activity, DollarSign, MapPin, Navigation, 
   Compass, Share2, Eye, Database, FileSpreadsheet, Upload, PlusCircle,
-  HelpCircle, BookOpen
+  HelpCircle, BookOpen, Building, Tag, Calendar, Package, Lightbulb
 } from 'lucide-react';
 
 // AUDITED CORE GEOCENTRIC COORDINATE REGISTRY
@@ -71,7 +71,6 @@ export default function CountryRiskIntelligence() {
   const [selectedMacroSector, setSelectedMacroSector] = useState('ALL');
   const [selectedCorridorFilter, setSelectedCorridorFilter] = useState('ALL');
   
-  // Custom uploaded jurisdiction coordinate registry state
   const [customCoordinates, setCustomCoordinates] = useState({});
   const [uploadFeedback, setUploadFeedback] = useState('');
   const [showMethodologyPanel, setShowMethodologyPanel] = useState(false);
@@ -80,13 +79,12 @@ export default function CountryRiskIntelligence() {
   const mapInstanceRef = useRef(null);
   const layerGroupRef = useRef(null);
 
-  // Merged Coordinate Registry (Base + User Uploaded XLSX/CSV/JSON Coordinates)
+  // Merged Coordinate Registry
   const activeCoordinatesRegistry = useMemo(() => {
     return { ...BASE_JURISDICTION_COORDINATES, ...customCoordinates };
   }, [customCoordinates]);
 
   // ULTRA-FORGIVING MULTI-DELIMITER COORDINATE FILE UPLOAD PARSER
-  // Automatically skips header rows ("Country,Latitude,Longitude") and handles CSV, TSV, and JSON
   const handleCoordinateFileUpload = (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -105,18 +103,15 @@ export default function CountryRiskIntelligence() {
             }
           });
         } else {
-          // Robust CSV / TSV / Semicolon Parser with Automatic Header Skipping
           const lines = content.split(/\r?\n/);
           lines.forEach(line => {
             if (!line || !line.trim()) return;
-            // Split by comma, tab, or semicolon
             const parts = line.split(/[,;\t]/).map(p => p.replace(/["']/g, '').trim());
             if (parts.length >= 3) {
               const country = parts[0].toUpperCase();
               const lat = Number(parts[1]);
               const lng = Number(parts[2]);
               
-              // Skip header rows where Lat/Lng evaluate to NaN (e.g., "Latitude", "Longitude")
               if (country && !isNaN(lat) && !isNaN(lng)) {
                 parsedNewCoords[country] = [lat, lng];
               }
@@ -158,34 +153,30 @@ export default function CountryRiskIntelligence() {
     };
   }, []);
 
-  // ADAPTIVE COGNITIVE PIPELINE: Dynamic Profiling, Valuation & AI NLP Commodity Clustering
+  // Dynamic Profiling, Valuation & AI NLP Commodity Clustering Pipeline
   const parsedRecords = useMemo(() => {
     if (!tradeData || tradeData.length === 0) return [];
 
-    // PHASE 1: Exact Financial Baseline Valuation Analysis (Zero artificial default fallbacks)
     const valuesArray = tradeData.map(r => {
       return Number(r?.Amount) || Number(r?.amount) || Number(r?.Value) || Number(r?.value) || 0;
     });
     const globalSum = valuesArray.reduce((a, b) => a + b, 0);
     const globalMean = globalSum / (valuesArray.length || 1);
     
-    // Compute Dynamic Standard Deviation (Z-Score Baseline)
     const variance = valuesArray.reduce((a, b) => a + Math.pow(b - globalMean, 2), 0) / (valuesArray.length || 1);
     const globalStdDev = Math.sqrt(variance) || 1;
 
-    // PHASE 2: Multi-Layer Processing & Classification Loop
     return tradeData.map((row, idx) => {
       if (!row) return null;
 
-      const rawProduct = (row.Product || row.product_description || '').toUpperCase().trim();
+      const rawProduct = (row.Product || row.product_description || row.brand || '').toUpperCase().trim();
       const rawOrigin = (row.OriginCountry || row.origin || '').toUpperCase().trim();
       const rawDest = (row.DestinationCountry || row.destination || '').toUpperCase().trim();
-      const rawImporter = (row.Importer || row.importer || '').toUpperCase().trim();
+      const rawImporter = (row.Importer || row.importer || row.entity || '').toUpperCase().trim();
       
-      // Strict CSV Valuation Extraction (No artificial fallbacks)
       const valAmount = Number(row.Amount) || Number(row.amount) || Number(row.Value) || Number(row.value) || 0;
 
-      // 1. DYNAMIC AI COMMODITY CLASSIFICATION ENGINE (WCO Harmonized System Inference)
+      // 1. AI COMMODITY CLASSIFICATION ENGINE
       let calculatedHs = '';
       let discoveredSector = 'Unclassified Commercial Freight';
       const cleanDigits = String(row.HSCode || row.hs_code || '').replace(/[^0-9]/g, '');
@@ -194,7 +185,6 @@ export default function CountryRiskIntelligence() {
         calculatedHs = cleanDigits.substring(0, 6).padEnd(6, '0');
         const prefixNum = parseInt(calculatedHs.substring(0, 2), 10);
         
-        // Universal WCO Section Chapter Mapping
         if (prefixNum >= 1 && prefixNum <= 24) discoveredSector = `Agri-Food & Consumables (Ch.${prefixNum})`;
         else if (prefixNum >= 25 && prefixNum <= 40) discoveredSector = `Chemicals, Polymers & Resins (Ch.${prefixNum})`;
         else if (prefixNum >= 41 && prefixNum <= 49) discoveredSector = `Wood, Pulp & Cellulose Products (Ch.${prefixNum})`;
@@ -204,7 +194,6 @@ export default function CountryRiskIntelligence() {
         else if (prefixNum >= 86 && prefixNum <= 89) discoveredSector = `Aerospace, Maritime & Transit Equipment (Ch.${prefixNum})`;
         else discoveredSector = `Specialized Technical Commodities (Ch.${prefixNum})`;
       } else {
-        // AI NLP Semantic Token Clustering Engine (No static hardcoded fallbacks)
         const tokens = rawProduct.split(/[^A-Z0-9]+/).filter(t => t.length > 3);
         if (tokens.length > 0) {
           calculatedHs = '847990';
@@ -217,15 +206,14 @@ export default function CountryRiskIntelligence() {
 
       const chapter = calculatedHs.substring(0, 2);
 
-      // 2. GEOGRAPHIC CORRIDOR & TRANSIT RESOLUTION
+      // 2. GEOGRAPHIC CORRIDOR RESOLUTION
       let cleanOrigin = rawOrigin.split(/[→\u2192]/)[0].trim() || 'INDONESIA';
       let cleanDestination = rawDest.split(/[→\u2192]/)[0].trim() || 'GERMANY';
 
-      // 3. DYNAMIC Z-SCORE VALUATION OUTLIER ENGINE
+      // 3. Z-SCORE VALUATION OUTLIER ENGINE
       const deviationZScore = globalStdDev > 0 ? (valAmount - globalMean) / globalStdDev : 0;
       const absZScore = Math.abs(deviationZScore);
 
-      // Statistical Threshold Categorization
       let zScoreTier = 'NORMAL';
       let valueAnomalyBonus = 0;
       if (absZScore >= 1.96) {
@@ -291,18 +279,20 @@ export default function CountryRiskIntelligence() {
         cleanOrigin,
         cleanDestination,
         cleanProduct: rawProduct || 'BULK DISCOVERED MANIFEST FREIGHT',
+        cleanImporter: rawImporter || 'UNSPECIFIED COMMERCIAL IMPORTER',
         Amount: valAmount,
         approxDistanceKm,
         valuePerKm,
         deviationZScore,
         zScoreTier,
         routingCorridorContainsHub,
-        containsComplexWaybills
+        containsComplexWaybills,
+        dateString: row.Date || row.date || row.Timestamp || 'N/A'
       };
     }).filter(Boolean);
   }, [tradeData, activeCoordinatesRegistry]);
 
-  // CORRIDOR INTELLIGENCE PIPELINE: Aggregate Geospatial Trade Behavior & Route Rankings
+  // Dynamic Corridor Intelligence Matrix Pipeline
   const corridorIntelligence = useMemo(() => {
     const corridorMap = {};
 
@@ -322,6 +312,7 @@ export default function CountryRiskIntelligence() {
           complexWaybillCount: 0,
           totalDistanceKm: rec.approxDistanceKm,
           sectors: new Set(),
+          importers: new Set(),
           maxAbsZScore: 0,
           compositeRiskScore: 0
         };
@@ -337,6 +328,7 @@ export default function CountryRiskIntelligence() {
       if (rec.routingCorridorContainsHub) entry.hubInvolvedCount += 1;
       if (rec.containsComplexWaybills) entry.complexWaybillCount += 1;
       entry.sectors.add(rec.macroSector);
+      if (rec.cleanImporter) entry.importers.add(rec.cleanImporter);
       if (Math.abs(rec.deviationZScore) > entry.maxAbsZScore) {
         entry.maxAbsZScore = Math.abs(rec.deviationZScore);
       }
@@ -358,6 +350,7 @@ export default function CountryRiskIntelligence() {
       return {
         ...c,
         sectorCount: c.sectors.size,
+        importerCount: c.importers.size,
         compositeRiskScore: compositeScore,
         investigativeTier,
         avgValuePerKm: c.totalValue / (c.totalDistanceKm || 1),
@@ -392,52 +385,111 @@ export default function CountryRiskIntelligence() {
 
   const activeHighlightedRoute = mapRoutesToRender[selectedRouteIdx] || mapRoutesToRender[0] || null;
 
-  // SYSTEM INTELLIGENCE OBJECT OUTPUT ENGINE
-  const intelligenceObjectOutput = useMemo(() => {
-    const totalCap = parsedRecords.reduce((acc, r) => acc + (r.Amount || 0), 0);
-    const topHighRiskCorridors = corridorIntelligence.filter(c => c.investigativeTier === 'HIGH_PRIORITY_INVESTIGATION');
-    
-    return {
-      metadata: {
-        module: "CountryRiskIntelligence & TradeCorridorCentre",
-        generatedTimestamp: new Date().toISOString(),
-        datasetSize: parsedRecords.length,
-        totalTradeVolumeUSD: totalCap
-      },
-      geospatialSummary: {
-        activeCorridorsCount: corridorIntelligence.length,
-        highRiskCorridorsCount: topHighRiskCorridors.length,
-        originJurisdictions: uniqueOrigins,
-        destinationJurisdictions: uniqueDestinations,
-        primaryTransitHubsDetected: TRANSSHIPMENT_HUB_REGISTRY.filter(hub => 
-          parsedRecords.some(r => r.cleanOrigin.includes(hub) || r.cleanDestination.includes(hub))
-        )
-      },
-      corridorRiskMatrix: corridorIntelligence.map(c => ({
-        corridor: c.corridorId,
-        compositeRiskScore: c.compositeRiskScore,
-        tier: c.investigativeTier,
-        shipments: c.shipmentCount,
-        volumeUSD: c.totalValue,
-        hubDependencyPercent: Number(c.hubDependencyPercent),
-        circuitousIndex: Number(c.circuitousRatio)
-      })),
-      investigativeActionItems: topHighRiskCorridors.map(c => (
-        `Prioritize forensic customs ledger review on ${c.corridorId} (Score: ${c.compositeRiskScore}/100) due to ${c.hubDependencyPercent}% transshipment hub reliance and ${c.circuitousRatio}% circuitous waybill complexity.`
-      ))
-    };
-  }, [parsedRecords, corridorIntelligence, uniqueOrigins, uniqueDestinations]);
+  // Total Capitalization Sum
+  const calculatedCapitalizationSum = useMemo(() => {
+    return filteredRecords.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
+  }, [filteredRecords]);
 
-  // AI Dynamic Briefing Synthesis Paragraph
+  // CROSS-DIMENSIONAL INTELLIGENCE NEXUS (ENTITY, BRAND, VOLUME, TIMELINE & PRICING)
+  const nexusIntelligence = useMemo(() => {
+    if (!filteredRecords.length) return null;
+
+    const entityFreq = {};
+    const brandFreq = {};
+    let minVal = Infinity;
+    let maxVal = -Infinity;
+    const datesList = [];
+
+    filteredRecords.forEach(r => {
+      if (r.cleanImporter) entityFreq[r.cleanImporter] = (entityFreq[r.cleanImporter] || 0) + 1;
+      if (r.cleanProduct) brandFreq[r.cleanProduct] = (brandFreq[r.cleanProduct] || 0) + 1;
+      
+      if (r.Amount < minVal) minVal = r.Amount;
+      if (r.Amount > maxVal) maxVal = r.Amount;
+
+      if (r.dateString && r.dateString !== 'N/A') datesList.push(r.dateString);
+    });
+
+    const topEntities = Object.entries(entityFreq).sort((a,b) => b[1] - a[1]).slice(0, 4);
+    const topBrands = Object.entries(brandFreq).sort((a,b) => b[1] - a[1]).slice(0, 4);
+    const avgVal = calculatedCapitalizationSum / (filteredRecords.length || 1);
+    const totalDistSum = filteredRecords.reduce((acc, r) => acc + r.approxDistanceKm, 0);
+    const globalAvgPriceKm = totalDistSum > 0 ? calculatedCapitalizationSum / totalDistSum : 0;
+
+    return {
+      topEntities,
+      topBrands,
+      minVal: minVal === Infinity ? 0 : minVal,
+      maxVal: maxVal === -Infinity ? 0 : maxVal,
+      avgVal,
+      globalAvgPriceKm,
+      datesCount: datesList.length,
+      sampleDates: datesList.slice(0, 3)
+    };
+  }, [filteredRecords, calculatedCapitalizationSum]);
+
+  // REFIXED CORRECTIVE AI DYNAMIC BRIEFING SYNTHESIS PARAGRAPH & HYPOTHESES
   const dynamicSummaryParagraph = useMemo(() => {
     if (filteredRecords.length === 0) return "No active logistics vectors correspond to chosen analytical configurations.";
     const total = filteredRecords.length;
     const elevatedCount = filteredRecords.filter(r => r.severity === 'HIGH').length;
+    const midCount = filteredRecords.filter(r => r.severity === 'MEDIUM').length;
     const directCount = filteredRecords.filter(r => r.severity === 'LOW').length;
     const topCorridor = corridorIntelligence[0];
-    
-    return `AI GEOSPATIAL & CORRIDOR SYNTHESIS: Currently evaluating ${total} dynamically cataloged trade paths across ${corridorIntelligence.length} active trade corridors. The AI NLP Commodity Classification engine dynamically extracted WCO Harmonized System chapters across the active profile to map ${discoveredSectorsList.length} custom sectors without hardcoded regex fallbacks. Outlier profiling isolated ${elevatedCount} transactions reflecting asymmetric routing anomalies, while ${directCount} pathways align with direct point-to-point transport baselines. Highest investigative priority is assigned to the ${topCorridor ? topCorridor.corridorId : 'primary'} corridor (Risk Score: ${topCorridor ? topCorridor.compositeRiskScore : 0}/100), where geographic distance-to-valuation ratios and intermediate transshipment hub interactions signal structural diversion.`;
+
+    let corridorRiskAssessment = "";
+    if (topCorridor) {
+      if (topCorridor.compositeRiskScore >= 65) {
+        corridorRiskAssessment = `Highest investigative priority is assigned to the ${topCorridor.corridorId} corridor (Risk Score: ${topCorridor.compositeRiskScore}/100), where high transshipment hub dependency (${topCorridor.hubDependencyPercent}%) and circuitous routing (${topCorridor.circuitousRatio}%) indicate potential structural diversion, customs misclassification, or tariff evasion.`;
+      } else if (topCorridor.compositeRiskScore >= 35) {
+        corridorRiskAssessment = `Primary corridor evaluated is ${topCorridor.corridorId} (Risk Score: ${topCorridor.compositeRiskScore}/100), exhibiting moderate trade drift and hub reliance (${topCorridor.hubDependencyPercent}%), warranting secondary customs audit.`;
+      } else {
+        corridorRiskAssessment = `Primary corridor evaluated is ${topCorridor.corridorId} (Risk Score: ${topCorridor.compositeRiskScore}/100). This corridor operates within standard direct supply chain baselines (Tier 3) with zero structural diversion indicators.`;
+      }
+    }
+
+    return `AI GEOSPATIAL & CORRIDOR SYNTHESIS: Currently evaluating ${total} dynamically cataloged trade paths across ${corridorIntelligence.length} active corridors. The AI NLP Commodity Classification engine dynamically extracted WCO Harmonized System chapters across the active profile to map ${discoveredSectorsList.length} custom sectors. Outlier profiling isolated ${elevatedCount} high-risk transactions (compound routing/valuation alerts), ${midCount} moderate variance transactions, and ${directCount} baseline direct pathways. ${corridorRiskAssessment}`;
   }, [filteredRecords, corridorIntelligence, discoveredSectorsList]);
+
+  // DATA-BACKED INVESTIGATIVE HYPOTHESES & REAL POSSIBILITIES
+  const dynamicHypotheses = useMemo(() => {
+    if (!filteredRecords.length) return [];
+    const hypothesesList = [];
+
+    const highRiskList = filteredRecords.filter(r => r.severity === 'HIGH');
+    const zOutliers = filteredRecords.filter(r => Math.abs(r.deviationZScore) >= 1.96);
+    const hubTraversals = filteredRecords.filter(r => r.routingCorridorContainsHub);
+
+    if (zOutliers.length > 0) {
+      hypothesesList.push({
+        title: "Possibility A: Transfer Pricing Misinvoicing / Valuation Deviation",
+        detail: `${zOutliers.length} transaction(s) breach the 95%+ confidence interval (|Z| ≥ 1.96). Significant price deviations relative to geographic distance averages suggest potential customs under-declaration to minimize tariffs or over-declaration for capital flight.`
+      });
+    }
+
+    if (hubTraversals.length > 0) {
+      hypothesesList.push({
+        title: "Possibility B: Transshipment Origin Camouflage / Tariff Avoidance",
+        detail: `${hubTraversals.length} shipment(s) traverse known global transit hubs (Dubai, Singapore, HK). Indicates potential origin re-labeling or bill-of-lading switching to circumvent country-of-origin tariffs or trade embargoes.`
+      });
+    }
+
+    if (highRiskList.length > 0 && hypothesesList.length < 3) {
+      hypothesesList.push({
+        title: "Possibility C: Complex Multi-Modal Route Obfuscation",
+        detail: `${highRiskList.length} transaction(s) utilize split waybills, FTZ transfers, or non-linear transport legs. Suggests deliberate logistics layering to obscure ultimate beneficial ownership (UBO).`
+      });
+    }
+
+    if (hypothesesList.length === 0) {
+      hypothesesList.push({
+        title: "Possibility A: Compliant Commercial Direct Operations",
+        detail: "Current dataset exhibits linear freight trajectories, standard pricing distributions, and minimal transshipment reliance. Operates within legitimate commercial control baselines."
+      });
+    }
+
+    return hypothesesList;
+  }, [filteredRecords]);
 
   const countersIndex = useMemo(() => {
     const total = parsedRecords.length || 1;
@@ -458,7 +510,7 @@ export default function CountryRiskIntelligence() {
     };
   }, [parsedRecords]);
 
-  // Leaflet Spatial Mapping Rendering Engine
+  // Leaflet Spatial Mapping Rendering Engine with Polyline Hover & Popup Interactivity
   useEffect(() => {
     if (!leafletReady || !mapContainerRef.current) return;
     const L = window.L;
@@ -495,6 +547,7 @@ export default function CountryRiskIntelligence() {
       const isActiveNode = activeHighlightedRoute && activeHighlightedRoute.id === item.id;
       const polylineColor = item.severity === 'HIGH' ? '#f43f5e' : item.severity === 'MEDIUM' ? '#3b82f6' : '#10b981';
 
+      // Origin and Destination Node Markers
       const sourceDot = L.circleMarker(sourceCoord, {
         radius: isActiveNode ? 9 : 5, fillColor: '#3b82f6', color: isActiveNode ? '#ffffff' : '#0f172a', weight: isActiveNode ? 2 : 1, fillOpacity: 0.95
       }).bindPopup(`<b style="color:#0f172a">Origin Node: ${item.cleanOrigin}</b><br/><span style="color:#334155">Corridor Risk Index: ${item.riskScore}/100</span>`);
@@ -503,8 +556,29 @@ export default function CountryRiskIntelligence() {
         radius: isActiveNode ? 9 : 5, fillColor: '#10b981', color: isActiveNode ? '#ffffff' : '#0f172a', weight: isActiveNode ? 2 : 1, fillOpacity: 0.95
       }).bindPopup(`<b style="color:#0f172a">Destination Node: ${item.cleanDestination}</b><br/><span style="color:#334155">Sector: ${item.macroSector}</span>`);
 
+      // INTERACTIVE POLYLINE WITH HOVER & POPUP
       const structuralLine = L.polyline([sourceCoord, targetCoord], {
-        color: polylineColor, weight: isActiveNode ? 5 : 2.5, opacity: isActiveNode ? 1.0 : 0.55, dashArray: isActiveNode ? '8, 5' : '4, 4'
+        color: polylineColor, weight: isActiveNode ? 6 : 3, opacity: isActiveNode ? 1.0 : 0.65, dashArray: isActiveNode ? '8, 5' : '4, 4'
+      });
+
+      // Line Click Popup (Entities, Brand, Volume, Price, Sector)
+      structuralLine.bindPopup(`
+        <div style="font-family: system-ui, sans-serif; font-size: 11px; color: #0f172a; padding: 2px; min-width: 220px;">
+          <div style="font-weight: bold; color: #1e3a8a; font-size: 12px; border-bottom: 1px solid #cbd5e1; padding-bottom: 4px; margin-bottom: 6px;">
+            ${item.cleanOrigin} ➔ ${item.cleanDestination}
+          </div>
+          <div style="margin-bottom: 3px;"><b>Entity / Importer:</b> ${item.cleanImporter}</div>
+          <div style="margin-bottom: 3px;"><b>Declared Commodity:</b> ${item.cleanProduct}</div>
+          <div style="margin-bottom: 3px;"><b>Sector:</b> ${item.macroSector} (HS ${item.hsCodeMatched})</div>
+          <div style="margin-bottom: 3px;"><b>Declared Volume ($):</b> <span style="color: #047857; font-weight: bold;">$${item.Amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</span></div>
+          <div style="margin-bottom: 3px;"><b>Price / Distance:</b> $${item.valuePerKm.toFixed(2)} / km (${item.approxDistanceKm.toLocaleString()} km)</div>
+          <div><b>Corridor Risk Score:</b> <span style="font-weight: bold; color: ${item.severity === 'HIGH' ? '#e11d48' : item.severity === 'MEDIUM' ? '#2563eb' : '#059669'};">${item.riskScore}/100 (${item.severity})</span></div>
+        </div>
+      `);
+
+      // Line Hover Tooltip
+      structuralLine.bindTooltip(`Vector: ${item.cleanOrigin} ➔ ${item.cleanDestination} ($${item.Amount.toLocaleString()})`, {
+        sticky: true
       });
 
       layerGroup.addLayer(sourceDot);
@@ -523,15 +597,10 @@ export default function CountryRiskIntelligence() {
     }
   }, [leafletReady, mapRoutesToRender, activeHighlightedRoute, activeCoordinatesRegistry]);
 
-  // Corrected Exact Financial Capitalization Summation ($1.49M CSV Reconciliation)
-  const calculatedCapitalizationSum = useMemo(() => {
-    return filteredRecords.reduce((acc, curr) => acc + (Number(curr.Amount) || 0), 0);
-  }, [filteredRecords]);
-
   return (
     <div className="space-y-6 text-slate-100 max-w-[1800px] mx-auto p-4 font-normal antialiased bg-slate-950 min-h-screen">
       
-      {/* HEADER CONTROLS FRAME WITH ELEVATED SLATE BACKGROUNDS */}
+      {/* HEADER CONTROLS FRAME */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center border-b border-slate-700/60 pb-5 gap-4 print:hidden">
         <div>
           <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
@@ -543,7 +612,6 @@ export default function CountryRiskIntelligence() {
         </div>
         
         <div className="flex flex-wrap items-center gap-3">
-          {/* Methodology Toggle Button */}
           <button
             onClick={() => setShowMethodologyPanel(prev => !prev)}
             className="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer transition-all shadow-sm text-slate-200"
@@ -552,7 +620,6 @@ export default function CountryRiskIntelligence() {
             <span>{showMethodologyPanel ? 'Hide Methodology Guide' : 'Statistical Methodology & Formulas'}</span>
           </button>
 
-          {/* Custom Jurisdiction Coordinate Upload Uploader */}
           <label className="flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700/60 rounded-lg px-3 py-2 text-xs font-semibold cursor-pointer transition-all shadow-sm">
             <Upload size={14} className="text-blue-400" />
             <span className="text-slate-200">Upload Coordinates (CSV/TSV)</span>
@@ -610,7 +677,7 @@ export default function CountryRiskIntelligence() {
         </div>
       )}
 
-      {/* DEDICATED FORENSIC STATISTICAL METHODOLOGY & RISK SCORING ARCHITECTURE PANEL */}
+      {/* DEDICATED FORENSIC STATISTICAL METHODOLOGY PANEL */}
       {showMethodologyPanel && (
         <div className="bg-slate-900/95 border border-emerald-500/50 p-6 rounded-xl space-y-6 shadow-xl print:block">
           <div className="flex items-center justify-between border-b border-slate-700/60 pb-3">
@@ -621,8 +688,6 @@ export default function CountryRiskIntelligence() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-xs leading-relaxed">
-            
-            {/* Column 1: Z-Score Statistical Framework */}
             <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
               <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
                 <Activity size={14} className="text-blue-400" /> 1. Z-Score Valuation Outlier Engine
@@ -636,27 +701,25 @@ export default function CountryRiskIntelligence() {
               <ul className="space-y-1.5 pt-1 text-slate-300">
                 <li>• <strong className="text-white">|Z| &lt; 1.00 (Normal):</strong> Standard market pricing (~68% of commercial trade).</li>
                 <li>• <strong className="text-amber-300">1.00 &le; |Z| &lt; 1.96 (Elevated):</strong> Moderate statistical divergence; monitor for volume discounting.</li>
-                <li>• <strong className="text-rose-400">|Z| &ge; 1.96 (Critical Outlier):</strong> Exceeds the 95% confidence interval. Flags probable customs undervaluation or capital flight overvaluation.</li>
+                <li>• <strong className="text-rose-400">|Z| &ge; 1.96 (Critical Outlier):</strong> Exceeds 95% confidence interval. Flags probable undervaluation or overvaluation risk.</li>
               </ul>
             </div>
 
-            {/* Column 2: Composite Risk Score Calculation */}
             <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
               <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
                 <ShieldAlert size={14} className="text-rose-400" /> 2. Composite Risk Score (0–100)
               </h3>
               <p className="text-slate-300">
-                Every transaction and corridor receives an additive score combining four structural risk dimensions:
+                Combines four structural risk dimensions into an additive index score:
               </p>
               <ul className="space-y-1.5 pt-1 text-slate-300">
-                <li>• <strong className="text-white">Intrinsic Manifest Risk (+15 to +35):</strong> Base weight adjusted for complex strings or anomalous punctuation.</li>
-                <li>• <strong className="text-blue-300">Z-Score Valuation Bonus (+15 to +30):</strong> Added when transaction value breaches elevated or critical statistical thresholds.</li>
-                <li>• <strong className="text-amber-300">Transshipment Hub Exposure (+25):</strong> Added if Origin/Destination involves high-risk global transit gateways.</li>
+                <li>• <strong className="text-white">Intrinsic Manifest Risk (+15 to +35):</strong> Base weight adjusted for string complexity.</li>
+                <li>• <strong className="text-blue-300">Z-Score Valuation Bonus (+15 to +30):</strong> Added when transaction value breaches statistical thresholds.</li>
+                <li>• <strong className="text-amber-300">Transshipment Hub Exposure (+25):</strong> Added if Origin/Destination involves high-vulnerability transit hubs.</li>
                 <li>• <strong className="text-rose-400">Circuitous Waybill Syntax (+45):</strong> Added when split-routing symbols (&rarr;, VIA, FTZ) indicate multi-modal layering.</li>
               </ul>
             </div>
 
-            {/* Column 3: Index & Action Thresholds */}
             <div className="bg-slate-800/80 p-4 rounded-lg border border-slate-700/60 space-y-2">
               <h3 className="text-xs font-bold text-white uppercase tracking-wide flex items-center gap-1.5">
                 <BarChart4 size={14} className="text-purple-400" /> 3. Risk Index & Audit Thresholds
@@ -666,19 +729,16 @@ export default function CountryRiskIntelligence() {
               </p>
               <ul className="space-y-1.5 pt-1 text-slate-300">
                 <li>• <strong className="text-emerald-400">Baseline Index (&lt; 35):</strong> Normal trade control group. No immediate customs audit required.</li>
-                <li>• <strong className="text-blue-300">Elevated Audit Corridor (35–64):</strong> Secondary review recommended. Inspect transfer pricing and hub dependency ratios.</li>
-                <li>• <strong className="text-rose-400">High Priority Investigation (&ge; 65):</strong> Immediate forensic audit required. Flags compound routing anomalies and trade-based money laundering (TBML) indicators.</li>
+                <li>• <strong className="text-blue-300">Elevated Audit Corridor (35–64):</strong> Secondary review recommended. Inspect transfer pricing and hub ratios.</li>
+                <li>• <strong className="text-rose-400">High Priority Investigation (&ge; 65):</strong> Immediate forensic audit required. Flags compound routing anomalies.</li>
               </ul>
             </div>
-
           </div>
         </div>
       )}
 
-      {/* COMPREHENSIVE KPI CARDS WIDGET MATRIX WITH INTERPRETATION, RISK INDEX & SIGNIFICANCE */}
+      {/* COMPREHENSIVE KPI CARDS WIDGET MATRIX */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 print:grid-cols-4">
-        
-        {/* KPI 1: TOTAL INSPECTED ENTRIES & BASELINE VELOCITY */}
         <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-3 flex flex-col justify-between shadow-lg">
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs font-bold text-slate-200 uppercase tracking-wider">
@@ -700,7 +760,6 @@ export default function CountryRiskIntelligence() {
           </div>
         </div>
 
-        {/* KPI 2: TIER 1 COMPOUND ANOMALIES */}
         <div className="bg-slate-800/80 border-l-4 border-l-rose-500 border-y border-r border-slate-700/60 p-5 rounded-xl space-y-3 flex flex-col justify-between shadow-lg">
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs font-bold text-rose-400 uppercase tracking-wider">
@@ -724,7 +783,6 @@ export default function CountryRiskIntelligence() {
           </div>
         </div>
 
-        {/* KPI 3: TIER 2 INTERMEDIATE VARIANCE */}
         <div className="bg-slate-800/80 border-l-4 border-l-blue-500 border-y border-r border-slate-700/60 p-5 rounded-xl space-y-3 flex flex-col justify-between shadow-lg">
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs font-bold text-blue-400 uppercase tracking-wider">
@@ -748,7 +806,6 @@ export default function CountryRiskIntelligence() {
           </div>
         </div>
 
-        {/* KPI 4: TIER 3 DIRECT PIPELINE BASELINES */}
         <div className="bg-slate-800/80 border-l-4 border-l-emerald-500 border-y border-r border-slate-700/60 p-5 rounded-xl space-y-3 flex flex-col justify-between shadow-lg">
           <div className="space-y-1">
             <div className="flex justify-between items-center text-xs font-bold text-emerald-400 uppercase tracking-wider">
@@ -771,20 +828,123 @@ export default function CountryRiskIntelligence() {
             </div>
           </div>
         </div>
-
       </div>
 
-      {/* AUTOMATED AI TEXT SYNTHESIS & REAL-WORLD RELEVANCE PANEL */}
-      <div className="bg-slate-900/90 border border-blue-900/60 p-5 rounded-xl space-y-3 shadow-lg">
+      {/* CROSS-DIMENSIONAL INTELLIGENCE NEXUS: ENTITY, BRAND, VOLUME, TIMELINE & PRICING */}
+      {nexusIntelligence && (
+        <div className="bg-slate-900/90 border border-slate-700/60 p-5 rounded-xl space-y-4 shadow-lg print:block">
+          <div className="flex justify-between items-center border-b border-slate-700/60 pb-3">
+            <h3 className="text-xs font-bold text-amber-400 uppercase tracking-widest flex items-center gap-2">
+              <Building size={16} className="text-amber-400" /> Cross-Dimensional Intelligence Nexus: Entity, Brand, Volume, Timeline & Pricing
+            </h3>
+            <span className="text-xs text-slate-400 font-semibold">
+              Active Scope: {filteredRecords.length} Transactions
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+            {/* Top Entities */}
+            <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
+                <Building size={14} className="text-blue-400" /> Key Importers & Entities
+              </div>
+              <ul className="space-y-1 text-slate-300">
+                {nexusIntelligence.topEntities.map(([ent, cnt]) => (
+                  <li key={ent} className="flex justify-between truncate">
+                    <span className="truncate text-slate-200">{ent}</span>
+                    <span className="font-bold text-blue-400 ml-2">{cnt} shp</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Top Commodities / Brands */}
+            <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
+                <Tag size={14} className="text-emerald-400" /> Products & Brand Commodities
+              </div>
+              <ul className="space-y-1 text-slate-300">
+                {nexusIntelligence.topBrands.map(([brd, cnt]) => (
+                  <li key={brd} className="flex justify-between truncate">
+                    <span className="truncate text-slate-200">{brd}</span>
+                    <span className="font-bold text-emerald-400 ml-2">{cnt} shp</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {/* Valuation & Volume Spread */}
+            <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
+                <DollarSign size={14} className="text-purple-400" /> Valuation & Volume Spread
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Min Single Value:</span>
+                  <span className="font-bold text-white">${nexusIntelligence.minVal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Max Single Value:</span>
+                  <span className="font-bold text-amber-400">${nexusIntelligence.maxVal.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Mean Transaction:</span>
+                  <span className="font-bold text-emerald-400">${nexusIntelligence.avgVal.toLocaleString(undefined, {maximumFractionDigits: 0})}</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Pricing Density & Timeline */}
+            <div className="bg-slate-800/80 p-3.5 rounded-lg border border-slate-700/60 space-y-2">
+              <div className="font-bold text-white flex items-center gap-1.5 uppercase text-[11px]">
+                <Calendar size={14} className="text-rose-400" /> Price Density & Timeline
+              </div>
+              <div className="space-y-1 text-slate-300">
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Avg Distance Density:</span>
+                  <span className="font-bold text-purple-400">${nexusIntelligence.globalAvgPriceKm.toFixed(2)} / km</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-400">Dated Entries:</span>
+                  <span className="font-bold text-white">{nexusIntelligence.datesCount} records</span>
+                </div>
+                {nexusIntelligence.sampleDates.length > 0 && (
+                  <div className="text-[10px] text-slate-400 truncate">
+                    Span: {nexusIntelligence.sampleDates.join(', ')}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI SYNTHESIS SUMMARY & DATA-BACKED HYPOTHESES */}
+      <div className="bg-slate-900/90 border border-blue-900/60 p-5 rounded-xl space-y-4 shadow-lg">
         <h3 className="text-xs font-bold text-blue-400 uppercase tracking-widest flex items-center gap-2">
-          <Cpu size={16} className="text-blue-400" /> Dynamic AI Geospatial & Trade Corridor Synthesis Summary
+          <Cpu size={16} className="text-blue-400" /> AI Geospatial Synthesis & Data-Backed Investigative Hypotheses
         </h3>
+        
         <p className="text-xs sm:text-sm text-slate-100 leading-relaxed bg-slate-950 p-4 rounded-lg border border-slate-800 font-medium">
           {dynamicSummaryParagraph}
         </p>
+
+        {/* Actionable Hypotheses Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {dynamicHypotheses.map((hyp, i) => (
+            <div key={i} className="bg-slate-950 p-3.5 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+                <Lightbulb size={14} className="text-amber-400" /> {hyp.title}
+              </div>
+              <p className="text-[11px] text-slate-300 leading-normal">
+                {hyp.detail}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
 
-      {/* INVESTIGATIVE CORRIDOR RISK MATRIX & BEHAVIOR PROFILER PANEL */}
+      {/* INVESTIGATIVE CORRIDOR RISK MATRIX TABLE */}
       <div className="bg-slate-800/80 border border-slate-700/60 p-5 rounded-xl space-y-4 shadow-lg">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-700/60 pb-3 gap-2">
           <div>
@@ -792,7 +952,7 @@ export default function CountryRiskIntelligence() {
               <Navigation size={17} className="text-emerald-400" /> Investigative Corridor Risk Matrix & Behavior Profiler
             </h3>
             <p className="text-xs text-slate-400 mt-0.5">
-              Answers: "How is trade moving?", "Have trade corridors changed?", and "Which routes present the highest investigative risk?"
+              Answers: "How is trade moving?", "Have trade corridors changed?", and "Which routes present highest risk?"
             </p>
           </div>
           <span className="text-xs px-3 py-1 bg-slate-900/90 border border-slate-700/60 rounded-full text-blue-400 font-bold">
@@ -806,7 +966,7 @@ export default function CountryRiskIntelligence() {
               <tr className="border-b border-slate-700/60 text-slate-300 uppercase text-[10px] font-bold tracking-wider bg-slate-900/50">
                 <th className="p-3">Corridor Trajectory</th>
                 <th className="p-3">Risk Ranking</th>
-                <th className="p-3">Shipments / Vol</th>
+                <th className="p-3">Shipments / Total Volume ($USD)</th>
                 <th className="p-3">Hub Dependency</th>
                 <th className="p-3">Circuitous Index</th>
                 <th className="p-3">Value / Distance Ratio</th>
@@ -830,7 +990,7 @@ export default function CountryRiskIntelligence() {
                     </span>
                   </td>
                   <td className="p-3 text-slate-200 font-bold">
-                    {corridor.shipmentCount} <span className="text-slate-400 font-normal">(${corridor.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>
+                    {corridor.shipmentCount} <span className="text-emerald-400 font-normal">(${corridor.totalValue.toLocaleString(undefined, { maximumFractionDigits: 0 })})</span>
                   </td>
                   <td className="p-3 text-amber-400 font-bold">
                     {corridor.hubDependencyPercent}%
@@ -853,10 +1013,71 @@ export default function CountryRiskIntelligence() {
             </tbody>
           </table>
         </div>
+
+        {/* CORRIDOR METRICS REFERENCE & INVESTIGATIVE GUIDELINES PANEL */}
+        <div className="mt-4 pt-4 border-t border-slate-700/60 bg-slate-950/80 p-4 rounded-xl space-y-3">
+          <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest flex items-center gap-1.5">
+            <HelpCircle size={15} className="text-emerald-400" /> Corridor Metrics Reference Guide & Assessment Guidelines
+          </h4>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+            
+            {/* Hub Dependency */}
+            <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="font-bold text-amber-400 uppercase text-[11px]">1. Hub Dependency (%)</div>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Meaning:</strong> Percentage of shipments routed through high-vulnerability global transshipment hubs (Dubai, Singapore, HK, etc.).
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Score & Threshold:</strong> &lt;20% (Low exposure), 20–50% (Moderate hub reliance), &gt;50% (High transshipment risk).
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Real-World Significance:</strong> Transit hubs facilitate country-of-origin masking, re-invoicing, or circumvention of tariff embargoes.
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Possible Assessments:</strong> Audit re-packaging docs; inspect bill-of-lading switching; verify physical origin at port of entry.
+              </p>
+            </div>
+
+            {/* Circuitous Index */}
+            <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="font-bold text-purple-400 uppercase text-[11px]">2. Circuitous Index (%)</div>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Meaning:</strong> Ratio of shipments utilizing indirect, split-route waybills or transit indicators (<code>VIA</code>, <code>FTZ</code>, <code>→</code>).
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Score & Threshold:</strong> 0% (Direct route), 1–30% (Standard multi-modal transit), &gt;30% (Anomalous trajectory).
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Real-World Significance:</strong> Non-linear routes add unnecessary freight cost, often used to disguise supply chain origin/endpoints.
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Possible Assessments:</strong> Request full vessel log itineraries; verify intermediary free trade zone clearance forms.
+              </p>
+            </div>
+
+            {/* Value / Distance Ratio */}
+            <div className="bg-slate-900 p-3 rounded-lg border border-slate-800 space-y-1.5">
+              <div className="font-bold text-emerald-400 uppercase text-[11px]">3. Value / Distance Ratio ($/km)</div>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Meaning:</strong> Total monetary valuation divided by geodesic transport distance in kilometers between origin and destination.
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Score & Threshold:</strong> Varies by HS commodity chapter. Significant spikes/drops signal transfer pricing anomalies.
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Real-World Significance:</strong> Detects trade-based money laundering (TBML) through over-invoicing or customs undervaluation.
+              </p>
+              <p className="text-slate-300 text-[11px]">
+                <strong>Possible Assessments:</strong> Benchmark unit pricing against WCO fair market values; perform full transfer pricing audit.
+              </p>
+            </div>
+
+          </div>
+        </div>
       </div>
 
-      {/* LEAFLET CONTAINER MAP - UNMASKED FOR PRINT DOSSIER EXPORT */}
-      <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:block print:border-slate-400 print:bg-white print:break-inside-avoid">
+      {/* LEAFLET CONTAINER MAP WITH REFIXED PRINT STACKING CONTEXT */}
+      <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 space-y-4 shadow-lg print:block print:border-slate-400 print:bg-white print-section-stack">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 items-stretch print:block">
           
           <div className="lg:col-span-3 rounded-xl border border-slate-700/60 relative h-[450px] overflow-hidden z-10 bg-slate-950 print:w-full print:h-[350px] print:border-slate-400">
@@ -918,7 +1139,7 @@ export default function CountryRiskIntelligence() {
       </div>
 
       {/* AUDIT CORRIDOR TRANSACTIONS DATA SHEETS SHEET */}
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:block">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 print:block print-section-stack">
         
         <div className="space-y-2 print:hidden">
           <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest block px-1 mb-2">Vector Index Targets</span>
@@ -939,21 +1160,10 @@ export default function CountryRiskIntelligence() {
             </button>
           ))}
 
-          {/* Corrected Total Value Sum Card ($1.49M Dynamic Reconciliation) */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 mt-4 space-y-1 shadow-sm">
             <span className="text-[10px] font-bold text-slate-300 uppercase block">Dataset Financial Value Profile</span>
             <div className="text-xl font-bold text-emerald-400">
               ${calculatedCapitalizationSum.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-          </div>
-
-          <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-4 mt-4 space-y-2 shadow-sm">
-            <span className="text-[10px] font-bold text-blue-400 uppercase block">Comprehensive Report Hub Bridge</span>
-            <p className="text-[11px] text-slate-300">
-              Generated structured Intelligence Object payload ready for export to Global Analytics Matrix.
-            </p>
-            <div className="text-[10px] text-slate-400 bg-slate-950 p-2 rounded border border-slate-800 font-medium">
-              Payload Corridors: {intelligenceObjectOutput.geospatialSummary.activeCorridorsCount} | High Priority: {intelligenceObjectOutput.geospatialSummary.highRiskCorridorsCount}
             </div>
           </div>
         </div>
@@ -1024,7 +1234,7 @@ export default function CountryRiskIntelligence() {
 
       </div>
 
-      {/* HARDCOPY CSS PRINT OVERRIDES ENGINE - UNMASKED DOSSIER REPORTING & MAP EXPORT */}
+      {/* STACKING PRINT CSS RULES ENGINE */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
           body, html {
@@ -1049,13 +1259,31 @@ export default function CountryRiskIntelligence() {
           .print\\:text-blue-700 { color: #1d4ed8 !important; }
           .print\\:text-emerald-700 { color: #047857 !important; }
           .print\\:break-inside-avoid { break-inside: avoid !important; page-break-inside: avoid !important; }
-          /* Ensure Leaflet Container & Canvas Tiles Print Accurately */
+          
+          /* FIX LEAFLET PRINT OVERLAY ISSUE */
           .leaflet-container {
+            position: relative !important;
+            z-index: 1 !important;
             width: 100% !important;
             height: 350px !important;
             page-break-inside: avoid !important;
-            break-inside: avoid !important;
+            clear: both !important;
             background: #ffffff !important;
+          }
+          .leaflet-pane, .leaflet-tile-container, .leaflet-top, .leaflet-bottom, .leaflet-layer {
+            z-index: 1 !important;
+            position: relative !important;
+          }
+          .leaflet-tile {
+            print-color-adjust: exact !important;
+            -webkit-print-color-adjust: exact !important;
+          }
+          .print-section-stack {
+            position: relative !important;
+            z-index: 10 !important;
+            clear: both !important;
+            page-break-inside: avoid !important;
+            margin-top: 24px !important;
           }
           table { width: 100% !important; table-layout: auto !important; word-break: break-word !important; }
           div { overflow: visible !important; }
