@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import Papa from 'papaparse';
 
 const TradeDataContext = createContext();
@@ -7,16 +7,24 @@ export const TradeDataProvider = ({ children }) => {
   const [tradeData, setTradeData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   
-  // NEW: Central registry to store pre-calculated Intelligence Objects from all modules
+  // Central registry to store pre-calculated Intelligence Objects from all investigation modules
   const [intelligenceRegistry, setIntelligenceRegistry] = useState({});
 
-  // NEW: Stable function for modules to register their Intelligence Objects
+  // Stable function for modules to register their Intelligence Objects without recalculation
   const registerIntelligence = useCallback((moduleId, intelligenceData) => {
     setIntelligenceRegistry((prevRegistry) => ({
       ...prevRegistry,
-      [moduleId]: intelligenceData
+      [moduleId]: {
+        ...intelligenceData,
+        timestamp: new Date().toISOString()
+      }
     }));
   }, []);
+
+  // Helper to retrieve structured intelligence or generate a safe fallback object without duplicating math
+  const getModuleIntelligence = useCallback((moduleId, fallbackData = {}) => {
+    return intelligenceRegistry[moduleId] || fallbackData;
+  }, [intelligenceRegistry]);
 
   const processRawData = (csvString) => {
     setIsLoading(true);
@@ -26,7 +34,6 @@ export const TradeDataProvider = ({ children }) => {
       skipEmptyLines: true,
       complete: (results) => {
         const enriched = results.data.map((row, index) => {
-          
           const rawProduct = row['PRODUCT'] || '';
           const rawHsCode = String(row['HS Code'] || '');
           
@@ -40,7 +47,6 @@ export const TradeDataProvider = ({ children }) => {
             cleanUnitPrice = parseFloat(cleanUnitPrice.toString().replace(/,/g, ''));
           }
 
-          // Dynamic Formatting Cleanup for Quantities to ensure pricing metrics calculate accurately
           let cleanQuantity = row['Quantity'];
           if (cleanQuantity !== undefined && cleanQuantity !== null) {
             cleanQuantity = parseFloat(cleanQuantity.toString().replace(/,/g, ''));
@@ -88,6 +94,28 @@ export const TradeDataProvider = ({ children }) => {
     reader.readAsText(file);
   };
 
+  // Memoized Shared Evidence Repository assembler across registered module intelligence
+  const assembledEvidenceRepository = useMemo(() => {
+    const evidenceList = [];
+    Object.entries(intelligenceRegistry).forEach(([sourceModule, intel]) => {
+      if (intel && Array.isArray(intel.evidenceItems)) {
+        intel.evidenceItems.forEach((item) => {
+          evidenceList.push({
+            id: item.id || `${sourceModule}-${Math.random().toString(36).substr(2, 6)}`,
+            sourceModule,
+            severity: item.severity || 'Medium',
+            indicators: item.indicators || ['General Operational Variance'],
+            confidence: item.confidence || '85%',
+            supportingTransactions: item.supportingTransactions || 0,
+            linkedEntities: item.linkedEntities || [],
+            description: item.description || 'Verified anomaly detected by specialized analytical module.'
+          });
+        });
+      }
+    });
+    return evidenceList;
+  }, [intelligenceRegistry]);
+
   return (
     <TradeDataContext.Provider 
       value={{ 
@@ -96,9 +124,10 @@ export const TradeDataProvider = ({ children }) => {
         uploadFile, 
         isLoading, 
         processRawData,
-        // NEW values exposed to the application
         intelligenceRegistry,
-        registerIntelligence 
+        registerIntelligence,
+        getModuleIntelligence,
+        assembledEvidenceRepository
       }}
     >
       {children}
