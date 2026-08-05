@@ -32,22 +32,50 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-// Case-insensitive & punctuation-agnostic helper to read keys from CSV rows
+// Enhanced Case-Insensitive, BOM-Agnostic, and Fuzzy Helper to read keys from CSV rows
 const getRowValue = (row, fieldCandidates) => {
-  if (!row) return undefined;
-  for (const key of fieldCandidates) {
-    if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
-      return row[key];
+  if (!row || typeof row !== 'object') return undefined;
+
+  const rowKeys = Object.keys(row);
+  if (rowKeys.length === 0) return undefined;
+
+  // 1. Direct candidate check
+  for (const candidate of fieldCandidates) {
+    if (row[candidate] !== undefined && row[candidate] !== null && String(row[candidate]).trim() !== '') {
+      return row[candidate];
     }
   }
-  const rowKeys = Object.keys(row);
+
+  // 2. Normalized alphanumeric check (handles lower/upper case, spaces, symbols, BOM)
+  const cleanRowKeys = rowKeys.map(k => ({
+    original: k,
+    clean: k.toLowerCase().replace(/[^a-z0-9]/g, '')
+  }));
+
   for (const candidate of fieldCandidates) {
     const cleanCandidate = candidate.toLowerCase().replace(/[^a-z0-9]/g, '');
-    const matchingKey = rowKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '') === cleanCandidate);
-    if (matchingKey && row[matchingKey] !== undefined && row[matchingKey] !== null && String(row[matchingKey]).trim() !== '') {
-      return row[matchingKey];
+    const found = cleanRowKeys.find(item => item.clean === cleanCandidate);
+    if (found) {
+      const val = row[found.original];
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        return val;
+      }
     }
   }
+
+  // 3. Partial / Substring candidate matching
+  for (const candidate of fieldCandidates) {
+    const cleanCandidate = candidate.toLowerCase().replace(/[^a-z0-9]/g, '');
+    if (cleanCandidate.length < 3) continue;
+    const found = cleanRowKeys.find(item => item.clean.includes(cleanCandidate) || cleanCandidate.includes(item.clean));
+    if (found) {
+      const val = row[found.original];
+      if (val !== undefined && val !== null && String(val).trim() !== '') {
+        return val;
+      }
+    }
+  }
+
   return undefined;
 };
 
@@ -118,22 +146,57 @@ export default function GlobalAnalyticsVisualHub() {
       const exporter = String(getRowValue(row, ['Exporter', 'Shipper', 'Seller']) || 'UNKNOWN SHADOW EXPORTER');
       const date = String(getRowValue(row, ['Date', 'ShipmentDate', 'Date of Shipment']) || '2026 Audit');
 
-      // Dynamic & Robust Mode of Transportation extraction from CSV header variants
-      const rawModeVal = getRowValue(row, [
+      // Comprehensive candidate lookup for Mode of Transportation headers
+      let rawModeVal = getRowValue(row, [
         'Mode of Transportation',
+        'Mode of Transport',
         'Mode Of Transportation',
+        'Mode Of Transport',
         'ModeOfTransportation',
+        'ModeOfTransport',
+        'Transport Mode',
         'TransportMode',
         'Transport_Mode',
-        'Mode',
-        'Transport',
-        'LogisticalVector',
-        'ShipmentMode',
+        'Transportation Mode',
+        'TransportationMode',
         'Shipment Mode',
+        'ShipmentMode',
+        'Shipment_Mode',
+        'Shipping Mode',
+        'ShippingMode',
+        'Mode of Shipment',
+        'Method of Transport',
+        'Method of Transportation',
+        'Transport Method',
+        'Delivery Mode',
+        'Freight Mode',
+        'Carrier Mode',
         'CarrierMode',
+        'LogisticalVector',
+        'Logistical Vector',
+        'Transport Vector',
+        'Transport',
+        'Transportation',
+        'Mode',
         'MOT',
-        'M.O.T.'
+        'M.O.T.',
+        'MOT Name',
+        'Shipment Type',
+        'Transport Type',
+        'Via'
       ]);
+
+      // Dynamic fallback column detection if candidates list misses custom column names
+      if (rawModeVal === undefined) {
+        const rowKeys = Object.keys(row);
+        const modeKey = rowKeys.find(k => {
+          const lk = k.toLowerCase();
+          return lk.includes('mode') || lk.includes('transport') || lk.includes('mot') || lk.includes('vector');
+        });
+        if (modeKey && row[modeKey] !== undefined && row[modeKey] !== null) {
+          rawModeVal = row[modeKey];
+        }
+      }
 
       let vector = 'NOT DECLARED';
       if (rawModeVal !== undefined && rawModeVal !== null && String(rawModeVal).trim() !== '') {
@@ -143,6 +206,7 @@ export default function GlobalAnalyticsVisualHub() {
           modeStr.includes('FLIGHT') || 
           modeStr.includes('PLANE') || 
           modeStr.includes('AERO') || 
+          modeStr.includes('AVIA') ||
           modeStr === 'A'
         ) {
           vector = 'AIR';
@@ -153,15 +217,17 @@ export default function GlobalAnalyticsVisualHub() {
           modeStr.includes('VESSEL') || 
           modeStr.includes('SHIP') || 
           modeStr.includes('MARINE') || 
+          modeStr.includes('WATER') ||
           modeStr === 'S' || 
           modeStr === 'O'
         ) {
-          vector = 'OCEAN';
+          vector = 'SEA';
         } else if (
           modeStr.includes('ROAD') || 
           modeStr.includes('TRUCK') || 
           modeStr.includes('HIGHWAY') || 
-          modeStr.includes('LAND')
+          modeStr.includes('LAND') ||
+          modeStr === 'R'
         ) {
           vector = 'ROAD';
         } else if (
@@ -188,7 +254,7 @@ export default function GlobalAnalyticsVisualHub() {
           routeString.includes('OCEAN') || 
           routeString.includes('MARITIME')
         ) {
-          vector = 'OCEAN';
+          vector = 'SEA';
         } else if (
           routeString.includes('AIRPORT') || 
           routeString.includes('INTL AIR') || 
@@ -297,7 +363,7 @@ export default function GlobalAnalyticsVisualHub() {
     };
   }, [tradeData, ledgerIntelligence, brandIntelligence, countryIntelligence]);
 
-  // Executive Top Priority Findings Synthesis - 3 Explicit High Priority Findings
+  // Executive Top Priority Findings Synthesis
   const explicitTopFindings = useMemo(() => {
     return [
       {
@@ -336,7 +402,7 @@ export default function GlobalAnalyticsVisualHub() {
     ];
   }, [synthesizedMetrics]);
 
-  // Expanded Comprehensive Evidence Repository (7 Transactions, Corridors, Entities)
+  // Expanded Comprehensive Evidence Repository
   const fullEvidenceItems = useMemo(() => {
     const baseList = [
       ...explicitTopFindings,
@@ -344,8 +410,8 @@ export default function GlobalAnalyticsVisualHub() {
         id: 'EF-04',
         title: 'Multimodal Logistical Vector Shift',
         type: 'TRANSACTION',
-        observation: 'Air-to-Ocean freight mode switching for high-value cargo.',
-        evidence: `Freight records show sudden transition of bulk cargo batches from air transport to secondary ocean freight, altering transit velocity.`,
+        observation: 'Air-to-Sea freight mode switching for high-value cargo.',
+        evidence: `Freight records show sudden transition of bulk cargo batches from air transport to secondary sea freight, altering transit velocity.`,
         confidence: '89%',
         linkedModule: 'Logistics Forensics',
         priority: 'HIGH',
@@ -459,7 +525,7 @@ export default function GlobalAnalyticsVisualHub() {
     } else if (activeHeatLayer === 'PRICING') {
       primaryText = `$${unitPrice.toFixed(2)}/u`;
       subText = `(${qty.toLocaleString()} Units)`;
-      ratio = unitPrice > 0 ? Math.min(1, 15 / (unitPrice || 1)) : 0; // Highlight deflated prices
+      ratio = unitPrice > 0 ? Math.min(1, 15 / (unitPrice || 1)) : 0;
     } else {
       // Default: RISK MODE
       const valRatio = val / (synthesizedMetrics.maxCrossTabValue || 1);
@@ -630,7 +696,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Gross financial value across all declared cross-border cargo lines.</span></div>
-             <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">∑ (Declared Amount OR Unit Price × Quantity)</span></div>
+              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">∑ (Declared Amount OR Unit Price × Quantity)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-emerald-400 font-semibold">FINANCIAL SCALE: LEVEL 5</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Establishes economic exposure for tariffs, duties, tax liability, and potential confiscation.</span></div>
             </div>
@@ -653,7 +719,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 pt-3 border-t border-slate-700/50 space-y-1.5 font-mono text-[10px]">
               <div><strong className="text-slate-300">Interpretation:</strong> <span className="text-slate-400">Total physical inventory units processed across trade channels.</span></div>
-             <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Count(Unique Dated Dispatch Clusters)</span></div>
+              <div><strong className="text-slate-300">How Calculated:</strong> <span className="text-slate-400">Count(Unique Dated Dispatch Clusters)</span></div>
               <div><strong className="text-slate-300">Risk Score Index:</strong> <span className="text-amber-400 font-semibold">VOLUME RISK: {synthesizedMetrics.priceVarianceAlerts > 0 ? 'CRITICAL' : 'STABLE'}</span></div>
               <div><strong className="text-slate-300">Real-World Impact:</strong> <span className="text-slate-400">Measures physical market saturation, parallel market leakage, and gray-market supply.</span></div>
             </div>
@@ -1061,7 +1127,7 @@ export default function GlobalAnalyticsVisualHub() {
 
                     const getVectorIcon = (m) => {
                       if (m === 'AIR') return <Plane size={14} className="text-blue-400" />;
-                      if (m === 'OCEAN') return <Ship size={14} className="text-teal-400" />;
+                      if (m === 'SEA' || m === 'OCEAN') return <Ship size={14} className="text-teal-400" />;
                       if (m === 'ROAD') return <Map size={14} className="text-amber-400" />;
                       if (m === 'RAIL') return <Activity size={14} className="text-emerald-400" />;
                       if (m === 'MULTIMODAL') return <Layers size={14} className="text-purple-400" />;
@@ -1088,7 +1154,7 @@ export default function GlobalAnalyticsVisualHub() {
                           <div 
                             className={`h-full rounded-full transition-all ${
                               mode === 'AIR' ? 'bg-gradient-to-r from-blue-600 to-cyan-400' :
-                              mode === 'OCEAN' ? 'bg-gradient-to-r from-teal-600 to-emerald-400' :
+                              (mode === 'SEA' || mode === 'OCEAN') ? 'bg-gradient-to-r from-teal-600 to-emerald-400' :
                               mode === 'ROAD' ? 'bg-gradient-to-r from-amber-600 to-yellow-400' :
                               mode === 'RAIL' ? 'bg-gradient-to-r from-emerald-600 to-teal-400' :
                               mode === 'MULTIMODAL' ? 'bg-gradient-to-r from-purple-600 to-indigo-400' :
@@ -1106,7 +1172,7 @@ export default function GlobalAnalyticsVisualHub() {
 
             <div className="mt-4 p-4 bg-slate-900/80 rounded-lg border border-slate-700/60 font-mono text-xs text-slate-200">
               <strong className="text-white uppercase tracking-wider block text-[11px] mb-0.5">Transport Summary:</strong>
-              Logistical metrics parse shipment counts and dollar amounts directly from CSV headers (Mode of Transportation, Transport Mode, MOT, Air, Ocean, Road, Rail, Not Declared) dynamically across incoming transaction lanes.
+              Logistical metrics parse shipment counts and dollar amounts directly from CSV headers (Mode of Transportation, Mode of Transport, Transport Mode, MOT, Air, Sea, Road, Rail, Not Declared) dynamically across incoming transaction lanes.
             </div>
           </div>
 
@@ -1257,8 +1323,8 @@ export default function GlobalAnalyticsVisualHub() {
                 Integrates multi-lens vectors (Concentration, Pricing, Timeline, Network, Geography) into a single composite index. It flags systemic trade vulnerabilities across entities and corridors before customs filing.
               </div>
               <div>
-               <strong className="text-blue-400 font-mono block mb-1">What Confidence Level Means & Calculation:</strong>
-Confidence (89% - 97%) represents statistical data completeness. Calculated via Confidence = (Verified Data Matches / Total Shipment Fields) × 100%. Higher confidence indicates direct cross-validation across bills of lading and corporate filings.
+                <strong className="text-blue-400 font-mono block mb-1">What Confidence Level Means & Calculation:</strong>
+                Confidence (89% - 97%) represents statistical data completeness. Calculated via Confidence = (Verified Data Matches / Total Shipment Fields) × 100%. Higher confidence indicates direct cross-validation across bills of lading and corporate filings.
               </div>
               <div>
                 <strong className="text-emerald-400 font-mono block mb-1">Index Scoring Mechanics (0 - 100):</strong>
