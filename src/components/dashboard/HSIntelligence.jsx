@@ -534,6 +534,21 @@ export default function HSIntelligencePhase2() {
             color: #0f172a !important;
             background: #ffffff !important;
           }
+
+          /* Table Badge Overrides for Print Mode */
+          td span {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            border: 1px solid #94a3b8 !important;
+          }
+
+          td span.bg-rose-500\/20,
+          td span.text-rose-300,
+          td span.text-rose-400 {
+            background-color: #fff1f2 !important;
+            color: #be123c !important;
+            border: 1px solid #fda4af !important;
+          }
         }
       `}} />
 
@@ -1124,7 +1139,7 @@ export default function HSIntelligencePhase2() {
                       >
                         <td className="px-4 py-3.5 font-mono text-slate-300">{rec.date}</td>
                         <td className="px-4 py-3.5">
-                          <span className={`px-2.5 py-1 rounded-lg font-black border font-mono text-xs ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border-rose-500/40' : 'bg-slate-950 text-slate-200 border-slate-700'}`}>
+                          <span className={`px-2.5 py-1 rounded-lg font-black border font-mono text-xs ${rec.isMismatched ? 'bg-rose-500/20 text-rose-300 border-rose-500/40 print:bg-rose-100 print:text-rose-700 print:border-rose-300' : 'bg-slate-800 text-slate-100 border-slate-700 print:bg-slate-100 print:text-slate-900 print:border-slate-300'}`}>
                             {rec.hsCode}
                           </span>
                         </td>
