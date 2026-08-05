@@ -3,7 +3,7 @@ import { useTradeData } from '../../context/TradeDataContext.jsx';
 import { 
   ShieldAlert, AlertTriangle, Layers, FileText, TrendingUp, Info, Box, 
   Activity, DollarSign, ChevronDown, ChevronUp, Clock, Cpu, Globe, 
-  UserCheck, Filter, Network, ShieldCheck, Search, Tag, CornerDownRight, HelpCircle, Terminal
+  UserCheck, Filter, Network, ShieldCheck, Search, Tag, CornerDownRight, HelpCircle, Terminal, Users
 } from 'lucide-react';
 
 export default function HSIntelligencePhase2() {
@@ -22,6 +22,7 @@ export default function HSIntelligencePhase2() {
   const [expandedRowId, setExpandedRowId] = useState(null);
   const [isMultiFilterOpen, setIsMultiFilterOpen] = useState(false);
   const [dictionarySearch, setDictionarySearch] = useState('');
+  const [entityScope, setEntityScope] = useState('FLAGGED'); // 'FLAGGED' | 'ALL'
 
   // ============================================================================
   // ADVANCED FORENSIC COMPUTATION ENGINE
@@ -88,10 +89,8 @@ export default function HSIntelligencePhase2() {
 
     const hsList = Object.values(hsCodeMap).sort((a, b) => b.value - a.value);
     const chapterList = Object.values(chapterMap).sort((a, b) => b.value - a.value);
-    const headingList = Object.values(headingMap).sort((a, b) => b.value - a.value);
-    const productList = Object.values(productMap).sort((a, b) => b.value - a.value);
 
-    // Advanced Concentration Index Computations
+    // Concentration Index Computations
     const top3Value = hsList.slice(0, 3).reduce((acc, curr) => acc + curr.value, 0);
     const concentrationRatio = totalTradeValue > 0 ? (top3Value / totalTradeValue) * 100 : 0;
 
@@ -126,7 +125,7 @@ export default function HSIntelligencePhase2() {
 
     migrationTracks.sort((a, b) => b.delta - a.delta);
 
-    // Structural Anomaly Evaluation Engine
+    // Structural Anomaly Evaluation Engine & Entity Mapping
     let globalMismatchedValue = 0;
     let detectedShiftIncidents = 0;
     const computedRecords = [];
@@ -143,6 +142,8 @@ export default function HSIntelligencePhase2() {
       const origin = row.OriginCountry || 'UNKNOWN';
       const dest = row.DestinationCountry || 'UNKNOWN';
       const corridor = `${origin} → ${dest}`;
+      const exporter = String(row.Exporter || row.ExporterName || row.Shipper || row.Seller || 'UNSPECIFIED EXPORTER').trim();
+      const importer = String(row.Importer || row.ImporterName || row.Consignee || row.Buyer || 'UNSPECIFIED IMPORTER').trim();
       
       const investigationFlags = [];
       const customsRisks = [];
@@ -204,6 +205,8 @@ export default function HSIntelligencePhase2() {
         corridor,
         originCountry: origin,
         destinationCountry: dest,
+        exporter,
+        importer,
         isMismatched,
         investigationFlags,
         customsRisks,
@@ -212,14 +215,55 @@ export default function HSIntelligencePhase2() {
       });
     });
 
+    // Exporter & Importer Intelligence Aggregations
+    const exporterMap = {};
+    const importerMap = {};
+
+    computedRecords.forEach(rec => {
+      const exp = rec.exporter;
+      const imp = rec.importer;
+
+      if (!exporterMap[exp]) {
+        exporterMap[exp] = { name: exp, totalValue: 0, totalCount: 0, shiftCount: 0, shiftValue: 0, hsCodes: new Set() };
+      }
+      exporterMap[exp].totalValue += rec.amount;
+      exporterMap[exp].totalCount += 1;
+      exporterMap[exp].hsCodes.add(rec.hsCode);
+      if (rec.isMismatched) {
+        exporterMap[exp].shiftCount += 1;
+        exporterMap[exp].shiftValue += rec.amount;
+      }
+
+      if (!importerMap[imp]) {
+        importerMap[imp] = { name: imp, totalValue: 0, totalCount: 0, shiftCount: 0, shiftValue: 0, hsCodes: new Set() };
+      }
+      importerMap[imp].totalValue += rec.amount;
+      importerMap[imp].totalCount += 1;
+      importerMap[imp].hsCodes.add(rec.hsCode);
+      if (rec.isMismatched) {
+        importerMap[imp].shiftCount += 1;
+        importerMap[imp].shiftValue += rec.amount;
+      }
+    });
+
+    const exportersList = Object.values(exporterMap)
+      .map(e => ({ ...e, hsCodes: Array.from(e.hsCodes) }))
+      .sort((a, b) => b.totalValue - a.totalValue);
+
+    const importersList = Object.values(importerMap)
+      .map(i => ({ ...i, hsCodes: Array.from(i.hsCodes) }))
+      .sort((a, b) => b.totalValue - a.totalValue);
+
+    const flaggedExporters = exportersList.filter(e => e.shiftCount > 0).sort((a, b) => b.shiftValue - a.shiftValue);
+    const flaggedImporters = importersList.filter(i => i.shiftCount > 0).sort((a, b) => b.shiftValue - a.shiftValue);
+
     const totalHSCodesCount = hsList.length;
     const diversityIndex = totalHSCodesCount > 0 ? (totalHSCodesCount / (tradeData.length || 1)) * 10 : 0;
     const confidenceScore = tradeData.length > 0 ? ((tradeData.length - detectedShiftIncidents) / tradeData.length) * 100 : 100;
 
-    // AI Macro Narrative Generator Engine
     const dynamicAiNarrative = (() => {
       if (tradeData.length === 0) return "No active customs datasets are loaded into the parsing buffer. System idling.";
-      return `The imported dataset contains ${totalHSCodesCount} distinct HS classifications across ${chapterList.length} chapters. The top three high-volume HS headings alone account for ${concentrationRatio.toFixed(1)}% of total declared system value, indicating extreme concentration profiles. Multi-flag network analytics isolated ${detectedShiftIncidents} classification discrepancies representing a gross nomenclature risk volume of $${globalMismatchedValue.toLocaleString(undefined, {minimumFractionDigits: 2})}. The primary locus of deviation resides inside Chapter 56, where product manifest archetypes correlate with notable temporal shifts. These data positions suggest systematic classification migration and require immediate target adjustments by oversight personnel.`;
+      return `The imported dataset contains ${totalHSCodesCount} distinct HS classifications across ${chapterList.length} chapters. The top three high-volume HS headings alone account for ${concentrationRatio.toFixed(1)}% of total declared system value, indicating extreme concentration profiles. Multi-flag network analytics isolated ${detectedShiftIncidents} classification discrepancies representing a gross nomenclature risk volume of $${globalMismatchedValue.toLocaleString(undefined, {minimumFractionDigits: 2})}. Key entity profiles include ${flaggedExporters.length} exporters and ${flaggedImporters.length} importers associated with active HS code shift flags. These data positions suggest systematic classification migration and require immediate target adjustments by oversight personnel.`;
     })();
 
     return {
@@ -227,8 +271,8 @@ export default function HSIntelligencePhase2() {
       totalQuantity,
       totalHSCodesCount,
       distinctChapters: chapterList.length,
-      distinctHeadings: headingList.length,
-      distinctProducts: productList.length,
+      distinctHeadings: Object.keys(headingMap).length,
+      distinctProducts: Object.keys(productMap).length,
       concentrationRatio,
       highestValueHS,
       highestVolumeHS,
@@ -239,12 +283,25 @@ export default function HSIntelligencePhase2() {
       detectedShiftIncidents,
       records: computedRecords,
       chapters: chapterList,
-      headings: headingList,
+      headings: Object.values(headingMap).sort((a, b) => b.value - a.value),
       corridors: Object.values(corridorMap).sort((a, b) => b.anomalyValue - a.anomalyValue),
       migrationTracks: migrationTracks.slice(0, 5),
-      aiBriefing: dynamicAiNarrative
+      aiBriefing: dynamicAiNarrative,
+      exportersList,
+      importersList,
+      flaggedExporters,
+      flaggedImporters
     };
   }, [tradeData]);
+
+  // Exporters & Importers Scope Toggle Memo
+  const displayExporters = useMemo(() => {
+    return entityScope === 'FLAGGED' ? forensicAnalytics.flaggedExporters : forensicAnalytics.exportersList;
+  }, [entityScope, forensicAnalytics]);
+
+  const displayImporters = useMemo(() => {
+    return entityScope === 'FLAGGED' ? forensicAnalytics.flaggedImporters : forensicAnalytics.importersList;
+  }, [entityScope, forensicAnalytics]);
 
   // ============================================================================
   // CONDITIONAL PIPELINE STREAM FILTERING
@@ -303,23 +360,139 @@ export default function HSIntelligencePhase2() {
   return (
     <div className="p-6 space-y-8 max-w-[1800px] mx-auto bg-slate-950 text-slate-100 min-h-screen font-mono id-print-section select-none">
       
+      {/* ADVANCED PREMIUM PRINT DOSSIER STYLES */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
-          @page { size: landscape; margin: 10mm; }
-          html, body { background: #ffffff !important; color: #0f172a !important; font-family: monospace !important; font-size: 11px; }
-          .id-print-section { background: #ffffff !important; color: #0f172a !important; padding: 0 !important; }
-          .non-printable { display: none !important; }
-          .bg-slate-900, .bg-slate-800, .bg-slate-800\\/80, .bg-slate-950 {
-            background: #ffffff !important; border: 2px solid #94a3b8 !important; color: #0f172a !important;
-            box-shadow: none !important; border-radius: 6px !important; padding: 12px !important;
+          @page {
+            size: A4 landscape;
+            margin: 10mm;
           }
-          .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400 { color: #0f172a !important; }
-          .text-teal-400, .text-amber-400, .text-rose-400 { color: #0f172a !important; font-weight: bold !important; }
-          table { width: 100% !important; border-collapse: collapse !important; }
-          th { background: #e2e8f0 !important; border-bottom: 2px solid #94a3b8 !important; color: #0f172a !important; }
-          td { border-bottom: 1px solid #cbd5e1 !important; padding: 6px !important; }
+          html, body {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            font-size: 10px !important;
+            line-height: 1.4 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .id-print-section {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+          }
+          .non-printable {
+            display: none !important;
+          }
+          .print-header-dossier {
+            display: block !important;
+            border-bottom: 2px solid #0f172a !important;
+            padding-bottom: 8px !important;
+            margin-bottom: 16px !important;
+          }
+          
+          /* Remove element clippings & horizontal/vertical scrollbars for complete data printing */
+          *, *::before, *::after {
+            max-height: none !important;
+            overflow: visible !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+          }
+          
+          .max-h-64, .max-h-72, .max-h-96, .overflow-y-auto, .overflow-x-auto {
+            max-height: none !important;
+            overflow: visible !important;
+          }
+
+          /* Clean Grid behavior without box overlaps */
+          .grid {
+            display: flex !important;
+            flex-wrap: wrap !important;
+            gap: 12px !important;
+          }
+          .grid > * {
+            box-sizing: border-box !important;
+          }
+
+          /* Corporate Premium Card & Border Styling */
+          .bg-slate-900, .bg-slate-950, .bg-slate-800, .bg-slate-850 {
+            background: #ffffff !important;
+            border: 1px solid #94a3b8 !important;
+            color: #0f172a !important;
+            border-radius: 4px !important;
+            padding: 10px !important;
+            margin-bottom: 12px !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          /* Text contrast overrides for high clarity on paper */
+          .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 {
+            color: #0f172a !important;
+          }
+          .text-teal-400, .text-teal-300 {
+            color: #0f766e !important;
+            font-weight: 700 !important;
+          }
+          .text-rose-400, .text-rose-300 {
+            color: #be123c !important;
+            font-weight: 700 !important;
+          }
+          .text-amber-400, .text-amber-300 {
+            color: #b45309 !important;
+            font-weight: 700 !important;
+          }
+          .text-blue-400, .text-blue-300 {
+            color: #1d4ed8 !important;
+            font-weight: 700 !important;
+          }
+          .text-purple-400 {
+            color: #6b21a8 !important;
+            font-weight: 700 !important;
+          }
+
+          /* Premium Table formatting */
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            margin-top: 8px !important;
+            page-break-inside: auto !important;
+          }
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+          th {
+            background: #f1f5f9 !important;
+            border: 1px solid #64748b !important;
+            color: #0f172a !important;
+            font-weight: 700 !important;
+            padding: 6px 8px !important;
+            font-size: 9px !important;
+          }
+          td {
+            border: 1px solid #cbd5e1 !important;
+            padding: 5px 8px !important;
+            font-size: 8.5px !important;
+            color: #0f172a !important;
+          }
         }
       `}} />
+
+      {/* PRINT-ONLY OFFICIAL DOSSIER HEADER */}
+      <div className="hidden print-header-dossier">
+        <div className="flex justify-between items-center">
+          <div>
+            <h1 className="text-xl font-bold uppercase tracking-tight text-slate-900">HS Intelligence & Tariff Engineering Forensic Dossier</h1>
+            <p className="text-xs text-slate-600 mt-0.5">Automated Customs Risk Profiling & Nomenclature Audit Report</p>
+          </div>
+          <div className="text-right text-xs text-slate-500 font-mono">
+            CLASSIFICATION: OFFICIAL AUDIT USE
+          </div>
+        </div>
+      </div>
 
       {/* HEADER BLOCK */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b-2 border-slate-800 pb-5 gap-4 non-printable">
@@ -335,16 +508,16 @@ export default function HSIntelligencePhase2() {
           className="flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border-2 border-slate-600 rounded-lg text-xs font-bold text-slate-100 transition shadow-lg"
         >
           <FileText size={14} className="text-teal-400" />
-          <span>Generate Dossier Report</span>
+          <span>Generate Print Dossier Report</span>
         </button>
       </div>
 
-      {/* RESTORED: DYNAMIC AI EXECUTIVE MACRO BRIEFING */}
+      {/* DYNAMIC AI EXECUTIVE MACRO BRIEFING */}
       <div 
         className="bg-slate-900 border-2 border-slate-700/90 rounded-xl p-5 shadow-2xl relative overflow-hidden"
         title="AI Narrative Analysis Framework: Compiles transactional variations, product density index limits, and nomenclature deviation metrics into clear actionable customs risk contexts."
       >
-        <div className="absolute top-0 right-0 px-3 py-1 bg-teal-500/20 text-teal-300 text-[10px] font-bold tracking-widest border-l-2 border-b-2 border-slate-700 uppercase">
+        <div className="absolute top-0 right-0 px-3 py-1 bg-teal-500/20 text-teal-300 text-[10px] font-bold tracking-widest border-l-2 border-b-2 border-slate-700 uppercase non-printable">
           Dynamic Insight Engine
         </div>
         <div className="flex items-center gap-2.5 text-sm font-bold text-teal-400 uppercase tracking-wider mb-3">
@@ -360,7 +533,7 @@ export default function HSIntelligencePhase2() {
       <div className="space-y-3">
         <div className="text-xs font-bold text-slate-300 tracking-wider uppercase flex items-center gap-1.5">
           <span>Interactive Core Aggregation Matrices</span>
-          <span className="text-[10px] font-normal text-slate-400 italic font-sans">(Hover elements to display internal threshold rulesets)</span>
+          <span className="text-[10px] font-normal text-slate-400 italic font-sans non-printable">(Hover elements to display internal threshold rulesets)</span>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-5 xl:grid-cols-7 gap-4">
           
@@ -570,7 +743,7 @@ export default function HSIntelligencePhase2() {
 
           </div>
 
-          {/* RESTORED: ADVANCED FORENSIC TOOLS — HS CODE MIGRATION TIMELINE ENGINE */}
+          {/* ADVANCED FORENSIC TOOLS — HS CODE MIGRATION TIMELINE ENGINE */}
           <div 
             className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-3 shadow-2xl"
             title="TIMELINE METRIC DRIFT: Measures data value shift between early period reporting blocks versus recent sequences. A massive positive delta flags intentional product reclassification."
@@ -608,17 +781,114 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
-    {/* DYNAMIC INTELLIGENT NOMENCLATURE DICTIONARY */}
+      {/* NEW: EXPORTERS & IMPORTERS TRADING INTELLIGENCE PANEL */}
+      <div 
+        className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-5 space-y-4 shadow-2xl"
+        title="Exporters & Importers Matrix: Highlights entities participating in transactions flagged with HS Code Shifts while remaining visible and filterable across all transactions."
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
+          <div className="flex items-center gap-2 text-xs font-black text-slate-200 uppercase tracking-wider">
+            <Users size={16} className="text-teal-400" />
+            <span>Exporters & Importers Trading Intelligence Matrix</span>
+          </div>
+          <div className="flex items-center gap-2 non-printable">
+            <button 
+              onClick={() => setEntityScope('FLAGGED')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${entityScope === 'FLAGGED' ? 'bg-rose-500/20 text-rose-300 border-2 border-rose-500/40' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'}`}
+            >
+              HS Shift Flagged Entities ({forensicAnalytics.flaggedExporters.length} Exp / {forensicAnalytics.flaggedImporters.length} Imp)
+            </button>
+            <button 
+              onClick={() => setEntityScope('ALL')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${entityScope === 'ALL' ? 'bg-teal-500/20 text-teal-300 border-2 border-teal-500/40' : 'bg-slate-950 text-slate-400 border border-slate-800 hover:text-slate-200'}`}
+            >
+              All Trading Entities ({forensicAnalytics.exportersList.length} Exp / {forensicAnalytics.importersList.length} Imp)
+            </button>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* EXPORTERS COLUMN */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-300 border-b border-slate-800/80 pb-2">
+              <span className="flex items-center gap-1.5 text-teal-400 uppercase"><Globe size={13}/> Key Exporters ({entityScope === 'FLAGGED' ? 'Shift Flagged' : 'All Transactions'})</span>
+              <span className="text-[11px] text-slate-400 font-mono">Value & Risk Share</span>
+            </div>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {displayExporters.length > 0 ? (
+                displayExporters.map((exp, idx) => (
+                  <div key={idx} className="bg-slate-950 border border-slate-800/90 rounded-lg p-3 hover:border-slate-700 transition">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs font-bold text-slate-100">{exp.name}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">HS Lines: {exp.hsCodes.slice(0, 3).join(', ')}{exp.hsCodes.length > 3 ? '...' : ''}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-black text-white font-mono">${exp.totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        <div className="text-[10px] text-slate-400">{exp.totalCount} Shipment{exp.totalCount > 1 ? 's' : ''}</div>
+                      </div>
+                    </div>
+                    {exp.shiftCount > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-900 flex justify-between items-center text-[11px]">
+                        <span className="text-rose-400 font-bold flex items-center gap-1"><ShieldAlert size={11}/> {exp.shiftCount} Shift Flagged Record{exp.shiftCount > 1 ? 's' : ''}</span>
+                        <span className="text-rose-300 font-mono font-bold">${exp.shiftValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-500 italic text-xs py-4 text-center bg-slate-950/50 rounded-lg">No exporters found matching scope.</div>
+              )}
+            </div>
+          </div>
+
+          {/* IMPORTERS COLUMN */}
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-xs font-bold text-slate-300 border-b border-slate-800/80 pb-2">
+              <span className="flex items-center gap-1.5 text-blue-400 uppercase"><UserCheck size={13}/> Key Importers ({entityScope === 'FLAGGED' ? 'Shift Flagged' : 'All Transactions'})</span>
+              <span className="text-[11px] text-slate-400 font-mono">Value & Risk Share</span>
+            </div>
+            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+              {displayImporters.length > 0 ? (
+                displayImporters.map((imp, idx) => (
+                  <div key={idx} className="bg-slate-950 border border-slate-800/90 rounded-lg p-3 hover:border-slate-700 transition">
+                    <div className="flex justify-between items-start">
+                      <div>
+                        <div className="text-xs font-bold text-slate-100">{imp.name}</div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">HS Lines: {imp.hsCodes.slice(0, 3).join(', ')}{imp.hsCodes.length > 3 ? '...' : ''}</div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-xs font-black text-white font-mono">${imp.totalValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</div>
+                        <div className="text-[10px] text-slate-400">{imp.totalCount} Shipment{imp.totalCount > 1 ? 's' : ''}</div>
+                      </div>
+                    </div>
+                    {imp.shiftCount > 0 && (
+                      <div className="mt-2 pt-2 border-t border-slate-900 flex justify-between items-center text-[11px]">
+                        <span className="text-rose-400 font-bold flex items-center gap-1"><ShieldAlert size={11}/> {imp.shiftCount} Shift Flagged Record{imp.shiftCount > 1 ? 's' : ''}</span>
+                        <span className="text-rose-300 font-mono font-bold">${imp.shiftValue.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
+                      </div>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="text-slate-500 italic text-xs py-4 text-center bg-slate-950/50 rounded-lg">No importers found matching scope.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* DYNAMIC INTELLIGENT NOMENCLATURE DICTIONARY */}
       <div 
         className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-4 shadow-2xl"
-        title="Dynamic Nomenclature Engine: Cross-references manifest HS Codes against an AI-driven repository of official WCO (World Customs Organization) nomenclature definitions to detect declaration drift."
+        title="Dynamic Nomenclature Engine: Cross-references manifest HS Codes against an AI-driven repository of official WCO nomenclature definitions to detect declaration drift."
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 gap-3">
           <div className="flex items-center gap-2 text-xs font-black text-slate-200 uppercase tracking-wider">
             <Box size={14} className="text-purple-400" />
             <span>AI-Driven Nomenclature Dictionary</span>
           </div>
-          <div className="relative">
+          <div className="relative non-printable">
             <Search size={13} className="absolute left-2.5 top-2 text-slate-500" />
             <input 
               type="text" 
@@ -644,7 +914,6 @@ export default function HSIntelligencePhase2() {
                 const matches = forensicAnalytics.records.filter(r => r.hsCode === hs);
                 const frequency = matches.length;
                 
-                // AI Knowledge Base Engine (Simulated Official Classifications)
                 const getAiDefinition = (code) => {
                   const clean = String(code).replace(/\D/g, '');
                   if (!clean) return "Unclassified Entity / Pending AI Resolution";
@@ -686,6 +955,7 @@ export default function HSIntelligencePhase2() {
           </div>
         </div>
       </div>
+
       {/* HIERARCHY DRILLDOWN INTERACTIVE HEADER */}
       <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-3 shadow-2xl">
         <div className="text-xs font-black text-slate-200 uppercase tracking-wider flex items-center gap-2">
@@ -779,7 +1049,7 @@ export default function HSIntelligencePhase2() {
                     <div className="flex items-center gap-1">Transaction Date {sortField === 'Date' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}</div>
                   </th>
                   <th className="px-4 py-3.5">HS Code</th>
-                  <th className="px-4 py-3.5">Entity / Brand Context</th>
+                  <th className="px-4 py-3.5">Exporter / Importer</th>
                   <th className="px-4 py-3.5">Manifest Commodity Line</th>
                   <th className="px-4 py-3.5 text-right">Value (USD)</th>
                   <th className="px-4 py-3.5">Trading Route Corridor</th>
@@ -802,8 +1072,11 @@ export default function HSIntelligencePhase2() {
                             {rec.hsCode}
                           </span>
                         </td>
-                        <td className="px-4 py-3.5 text-teal-300 font-bold truncate max-w-[140px]" title={rec.brand}>{rec.brand}</td>
-                        <td className="px-4 py-3.5 text-slate-100 truncate max-w-[260px]" title={rec.product}>{rec.product}</td>
+                        <td className="px-4 py-3.5">
+                          <div className="text-teal-300 font-bold truncate max-w-[150px]" title={rec.exporter}>{rec.exporter}</div>
+                          <div className="text-slate-400 text-[11px] truncate max-w-[150px]" title={rec.importer}>To: {rec.importer}</div>
+                        </td>
+                        <td className="px-4 py-3.5 text-slate-100 truncate max-w-[240px]" title={rec.product}>{rec.product}</td>
                         <td className="px-4 py-3.5 text-right font-black text-white font-mono text-xs">${rec.amount.toLocaleString(undefined, {minimumFractionDigits: 2})}</td>
                         <td className="px-4 py-3.5 text-slate-300 font-sans tracking-wide">{rec.corridor}</td>
                         <td className="px-4 py-3.5">
@@ -821,7 +1094,7 @@ export default function HSIntelligencePhase2() {
                         <tr className="bg-slate-950/90 border-b-2 border-slate-800">
                           <td colSpan={7} className="p-5">
                             <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-4 space-y-4 shadow-2xl relative overflow-hidden">
-                              <div className="absolute top-0 right-0 p-3 text-xs font-mono text-slate-400 font-bold">EVIDENCE MATRIX STACK INDEX: {rec.index}</div>
+                              <div className="absolute top-0 right-0 p-3 text-xs font-mono text-slate-400 font-bold non-printable">EVIDENCE MATRIX STACK INDEX: {rec.index}</div>
                               
                               <div className="flex items-center gap-2 text-xs font-black text-teal-300 border-b border-slate-800 pb-2 uppercase tracking-wider">
                                 <Search size={14}/>
@@ -843,9 +1116,11 @@ export default function HSIntelligencePhase2() {
 
                                 <div className="bg-slate-950 border border-slate-800 p-3 rounded-lg space-y-2">
                                   <div className="text-xs font-black text-slate-200 uppercase border-b border-slate-800 pb-1 flex items-center gap-1">
-                                    <Network size={12} className="text-blue-400"/> Entity Route Topology
+                                    <Network size={12} className="text-blue-400"/> Entity & Route Topology
                                   </div>
                                   <div className="text-xs text-slate-300 space-y-1 font-sans">
+                                    <div><span className="text-slate-400 font-bold font-mono">Exporter:</span> <span className="text-teal-300 font-bold">{rec.exporter}</span></div>
+                                    <div><span className="text-slate-400 font-bold font-mono">Importer:</span> <span className="text-blue-300 font-bold">{rec.importer}</span></div>
                                     <div><span className="text-slate-400 font-bold font-mono">Origin Port:</span> {rec.originCountry} Hub</div>
                                     <div><span className="text-slate-400 font-bold font-mono">Destination Port:</span> {rec.destinationCountry} Custom Zone</div>
                                     <div><span className="text-slate-400 font-bold font-mono">Routing Integrity:</span> <span className={rec.isMismatched ? 'text-amber-400 font-black font-mono' : 'text-slate-300'}>{rec.isMismatched ? 'Anomalous Vector Pattern' : 'Standard Pipeline'}</span></div>
