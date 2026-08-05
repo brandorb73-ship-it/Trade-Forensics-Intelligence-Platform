@@ -2,8 +2,104 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useTradeData } from '../../context/TradeDataContext';
 import { 
   Network, Users, AlertCircle, Building2, CheckCircle, FileText, Info, 
-  Award, ShieldAlert, TrendingUp, Activity, Map, Box, ChevronDown, ChevronUp, Terminal, Key
+  Award, ShieldAlert, TrendingUp, Activity, Map, Box, ChevronDown, ChevronUp, 
+  Terminal, Key, Filter, RotateCcw, X, Check
 } from 'lucide-react';
+
+// Reusable Multi-Option Dropdown Filter Component
+function MultiSelectFilter({ label, options, selected, onChange }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+
+  const filteredOptions = useMemo(() => {
+    return options.filter(opt => opt.toLowerCase().includes(searchTerm.toLowerCase()));
+  }, [options, searchTerm]);
+
+  const toggleOption = (option) => {
+    if (selected.includes(option)) {
+      onChange(selected.filter(item => item !== option));
+    } else {
+      onChange([...selected, option]);
+    }
+  };
+
+  const selectAll = () => onChange([...options]);
+  const clearAll = () => onChange([]);
+
+  return (
+    <div className="relative inline-block text-left">
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className={`flex items-center justify-between gap-1.5 px-3 py-1.5 rounded-lg border text-[11px] font-bold transition cursor-pointer ${
+          selected.length > 0 
+            ? 'bg-emerald-950/70 border-emerald-500/80 text-emerald-300' 
+            : 'bg-slate-950 border-slate-700/80 text-slate-300 hover:bg-slate-800'
+        }`}
+      >
+        <span className="flex items-center gap-1.5 truncate max-w-[140px]">
+          <Filter size={12} className={selected.length > 0 ? "text-emerald-400" : "text-slate-400"} />
+          <span>{label}</span>
+          {selected.length > 0 && (
+            <span className="bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 text-[10px] rounded-full border border-emerald-500/40">
+              {selected.length}
+            </span>
+          )}
+        </span>
+        <ChevronDown size={12} className={`transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </button>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-20" onClick={() => setIsOpen(false)} />
+          <div className="absolute left-0 mt-1.5 w-64 rounded-xl bg-slate-900 border-2 border-slate-700 shadow-2xl z-30 p-2.5 text-xs font-mono">
+            <div className="flex justify-between items-center pb-2 mb-2 border-b border-slate-800">
+              <span className="font-bold text-slate-200 text-[11px] uppercase tracking-wider">{label} Filters</span>
+              <div className="flex gap-2 text-[10px]">
+                <button type="button" onClick={selectAll} className="text-emerald-400 hover:underline">Select All</button>
+                <button type="button" onClick={clearAll} className="text-slate-400 hover:underline">Clear</button>
+              </div>
+            </div>
+
+            {options.length > 5 && (
+              <input
+                type="text"
+                placeholder="Search..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full bg-slate-950 border border-slate-700 rounded px-2 py-1 text-slate-200 text-[11px] mb-2 focus:outline-none focus:border-emerald-500"
+              />
+            )}
+
+            <div className="max-h-48 overflow-y-auto space-y-1 pr-1 scrollbar-thin">
+              {filteredOptions.length > 0 ? (
+                filteredOptions.map((option) => {
+                  const isChecked = selected.includes(option);
+                  return (
+                    <label
+                      key={option}
+                      className="flex items-center gap-2 p-1.5 hover:bg-slate-800/80 rounded cursor-pointer transition text-slate-300 text-[11px]"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleOption(option)}
+                        className="rounded border-slate-700 text-emerald-500 focus:ring-0 bg-slate-950 accent-emerald-500 cursor-pointer"
+                      />
+                      <span className="truncate">{option}</span>
+                    </label>
+                  );
+                })
+              ) : (
+                <div className="text-slate-500 text-[11px] text-center py-2">No options found</div>
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export default function EntityIntelligence() {
   const contextData = useTradeData();
@@ -13,6 +109,12 @@ export default function EntityIntelligence() {
   const [expandedLinkId, setExpandedLinkId] = useState(null);
   const [sortField, setSortField] = useState('Amount');
   const [sortDirection, setSortDirection] = useState('desc');
+
+  // Multi-Option Table Filter States
+  const [filterExporters, setFilterExporters] = useState([]);
+  const [filterImporters, setFilterImporters] = useState([]);
+  const [filterBrands, setFilterBrands] = useState([]);
+  const [filterAuditStatus, setFilterAuditStatus] = useState('ALL'); // 'ALL', 'FLAGGED', 'CLEAR'
 
   // ============================================================================
   // SINGLE-PASS O(N) ENTITY RESOLUTION & NETWORK ANALYTICS ENGINE
@@ -204,33 +306,137 @@ export default function EntityIntelligence() {
     };
   }, [tradeData]);
 
+  // Unique filter option sets
+  const filterOptions = useMemo(() => {
+    const exporters = Array.from(new Set(networkAnalysis.links.map(l => l.exporter))).sort();
+    const importers = Array.from(new Set(networkAnalysis.links.map(l => l.importer))).sort();
+    const brands = Array.from(new Set(networkAnalysis.links.map(l => l.brand))).sort();
+    return { exporters, importers, brands };
+  }, [networkAnalysis.links]);
+
   // Expose Intelligence Object to window for conceptual downstream report hub hook integration
   useEffect(() => {
     window.__ENTITY_INTELLIGENCE_OBJECT = networkAnalysis.intelligenceObject;
   }, [networkAnalysis]);
 
-  // Filtering & Sorting
+  // Filtering & Sorting Logic
   const filteredLinks = useMemo(() => {
     let result = [...networkAnalysis.links];
-    if (activeEntityView === 'RISK_NETWORKS') result = result.filter(l => l.isRisk);
+
+    // Primary Tab View Filter
+    if (activeEntityView === 'RISK_NETWORKS') {
+      result = result.filter(l => l.isRisk);
+    }
+
+    // Multi-Option Dropdown Filters
+    if (filterExporters.length > 0) {
+      result = result.filter(l => filterExporters.includes(l.exporter));
+    }
+    if (filterImporters.length > 0) {
+      result = result.filter(l => filterImporters.includes(l.importer));
+    }
+    if (filterBrands.length > 0) {
+      result = result.filter(l => filterBrands.includes(l.brand));
+    }
+    if (filterAuditStatus === 'FLAGGED') {
+      result = result.filter(l => l.isRisk);
+    } else if (filterAuditStatus === 'CLEAR') {
+      result = result.filter(l => !l.isRisk);
+    }
     
+    // Sort logic across all columns (Value, Audit Status, Exporter, Importer, Brand)
     return result.sort((a, b) => {
-      let valA = a[sortField];
-      let valB = b[sortField];
+      let valA, valB;
+
+      if (sortField === 'Amount') {
+        valA = a.amount;
+        valB = b.amount;
+      } else if (sortField === 'isRisk') {
+        valA = a.isRisk ? 1 : 0;
+        valB = b.isRisk ? 1 : 0;
+      } else {
+        valA = (a[sortField] || '').toString().toLowerCase();
+        valB = (b[sortField] || '').toString().toLowerCase();
+      }
+
       if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
       if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [networkAnalysis.links, activeEntityView, sortField, sortDirection]);
+  }, [networkAnalysis.links, activeEntityView, filterExporters, filterImporters, filterBrands, filterAuditStatus, sortField, sortDirection]);
 
   const toggleSort = (field) => {
-    if (sortField === field) setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-    else { setSortField(field); setSortDirection('desc'); }
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const hasActiveFilters = filterExporters.length > 0 || filterImporters.length > 0 || filterBrands.length > 0 || filterAuditStatus !== 'ALL';
+
+  const resetAllFilters = () => {
+    setFilterExporters([]);
+    setFilterImporters([]);
+    setFilterBrands([]);
+    setFilterAuditStatus('ALL');
   };
 
   return (
     <div className="p-6 space-y-6 max-w-[1800px] mx-auto bg-slate-950 text-slate-100 min-h-screen font-mono id-print-section select-none">
       
+      {/* CSS Rules to guarantee zero print overflow / cutoff */}
+      <style type="text/css">{`
+        @media print {
+          @page {
+            size: A4 landscape;
+            margin: 8mm;
+          }
+          body {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .non-printable {
+            display: none !important;
+          }
+          .id-print-section {
+            background-color: #ffffff !important;
+            color: #000000 !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+          }
+          .print-fit-table {
+            table-layout: fixed !important;
+            width: 100% !important;
+            font-size: 8.5px !important;
+            border-collapse: collapse !important;
+          }
+          .print-fit-table th, .print-fit-table td {
+            padding: 4px 6px !important;
+            word-break: break-word !important;
+            overflow: hidden !important;
+            text-overflow: ellipsis !important;
+            color: #0f172a !important;
+            border-color: #cbd5e1 !important;
+          }
+          .print-fit-table th {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            font-weight: bold !important;
+          }
+          .print-fit-drawer {
+            background-color: #f8fafc !important;
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+          }
+        }
+      `}</style>
+
       {/* Header Framework */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 border-b-2 border-slate-800 pb-5 non-printable">
         <div>
@@ -254,9 +460,9 @@ export default function EntityIntelligence() {
         )}
       </div>
 
-      {/* UPGRADE 2 & 20: AI Executive Summary Narrative */}
+      {/* AI Executive Summary Narrative */}
       <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-5 shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold tracking-widest border-l-2 border-b-2 border-slate-700 uppercase">
+        <div className="absolute top-0 right-0 px-3 py-1 bg-emerald-500/20 text-emerald-300 text-[10px] font-bold tracking-widest border-l-2 border-b-2 border-slate-700 uppercase non-printable">
           AI Network Narrative
         </div>
         <div className="flex items-center gap-2.5 text-sm font-bold text-emerald-400 uppercase tracking-wider mb-3">
@@ -268,7 +474,7 @@ export default function EntityIntelligence() {
         </div>
       </div>
 
-      {/* UPGRADE 1: Executive KPI Metrics Cards */}
+      {/* Executive KPI Metrics Cards */}
       <div className="space-y-3">
         <div className="text-xs font-bold text-slate-300 tracking-wider uppercase flex items-center gap-1.5">
           <span>Global Network Health & Concentration Metrics</span>
@@ -342,24 +548,97 @@ export default function EntityIntelligence() {
           </div>
         </div>
 
-        {/* Dynamic Relational Ledger Table & Drawer */}
+        {/* Dynamic Relational Ledger Table Container */}
         <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl overflow-hidden lg:col-span-4 shadow-2xl">
-          <div className="p-4 bg-slate-950/60 border-b-2 border-slate-800 text-xs font-black tracking-wider text-slate-200 uppercase flex items-center justify-between">
+          <div className="p-4 bg-slate-950/60 border-b-2 border-slate-800 text-xs font-black tracking-wider text-slate-200 uppercase flex flex-col md:flex-row md:items-center justify-between gap-3">
             <span>Relationship Node Matrix ({filteredLinks.length} Connections)</span>
-            <span className="text-[10px] text-slate-500 font-sans italic lowercase tracking-normal font-normal">Click any row to open Corporate Intelligence Drawer</span>
+            <span className="text-[10px] text-slate-500 font-sans italic lowercase tracking-normal font-normal non-printable">Click any row to open Corporate Intelligence Drawer</span>
+          </div>
+
+          {/* Multi-Option Filter Toolbar */}
+          <div className="p-3 bg-slate-950/80 border-b border-slate-800/80 flex flex-wrap items-center gap-2.5 non-printable">
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mr-1 flex items-center gap-1">
+              <Filter size={12} className="text-emerald-400" /> Filters:
+            </span>
+
+            <MultiSelectFilter
+              label="Exporter"
+              options={filterOptions.exporters}
+              selected={filterExporters}
+              onChange={setFilterExporters}
+            />
+
+            <MultiSelectFilter
+              label="Importer"
+              options={filterOptions.importers}
+              selected={filterImporters}
+              onChange={setFilterImporters}
+            />
+
+            <MultiSelectFilter
+              label="Brand Vector"
+              options={filterOptions.brands}
+              selected={filterBrands}
+              onChange={setFilterBrands}
+            />
+
+            {/* Audit Status Dropdown Filter */}
+            <select
+              value={filterAuditStatus}
+              onChange={(e) => setFilterAuditStatus(e.target.value)}
+              className="bg-slate-950 border border-slate-700/80 text-slate-300 text-[11px] font-bold rounded-lg px-2.5 py-1.5 focus:outline-none focus:border-emerald-500 cursor-pointer"
+            >
+              <option value="ALL">Audit Status: All</option>
+              <option value="FLAGGED">Audit Status: Flagged Only</option>
+              <option value="CLEAR">Audit Status: Clear Only</option>
+            </select>
+
+            {hasActiveFilters && (
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="flex items-center gap-1 text-[11px] font-bold text-rose-400 hover:text-rose-300 px-2.5 py-1.5 rounded-lg border border-rose-900/60 bg-rose-950/40 transition cursor-pointer ml-auto"
+              >
+                <RotateCcw size={11} /> Reset Filters
+              </button>
+            )}
           </div>
           
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          {/* Table Element - Scaled with explicit column percentage bounds to prevent print cut-off */}
+          <div className="w-full overflow-x-auto print:overflow-visible">
+            <table className="w-full text-left border-collapse table-fixed print-fit-table">
               <thead>
                 <tr className="bg-slate-950 border-b-2 border-slate-800 text-slate-300 font-bold text-[11px] uppercase tracking-wider">
-                  <th className="px-4 py-3.5">Shipper / Exporter</th>
-                  <th className="px-4 py-3.5">Consignee / Importer</th>
-                  <th className="px-4 py-3.5">Brand Vector</th>
-                  <th className="px-4 py-3.5 cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('Amount')}>
-                    <div className="flex items-center justify-end gap-1">Value (USD) {sortField === 'Amount' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}</div>
+                  <th className="px-4 py-3.5 w-[28%] cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('exporter')}>
+                    <div className="flex items-center justify-between gap-1 truncate">
+                      <span>Shipper / Exporter</span>
+                      {sortField === 'exporter' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}
+                    </div>
                   </th>
-                  <th className="px-4 py-3.5 text-center">Audit Status</th>
+                  <th className="px-4 py-3.5 w-[28%] cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('importer')}>
+                    <div className="flex items-center justify-between gap-1 truncate">
+                      <span>Consignee / Importer</span>
+                      {sortField === 'importer' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5 w-[20%] cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('brand')}>
+                    <div className="flex items-center justify-between gap-1 truncate">
+                      <span>Brand Vector</span>
+                      {sortField === 'brand' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5 w-[12%] text-right cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('Amount')}>
+                    <div className="flex items-center justify-end gap-1 truncate">
+                      <span>Value (USD)</span>
+                      {sortField === 'Amount' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}
+                    </div>
+                  </th>
+                  <th className="px-4 py-3.5 w-[12%] text-center cursor-pointer hover:bg-slate-900" onClick={() => toggleSort('isRisk')}>
+                    <div className="flex items-center justify-center gap-1 truncate">
+                      <span>Audit Status</span>
+                      {sortField === 'isRisk' && (sortDirection === 'asc' ? <ChevronUp size={12}/> : <ChevronDown size={12}/>)}
+                    </div>
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/80 text-xs font-medium">
@@ -375,13 +654,13 @@ export default function EntityIntelligence() {
                           onClick={() => setExpandedLinkId(isExpanded ? null : link.id)}
                           className={`hover:bg-slate-800/60 transition-colors cursor-pointer text-slate-200 ${link.isRisk ? 'bg-rose-950/20' : ''} ${isExpanded ? 'bg-slate-800/80' : ''}`}
                         >
-                          <td className="px-4 py-3.5 max-w-[200px] truncate font-bold text-slate-100">{link.exporter}</td>
-                          <td className="px-4 py-3.5 max-w-[200px] truncate text-slate-300">{link.importer}</td>
-                          <td className="px-4 py-3.5 text-emerald-400 font-bold max-w-[120px] truncate">{link.brand}</td>
-                          <td className="px-4 py-3.5 text-right font-black text-white font-mono">
+                          <td className="px-4 py-3.5 truncate font-bold text-slate-100">{link.exporter}</td>
+                          <td className="px-4 py-3.5 truncate text-slate-300">{link.importer}</td>
+                          <td className="px-4 py-3.5 text-emerald-400 font-bold truncate">{link.brand}</td>
+                          <td className="px-4 py-3.5 text-right font-black text-white font-mono truncate">
                             ${link.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                           </td>
-                          <td className="px-4 py-3.5 text-center">
+                          <td className="px-4 py-3.5 text-center truncate">
                             {link.isRisk ? (
                               <span className="inline-flex items-center gap-1 text-rose-400 font-black text-[10px] uppercase tracking-widest bg-rose-950/40 px-2 py-1 rounded border border-rose-900">
                                 <ShieldAlert size={12}/> Flagged
@@ -394,10 +673,10 @@ export default function EntityIntelligence() {
                           </td>
                         </tr>
 
-                        {/* UPGRADE 17: INVESTIGATION DRAWER */}
+                        {/* INVESTIGATION DRAWER */}
                         {isExpanded && (
                           <tr className="bg-slate-950/95 border-b-2 border-slate-700">
-                            <td colSpan={5} className="p-6">
+                            <td colSpan={5} className="p-6 print-fit-drawer">
                               <div className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-5 shadow-2xl space-y-5">
                                 
                                 <div className="flex items-center gap-2 text-xs font-black text-blue-400 border-b border-slate-800 pb-2 uppercase tracking-widest">
@@ -446,7 +725,7 @@ export default function EntityIntelligence() {
 
                                 </div>
 
-                                {/* UPGRADE 18: AI Evidence & Recommendations */}
+                                {/* AI Evidence & Recommendations */}
                                 <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 flex items-start gap-3">
                                   <Info size={18} className="text-emerald-400 mt-0.5 flex-shrink-0" />
                                   <div className="space-y-2">
@@ -474,7 +753,7 @@ export default function EntityIntelligence() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={5} className="text-center py-16 text-slate-500 text-sm font-bold bg-slate-900/40">No records parsed matching active navigation filters.</td>
+                    <td colSpan={5} className="text-center py-16 text-slate-500 text-sm font-bold bg-slate-900/40">No records parsed matching active navigation and table filters.</td>
                   </tr>
                 )}
               </tbody>
