@@ -367,38 +367,60 @@ export default function HSIntelligencePhase2() {
             size: A4 landscape;
             margin: 10mm;
           }
-          html, body {
+
+          /* Force full white background on all parent containers and resets */
+          html, body, #root, #app, main, header, footer, section, article, div {
             background: #ffffff !important;
+            background-color: #ffffff !important;
+            box-shadow: none !important;
+            text-shadow: none !important;
+          }
+
+          html, body {
             color: #0f172a !important;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
             font-size: 10px !important;
             line-height: 1.4 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            width: 100% !important;
+            height: auto !important;
           }
+
           .id-print-section {
             background: #ffffff !important;
+            background-color: #ffffff !important;
             color: #0f172a !important;
             padding: 0 !important;
             margin: 0 !important;
             width: 100% !important;
+            max-width: 100% !important;
+            box-shadow: none !important;
+            border: none !important;
           }
+
           .non-printable {
             display: none !important;
           }
+
           .print-header-dossier {
             display: block !important;
             border-bottom: 2px solid #0f172a !important;
             padding-bottom: 8px !important;
             margin-bottom: 16px !important;
+            background: transparent !important;
           }
           
-          /* Remove element clippings & horizontal/vertical scrollbars for complete data printing */
+          /* Remove element clippings, shadows, glows, and scrollbars for clean printing */
           *, *::before, *::after {
             max-height: none !important;
             overflow: visible !important;
             box-shadow: none !important;
             text-shadow: none !important;
+            filter: none !important;
+            backdrop-filter: none !important;
           }
           
           .max-h-64, .max-h-72, .max-h-96, .overflow-y-auto, .overflow-x-auto {
@@ -416,12 +438,24 @@ export default function HSIntelligencePhase2() {
             box-sizing: border-box !important;
           }
 
-          /* Corporate Premium Card & Border Styling */
-          .bg-slate-900, .bg-slate-950, .bg-slate-800, .bg-slate-850 {
+          /* Enforce 1px subtle slate borders (#cbd5e1) on cards, matrices, executive summary, and inner containers */
+          .bg-slate-900, 
+          .bg-slate-950, 
+          .bg-slate-800, 
+          .bg-slate-850, 
+          .bg-slate-950\/80, 
+          .bg-slate-900\/40, 
+          .bg-slate-950\/90, 
+          .bg-slate-950\/50 {
             background: #ffffff !important;
-            border: 1px solid #94a3b8 !important;
+            background-color: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
             color: #0f172a !important;
             border-radius: 4px !important;
+            box-shadow: none !important;
+          }
+
+          .bg-slate-900 {
             padding: 10px !important;
             margin-bottom: 12px !important;
             page-break-inside: avoid !important;
@@ -429,9 +463,16 @@ export default function HSIntelligencePhase2() {
           }
 
           /* Text contrast overrides for high clarity on paper */
-          .text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500 {
+          .text-white, 
+          .text-slate-100, 
+          .text-slate-200, 
+          .text-slate-300, 
+          .text-slate-400, 
+          .text-slate-500,
+          .text-slate-600 {
             color: #0f172a !important;
           }
+
           .text-teal-400, .text-teal-300 {
             color: #0f766e !important;
             font-weight: 700 !important;
@@ -452,6 +493,18 @@ export default function HSIntelligencePhase2() {
             color: #6b21a8 !important;
             font-weight: 700 !important;
           }
+          .text-emerald-400 {
+            color: #047857 !important;
+            font-weight: 700 !important;
+          }
+
+          /* Executive summary inner text container fix */
+          .bg-slate-950\/80 {
+            background: #ffffff !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            padding: 8px !important;
+          }
 
           /* Premium Table formatting */
           table {
@@ -459,10 +512,12 @@ export default function HSIntelligencePhase2() {
             border-collapse: collapse !important;
             margin-top: 8px !important;
             page-break-inside: auto !important;
+            background: #ffffff !important;
           }
           tr {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
+            background: #ffffff !important;
           }
           th {
             background: #f1f5f9 !important;
@@ -477,6 +532,7 @@ export default function HSIntelligencePhase2() {
             padding: 5px 8px !important;
             font-size: 8.5px !important;
             color: #0f172a !important;
+            background: #ffffff !important;
           }
         }
       `}} />
@@ -781,7 +837,7 @@ export default function HSIntelligencePhase2() {
         </div>
       </div>
 
-      {/* NEW: EXPORTERS & IMPORTERS TRADING INTELLIGENCE PANEL */}
+      {/* EXPORTERS & IMPORTERS TRADING INTELLIGENCE PANEL */}
       <div 
         className="bg-slate-900 border-2 border-slate-700/80 rounded-xl p-5 space-y-4 shadow-2xl"
         title="Exporters & Importers Matrix: Highlights entities participating in transactions flagged with HS Code Shifts while remaining visible and filterable across all transactions."
