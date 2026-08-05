@@ -556,9 +556,22 @@ export default function GlobalAnalyticsVisualHub() {
   return (
     <div className="space-y-8 text-slate-100 id-print-section font-sans">
       
-      {/* Print Stylesheet Overrides */}
+      {/* Enhanced Print Stylesheet Overrides to prevent scrollbar cutoffs & expand tables */}
       <style dangerouslySetInnerHTML={{__html: `
         @media print {
+          /* Expand all scrollable containers so ALL vertical & horizontal data renders in full */
+          *, *:before, *:after {
+            overflow: visible !important;
+          }
+          .max-h-\[380px\], 
+          .max-h-\[300px\], 
+          .max-h-\[280px\], 
+          .max-h-\[165px\], 
+          .overflow-y-auto, 
+          .overflow-x-auto {
+            max-height: none !important;
+            overflow: visible !important;
+          }
           .page-break-avoid, .print-break-avoid {
             page-break-inside: avoid !important;
             break-inside: avoid !important;
@@ -592,6 +605,30 @@ export default function GlobalAnalyticsVisualHub() {
             word-wrap: break-word !important;
             text-align: center !important;
           }
+
+          /* Global Risk Matrix Table Print Overrides - Fits all 9 columns without horizontal cutoff */
+          table.print-risk-matrix-force {
+            table-layout: fixed !important;
+            width: 100% !important;
+            min-width: 100% !important;
+            border-collapse: collapse !important;
+            margin: 8px 0 !important;
+          }
+          table.print-risk-matrix-force th, table.print-risk-matrix-force td {
+            padding: 4px 2px !important;
+            font-size: 8px !important;
+            border: 1px solid #cbd5e1 !important;
+            word-break: break-word !important;
+            white-space: normal !important;
+            text-align: center !important;
+            color: #0f172a !important;
+          }
+          table.print-risk-matrix-force th {
+            background-color: #f1f5f9 !important;
+            color: #0f172a !important;
+            font-weight: 800 !important;
+          }
+
           table.print-matrix-force td[class*="bg-red-900"],
           table.print-matrix-force td.force-red-print { background-color: #fee2e2 !important; color: #b91c1c !important; font-weight: 900 !important; }
           table.print-matrix-force td[class*="bg-amber-900"],
@@ -883,7 +920,7 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
 
           {/* Dynamic Grid Layout Table */}
-          <div className="overflow-x-auto bg-slate-900/90 p-4 rounded-xl border border-slate-800 print-matrix-container print:p-0 print:border-none">
+          <div className="overflow-x-auto bg-slate-900/90 p-4 rounded-xl border border-slate-800 print-matrix-container print:p-0 print:border-none print:overflow-visible">
             <table className="w-full text-left font-mono text-[11px] border-collapse min-w-[750px] print:min-w-0 print-matrix-force">
               <thead>
                 <tr className="bg-slate-950 print:bg-slate-50">
@@ -1176,7 +1213,7 @@ export default function GlobalAnalyticsVisualHub() {
             </div>
           </div>
 
-          {/* Chronological Shipment Timeline */}
+          {/* Chronological Shipment Timeline - Expands fully in Print */}
           <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-6 flex flex-col justify-between print-break-avoid shadow-sm">
             <div>
               <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4">
@@ -1270,19 +1307,19 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
         </div>
 
-        {/* Global Unified Risk Matrix (Multi-Lens Integration) */}
-        <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-6 print-break-avoid shadow-sm">
-          <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4">
-            <h3 className="text-sm font-mono font-semibold text-white flex items-center gap-2 uppercase tracking-wider">
-              <Activity size={16} className="text-red-400" /> Global Risk Matrix (Multi-Lens Integration)
+        {/* Global Unified Risk Matrix (Multi-Lens Integration) - Fits fully in print dossier without horizontal truncation */}
+        <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-6 print-break-avoid shadow-sm print:bg-white print:border-slate-300 print:p-0">
+          <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4 print:border-slate-200">
+            <h3 className="text-sm font-mono font-semibold text-white flex items-center gap-2 uppercase tracking-wider print:text-slate-900">
+              <Activity size={16} className="text-red-400 print:text-slate-900" /> Global Risk Matrix (Multi-Lens Integration)
             </h3>
-            <span className="text-[11px] font-mono text-slate-400">Cross-Module Risk Score Output</span>
+            <span className="text-[11px] font-mono text-slate-400 print:text-slate-600">Cross-Module Risk Score Output</span>
           </div>
 
-          <div className="overflow-x-auto bg-slate-900/90 rounded-xl border border-slate-800 p-2">
-            <table className="w-full text-left font-mono text-[11px]">
+          <div className="overflow-x-auto bg-slate-900/90 rounded-xl border border-slate-800 p-2 print-matrix-container print:p-0 print:border-none print:overflow-visible">
+            <table className="w-full text-left font-mono text-[11px] print-risk-matrix-force">
               <thead>
-                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800">
+                <tr className="bg-slate-950 text-slate-400 border-b border-slate-800 print:bg-slate-100 print:text-slate-900">
                   <th className="p-2.5">Category</th>
                   <th className="p-2.5">Subject</th>
                   <th className="p-2.5 text-center">Concentration</th>
@@ -1294,18 +1331,18 @@ export default function GlobalAnalyticsVisualHub() {
                   <th className="p-2.5 text-center">Risk Score</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-slate-800/60 print:divide-slate-300">
                 {riskMatrixData.map((row, idx) => (
                   <tr key={idx} className="hover:bg-slate-800/40">
-                    <td className="p-2.5 text-slate-300 font-semibold">{row.category}</td>
-                    <td className="p-2.5 text-white font-semibold">{row.subject}</td>
-                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60">{row.concentration}</span></td>
-                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-800/60">{row.pricing}</span></td>
-                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60">{row.timeline}</span></td>
-                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60">{row.network}</span></td>
-                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60">{row.geo}</span></td>
-                    <td className="p-2.5 text-center text-emerald-400 font-semibold">{row.confidence}</td>
-                    <td className="p-2.5 text-center font-bold text-red-400">{row.score} / 100</td>
+                    <td className="p-2.5 text-slate-300 font-semibold print:text-slate-900">{row.category}</td>
+                    <td className="p-2.5 text-white font-semibold print:text-slate-900">{row.subject}</td>
+                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 print:bg-amber-100 print:text-amber-900 print:border-amber-300">{row.concentration}</span></td>
+                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-800/60 print:bg-red-100 print:text-red-900 print:border-red-300">{row.pricing}</span></td>
+                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60 print:bg-blue-100 print:text-blue-900 print:border-blue-300">{row.timeline}</span></td>
+                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-purple-950/80 text-purple-300 border border-purple-800/60 print:bg-purple-100 print:text-purple-900 print:border-purple-300">{row.network}</span></td>
+                    <td className="p-2.5 text-center"><span className="px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/60 print:bg-amber-100 print:text-amber-900 print:border-amber-300">{row.geo}</span></td>
+                    <td className="p-2.5 text-center text-emerald-400 font-semibold print:text-emerald-700">{row.confidence}</td>
+                    <td className="p-2.5 text-center font-bold text-red-400 print:text-red-700">{row.score} / 100</td>
                   </tr>
                 ))}
               </tbody>
@@ -1313,25 +1350,25 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
 
           {/* Explanation, Scoring, Confidence, and Significance Underneath Global Risk Matrix */}
-          <div className="mt-4 p-4 bg-slate-900/90 rounded-xl border border-slate-700/60 font-sans text-xs text-slate-200 space-y-3">
-            <h4 className="font-mono font-semibold text-white uppercase tracking-wider text-xs border-b border-slate-800 pb-2">
+          <div className="mt-4 p-4 bg-slate-900/90 rounded-xl border border-slate-700/60 font-sans text-xs text-slate-200 space-y-3 print:bg-slate-50 print:border-slate-300 print:text-slate-800">
+            <h4 className="font-mono font-semibold text-white uppercase tracking-wider text-xs border-b border-slate-800 pb-2 print:text-slate-900 print:border-slate-300">
               Global Risk Matrix Scoring & Interpretation Methodology
             </h4>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-[11px] leading-relaxed">
               <div>
-                <strong className="text-amber-400 font-mono block mb-1">Interpretation & Significance:</strong>
+                <strong className="text-amber-400 font-mono block mb-1 print:text-amber-800">Interpretation & Significance:</strong>
                 Integrates multi-lens vectors (Concentration, Pricing, Timeline, Network, Geography) into a single composite index. It flags systemic trade vulnerabilities across entities and corridors before customs filing.
               </div>
               <div>
-                <strong className="text-blue-400 font-mono block mb-1">What Confidence Level Means & Calculation:</strong>
+                <strong className="text-blue-400 font-mono block mb-1 print:text-blue-800">What Confidence Level Means & Calculation:</strong>
                 Confidence (89% - 97%) represents statistical data completeness. Calculated via Confidence = (Verified Data Matches / Total Shipment Fields) × 100%. Higher confidence indicates direct cross-validation across bills of lading and corporate filings.
               </div>
               <div>
-                <strong className="text-emerald-400 font-mono block mb-1">Index Scoring Mechanics (0 - 100):</strong>
+                <strong className="text-emerald-400 font-mono block mb-1 print:text-emerald-800">Index Scoring Mechanics (0 - 100):</strong>
                 Scores from 0 - 39 = Low Risk; 40 - 59 = Medium; 60 - 79 = High; 80 - 100 = Critical. Calculated using weighted multi-factor regression across price variance (35%), route complexity (35%), and corporate registry authenticity (30%).
               </div>
               <div>
-                <strong className="text-purple-400 font-mono block mb-1">Real-World Actionable Implications:</strong>
+                <strong className="text-purple-400 font-mono block mb-1 print:text-purple-800">Real-World Actionable Implications:</strong>
                 Scores above 80/100 warrant immediate physical cargo hold, UBO financial investigation, and cross-border customs intelligence sharing.
               </div>
             </div>
@@ -1343,7 +1380,7 @@ export default function GlobalAnalyticsVisualHub() {
       {/* ZONE 5: EVIDENCE & INVESTIGATIVE PRIORITIES */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 print-break-avoid">
         
-        {/* Executive Findings (Top Priority) */}
+        {/* Executive Findings (Top Priority) - Expands fully in Print */}
         <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-6 flex flex-col justify-between shadow-sm print-break-avoid">
           <div>
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4">
@@ -1353,20 +1390,20 @@ export default function GlobalAnalyticsVisualHub() {
               <span className="text-[11px] font-mono text-slate-400">Multi-Lens Intelligence</span>
             </div>
 
-            <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[380px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible">
               {explicitTopFindings.map((finding) => (
-                <div key={finding.id} className="bg-slate-950/90 border border-slate-800 rounded-lg p-3 space-y-1.5 font-mono text-xs">
+                <div key={finding.id} className="bg-slate-950/90 border border-slate-800 rounded-lg p-3 space-y-1.5 font-mono text-xs print:bg-slate-50 print:border-slate-300">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold text-white flex items-center gap-1.5">
-                      <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-400 text-[10px] border border-red-800">{finding.priority}</span>
+                    <span className="font-semibold text-white flex items-center gap-1.5 print:text-slate-900">
+                      <span className="px-1.5 py-0.5 rounded bg-red-950 text-red-400 text-[10px] border border-red-800 print:bg-red-100 print:text-red-800 print:border-red-300">{finding.priority}</span>
                       {finding.observation}
                     </span>
-                    <span className="text-[10px] text-blue-400">{finding.linkedModule}</span>
+                    <span className="text-[10px] text-blue-400 print:text-blue-800">{finding.linkedModule}</span>
                   </div>
-                  <p className="text-[11px] text-slate-300 font-sans">{finding.evidence}</p>
-                  <div className="text-[10px] text-slate-400 flex justify-between items-center pt-1 border-t border-slate-800">
-                    <span>Action: <strong className="text-slate-200">{finding.action}</strong></span>
-                    <span className="text-emerald-400">Confidence: {finding.confidence}</span>
+                  <p className="text-[11px] text-slate-300 font-sans print:text-slate-700">{finding.evidence}</p>
+                  <div className="text-[10px] text-slate-400 flex justify-between items-center pt-1 border-t border-slate-800 print:text-slate-600 print:border-slate-200">
+                    <span>Action: <strong className="text-slate-200 print:text-slate-900">{finding.action}</strong></span>
+                    <span className="text-emerald-400 print:text-emerald-700">Confidence: {finding.confidence}</span>
                   </div>
                 </div>
               ))}
@@ -1374,14 +1411,14 @@ export default function GlobalAnalyticsVisualHub() {
           </div>
         </div>
 
-        {/* Comprehensive Evidence Explorer */}
+        {/* Comprehensive Evidence Explorer - Expands fully in Print */}
         <div className="bg-slate-800/80 border border-slate-700/60 rounded-xl p-6 flex flex-col justify-between shadow-sm print-break-avoid">
           <div>
             <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4">
               <h3 className="text-sm font-mono font-semibold text-white flex items-center gap-2 uppercase tracking-wider">
                 <Eye size={16} className="text-blue-400" /> Evidence Explorer
               </h3>
-              <div className="flex gap-1 font-mono text-[10px]">
+              <div className="flex gap-1 font-mono text-[10px] non-printable">
                 {['ALL', 'CRITICAL', 'TRANSACTIONS', 'CORRIDORS', 'ENTITIES'].map(lvl => (
                   <button
                     key={lvl}
@@ -1394,25 +1431,25 @@ export default function GlobalAnalyticsVisualHub() {
               </div>
             </div>
 
-            <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1">
+            <div className="space-y-3 max-h-[280px] overflow-y-auto pr-1 print:max-h-none print:overflow-visible">
               {fullEvidenceItems.map((item) => (
-                <div key={item.id} className="bg-slate-950/90 border border-slate-800 rounded-lg p-3 space-y-1 font-mono text-xs">
-                  <div className="flex justify-between text-slate-200 font-semibold">
+                <div key={item.id} className="bg-slate-950/90 border border-slate-800 rounded-lg p-3 space-y-1 font-mono text-xs print:bg-slate-50 print:border-slate-300">
+                  <div className="flex justify-between text-slate-200 font-semibold print:text-slate-900">
                     <span className="flex items-center gap-1.5">
-                      <span className="text-blue-400 font-mono text-[10px] font-bold">[{item.type || 'FINDING'}]</span>
+                      <span className="text-blue-400 font-mono text-[10px] font-bold print:text-blue-800">[{item.type || 'FINDING'}]</span>
                       {item.title || item.observation}
                     </span>
-                    <span className="text-amber-400">{item.confidence || '94%'} Conf</span>
+                    <span className="text-amber-400 print:text-amber-800">{item.confidence || '94%'} Conf</span>
                   </div>
-                  <p className="text-[11px] text-slate-400 font-sans">{item.description || item.evidence}</p>
+                  <p className="text-[11px] text-slate-400 font-sans print:text-slate-700">{item.description || item.evidence}</p>
                 </div>
               ))}
             </div>
 
             {/* Explanation of Confidence Level & Index Scoring */}
-            <div className="mt-4 p-3 bg-slate-900/90 rounded-lg border border-slate-700/60 font-sans text-[11px] text-slate-300 space-y-1">
-              <strong className="text-white font-mono text-[10px] uppercase block">Confidence Level & Scoring Implications:</strong>
-              <p className="text-slate-400 leading-tight">
+            <div className="mt-4 p-3 bg-slate-900/90 rounded-lg border border-slate-700/60 font-sans text-[11px] text-slate-300 space-y-1 print:bg-slate-50 print:border-slate-300 print:text-slate-800">
+              <strong className="text-white font-mono text-[10px] uppercase block print:text-slate-900">Confidence Level & Scoring Implications:</strong>
+              <p className="text-slate-400 leading-tight print:text-slate-700">
                 Confidence percentages represent the statistical probability of finding accuracy based on redundant bill of lading data matches. High confidence (&gt;90%) indicates actionable proof suitable for formal legal requests and regulatory detention orders.
               </p>
             </div>
