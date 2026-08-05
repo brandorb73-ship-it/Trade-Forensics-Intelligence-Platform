@@ -96,7 +96,74 @@ export default function GlobalAnalyticsVisualHub() {
       const importer = row.Importer || row.Consignee || 'UNKNOWN TARGET CONSIGNEE';
       const exporter = row.Exporter || row.Shipper || 'UNKNOWN SHADOW EXPORTER';
       const date = row.Date || '2026 Audit';
-      const vector = row.LogisticalVector ? row.LogisticalVector.toUpperCase() : 'AIR';
+
+      // Dynamic & Robust Mode of Transportation extraction from uploaded CSV headers
+      const rawMode = String(
+        row['Mode of Transportation'] ||
+        row['Mode Of Transportation'] ||
+        row.ModeOfTransportation ||
+        row.TransportMode ||
+        row.Transport_Mode ||
+        row.Mode ||
+        row.Transport ||
+        row.LogisticalVector ||
+        row.ShipmentMode ||
+        row['Shipment Mode'] ||
+        row.CarrierMode ||
+        ''
+      ).toUpperCase().trim();
+
+      let vector = 'MULTIMODAL';
+      if (
+        rawMode.includes('AIR') || 
+        rawMode.includes('FLIGHT') || 
+        rawMode.includes('PLANE') || 
+        rawMode.includes('AERO') || 
+        rawMode === 'A'
+      ) {
+        vector = 'AIR';
+      } else if (
+        rawMode.includes('SEA') || 
+        rawMode.includes('OCEAN') || 
+        rawMode.includes('MARITIME') || 
+        rawMode.includes('VESSEL') || 
+        rawMode.includes('SHIP') || 
+        rawMode.includes('MARINE') || 
+        rawMode === 'S' || 
+        rawMode === 'O'
+      ) {
+        vector = 'OCEAN';
+      } else if (
+        rawMode.includes('MULTI') || 
+        rawMode.includes('COMBIN') || 
+        rawMode.includes('RAIL') || 
+        rawMode.includes('ROAD') || 
+        rawMode.includes('TRUCK') || 
+        rawMode.includes('LAND')
+      ) {
+        vector = 'MULTIMODAL';
+      } else {
+        // If empty or unknown, infer from transit hubs/port nomenclature, otherwise categorize as MULTIMODAL
+        const routeString = `${rawOrigin} ${dest} ${row.TransitHub || ''} ${row.TransshipmentPort || ''}`.toUpperCase();
+        if (
+          routeString.includes('PORT') || 
+          routeString.includes('SEA') || 
+          routeString.includes('HARBOUR') || 
+          routeString.includes('BAY') || 
+          routeString.includes('OCEAN') || 
+          routeString.includes('MARITIME')
+        ) {
+          vector = 'OCEAN';
+        } else if (
+          routeString.includes('AIRPORT') || 
+          routeString.includes('INTL AIR') || 
+          routeString.includes('AERO')
+        ) {
+          vector = 'AIR';
+        } else {
+          vector = 'MULTIMODAL';
+        }
+      }
 
       totalValue += val;
       totalQuantity += qty;
@@ -309,8 +376,10 @@ export default function GlobalAnalyticsVisualHub() {
           totalQuantity: synthesizedMetrics.totalQuantity,
           laneIntersects: `${synthesizedMetrics.origins.length} x ${synthesizedMetrics.destinations.length}`,
           timelineVelocity: synthesizedMetrics.timelineEvents.length,
-          globalIntelligenceScore: synthesizedMetrics.globalIntelligenceScore
+          globalIntelligenceScore: synthesizedMetrics.globalIntelligenceScore,
+          logisticalVectors: synthesizedMetrics.logisticalVectors
         },
+        logisticalVectors: synthesizedMetrics.logisticalVectors,
         riskMatrix: riskMatrixData,
         topFindings: explicitTopFindings,
         evidence: fullEvidenceItems,
@@ -1123,11 +1192,11 @@ Confidence (89% - 97%) represents statistical data completeness. Calculated via 
               </div>
               <div>
                 <strong className="text-emerald-400 font-mono block mb-1">Index Scoring Mechanics (0 - 100):</strong>
-                Scores from $0 - 39$ = Low Risk; $40 - 59$ = Medium; $60 - 79$ = High; $80 - 100$ = Critical. Calculated using weighted multi-factor regression across price variance ($35\%$), route complexity ($35\%$), and corporate registry authenticity ($30\%$).
+                Scores from 0 - 39 = Low Risk; 40 - 59 = Medium; 60 - 79 = High; 80 - 100 = Critical. Calculated using weighted multi-factor regression across price variance (35%), route complexity (35%), and corporate registry authenticity (30%).
               </div>
               <div>
                 <strong className="text-purple-400 font-mono block mb-1">Real-World Actionable Implications:</strong>
-                Scores above $80/100$ warrant immediate physical cargo hold, UBO financial investigation, and cross-border customs intelligence sharing.
+                Scores above 80/100 warrant immediate physical cargo hold, UBO financial investigation, and cross-border customs intelligence sharing.
               </div>
             </div>
           </div>
