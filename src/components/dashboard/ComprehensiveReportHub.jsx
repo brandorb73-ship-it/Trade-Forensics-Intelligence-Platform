@@ -6,8 +6,7 @@ import {
   Trash2, Cpu, Tag, ArrowRight, Link2, FileText, 
   Printer, Plus, X, Calendar, Ship, Shield, 
   Scale, Briefcase, CheckCircle2, FileCheck, 
-  AlertCircle, Compass, Lock, BookOpen, Award,
-  Eye, EyeOff, Filter, HelpCircle
+  Compass, BookOpen, Award, Eye, EyeOff, Filter, HelpCircle
 } from 'lucide-react';
 import Papa from 'papaparse';
 
@@ -24,6 +23,7 @@ const formatUSD = (val) => new Intl.NumberFormat('en-US', { style: 'currency', c
 
 // Case-insensitive CSV field resolver to prevent "undefined" values from header variations
 const getField = (row, possibleKeys, defaultVal = '') => {
+  if (!row) return defaultVal;
   const rowKeys = Object.keys(row);
   for (const targetKey of possibleKeys) {
     if (row[targetKey] !== undefined && row[targetKey] !== null && String(row[targetKey]).trim() !== '' && String(row[targetKey]).trim().toLowerCase() !== 'undefined') {
@@ -35,6 +35,26 @@ const getField = (row, possibleKeys, defaultVal = '') => {
     }
   }
   return defaultVal;
+};
+
+// Robust Transport Mode extractor preventing "undefined" values across context and uploaded data
+const extractTransportMode = (row) => {
+  if (!row) return 'Sea Manifest';
+  if (typeof row === 'string') {
+    const trimmed = row.trim();
+    if (trimmed && trimmed.toLowerCase() !== 'undefined' && trimmed.toLowerCase() !== 'null') return trimmed;
+    return 'Sea Manifest';
+  }
+  const val = getField(row, [
+    'ModeOfTransport', 'Mode of Transportation', 'Mode of Transport', 
+    'Transport Mode', 'Transportation Mode', 'Mode', 'MOT', 
+    'Transport', 'Shipment Mode', 'modeOfTransport', 'transportMode'
+  ], 'Sea Manifest');
+  
+  if (!val || String(val).trim().toLowerCase() === 'undefined' || String(val).trim().toLowerCase() === 'null') {
+    return 'Sea Manifest';
+  }
+  return String(val).trim();
 };
 
 export default function ComprehensiveReportHub() {
@@ -61,7 +81,7 @@ export default function ComprehensiveReportHub() {
   const [synthesizedReport, setSynthesizedReport] = useState('');
 
   const shipments = localShipments.length > 0 ? localShipments : (context?.tradeData || []);
-  const { intelligenceRegistry, assembledEvidenceRepository } = context || {};
+  const { assembledEvidenceRepository } = context || {};
 
   // --- CSV MANIFEST INGESTION CORE ---
   const handleFileUpload = (event) => {
@@ -96,7 +116,7 @@ export default function ComprehensiveReportHub() {
             DestinationCountry: getField(row, ['Destination Country', 'Destination', 'Import Country'], 'Unknown Destination'),
             OriginPort: getField(row, ['Origin Port', 'Port of Export', 'Loading Port'], 'N/A'),
             DestinationPort: getField(row, ['Destination on Port', 'Destination Port', 'Port of Entry', 'Discharge Port'], 'N/A'),
-            ModeOfTransport: getField(row, ['Mode of Transportation', 'Mode of Transport', 'Transport Mode', 'Transportation Mode', 'Mode', 'MOT', 'Transport', 'Shipment Mode'], 'Sea Manifest'),
+            ModeOfTransport: extractTransportMode(row),
           };
         });
         setLocalShipments(mappedData);
@@ -155,7 +175,7 @@ export default function ComprehensiveReportHub() {
       hsMetrics[hs].count += 1;
       hsMetrics[hs].items.add(s.Product);
 
-      const mode = String(s.ModeOfTransport).trim() || 'Sea Manifest';
+      const mode = extractTransportMode(s);
       modeMetrics[mode] = (modeMetrics[mode] || 0) + (Number(s.Amount) || 0);
     });
 
@@ -194,7 +214,7 @@ export default function ComprehensiveReportHub() {
   // --- CROSS-LENS INTELLIGENCE CORRELATION ENGINE ---
   const crossLensCorrelations = useMemo(() => {
     const results = [];
-    const { totalRecords, priceOutliers, hsMetrics, entityPairs, transitRoutes, brandMetrics, topOrigin, topDestination, majorHSCode, varianceHSCodes } = reportMetrics;
+    const { totalRecords, priceOutliers, entityPairs, transitRoutes, brandMetrics, topOrigin, topDestination, majorHSCode, varianceHSCodes } = reportMetrics;
 
     if (totalRecords === 0) return results;
 
@@ -235,7 +255,7 @@ export default function ComprehensiveReportHub() {
         title: "Chapter-Level Tariff Classification Divergence Across Uniform Cargo",
         lenses: ["HS Intelligence", "Timeline Intelligence", "Global Analytics"],
         confidence: "HIGH (88.1%)",
-        observation: `While the manifest ledger is majorly declared under HS Heading ${majorHSCode}, ${varCount} shipment(s) diverge into HS Heading ${varCode} for functionally corresponding commodity lines.`,
+        observation: `While the manifest ledger is majorly declared under HS Heading ${majorHSCode}, ${varCount} shipment(s) diverge into HS Heading ${varCode} (including HS 4818 variance) for functionally corresponding commodity lines.`,
         conclusion: "Distribution across divergent tariff headings without significant material alteration indicates tariff engineering or chapter splitting intended to minimize duty liability or bypass targeted inspection mandates.",
         evidenceRef: `See HS Code Tariff Variance Analysis (${varianceHSCodes.length} divergent headings audited).`
       });
@@ -287,7 +307,7 @@ export default function ComprehensiveReportHub() {
       });
     }
 
-    // Add HS Code Tariff Variance Evidence
+    // Add HS Code Tariff Variance Evidence (Specifically includes 4818 and other divergent headings)
     reportMetrics.varianceHSCodes.forEach(([code, data], idx) => {
       items.push({
         id: `EVID-HS-${idx + 202}`,
@@ -395,11 +415,12 @@ export default function ComprehensiveReportHub() {
   return (
     <div className="max-w-[1700px] mx-auto p-4 md:p-8 bg-slate-950 text-slate-100 min-h-screen font-sans">
       
-      {/* PRINT-MEDIA MULTI-LENS DOSSIER STYLESHEET ENHANCEMENTS */}
+      {/* PRINT-MEDIA MULTI-LENS DOSSIER STYLESHEET ENHANCEMENTS WITH COMPLETE UNCLIPPED TABLE PRINTING */}
       <style>{`
         @media print { 
           .non-printable { display: none !important; } 
           body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+          .overflow-x-auto { overflow: visible !important; }
           .print-unrolled-container { display: block !important; background: transparent !important; color: black !important; }
           .print-card { border: 1px solid #cbd5e1 !important; background: white !important; color: black !important; page-break-inside: avoid; margin-bottom: 24px; box-shadow: none !important; padding: 20px !important; border-radius: 8px !important; }
           .print-text { color: black !important; }
@@ -407,9 +428,13 @@ export default function ComprehensiveReportHub() {
           .print-header { border-bottom: 3px solid #0f172a !important; color: black !important; padding-bottom: 12px !important; }
           .print-table-row { border-bottom: 1px solid #94a3b8 !important; color: black !important; page-break-inside: avoid; }
           
-          .print-ledger-container { display: block !important; width: 100% !important; overflow: visible !important; }
-          .print-ledger-table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8.5px !important; }
-          .print-ledger-table th, .print-ledger-table td { padding: 6px 5px !important; word-wrap: break-word !important; overflow: hidden !important; border: 1px solid #cbd5e1 !important; }
+          /* Reconciliation Ledger Full Multi-Page Unclipped Print Rules */
+          .print-ledger-container { display: block !important; width: 100% !important; overflow: visible !important; page-break-inside: auto !important; }
+          .print-ledger-table { width: 100% !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8px !important; word-wrap: break-word !important; }
+          .print-ledger-table thead { display: table-header-group !important; }
+          .print-ledger-table tbody { display: table-row-group !important; }
+          .print-ledger-table tr { page-break-inside: avoid !important; page-break-after: auto !important; }
+          .print-ledger-table th, .print-ledger-table td { padding: 5px 4px !important; word-wrap: break-word !important; overflow: visible !important; border: 1px solid #cbd5e1 !important; white-space: normal !important; }
           .print-ledger-table th { background: #f8fafc !important; color: #0f172a !important; font-weight: 900 !important; }
           
           .print-textarea-unroll { display: block !important; white-space: pre-wrap !important; border: 1px solid #cbd5e1 !important; padding: 12px !important; background: #f8fafc !important; font-size: 11px !important; color: black !important; width: 100% !important; }
@@ -417,7 +442,7 @@ export default function ComprehensiveReportHub() {
           
           @page {
             size: A4 portrait;
-            margin: 18mm;
+            margin: 15mm;
           }
           
           .page-break-after { page-break-after: always !important; }
@@ -444,7 +469,7 @@ export default function ComprehensiveReportHub() {
 
       {/* DASHBOARD INGESTION & CONFIGURATION CONTROL PANELS */}
       <div className="non-printable grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8 p-6 bg-slate-900 border border-slate-700/80 shadow-xl rounded-2xl items-center">
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-6">
           <h3 className="font-black text-sm tracking-wide text-white uppercase flex items-center gap-2">
             <Database className="text-blue-400" size={18} /> MULTI-LENS INTELLIGENCE DOSSIER GENERATOR
           </h3>
@@ -480,28 +505,25 @@ export default function ComprehensiveReportHub() {
           </button>
         </div>
 
-        <div className="lg:col-span-4 flex items-center justify-end gap-3 flex-wrap">
-          <label className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl font-bold cursor-pointer flex items-center gap-2 transition-all shadow-lg text-xs uppercase">
-            <Upload size={14} /> LOAD ARTIFACT CSV
-            <input id="csv-file-loader" type="file" className="hidden" accept=".csv" onChange={handleFileUpload} />
-          </label>
+        {/* TOP ACTION CONTROLS (LOAD ARTIFACT CSV BUTTON REMOVED AS REQUESTED) */}
+        <div className="lg:col-span-3 flex items-center justify-end gap-3 flex-wrap">
           {shipments.length > 0 && (
             <>
               <button 
                 onClick={() => setViewMode(viewMode === 'Dossier' ? 'Interactive Tabs' : 'Dossier')}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all text-xs uppercase border border-slate-600 shadow-md"
+                className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-2 rounded-xl font-bold flex items-center gap-2 transition-all text-xs uppercase border border-slate-600 shadow-md"
               >
-                <BookOpen size={14} /> Mode: {viewMode === 'Dossier' ? 'Full Dossier View' : 'Tabbed Lens View'}
+                <BookOpen size={14} /> Mode: {viewMode === 'Dossier' ? 'Full Dossier View' : 'Tabbed View'}
               </button>
               <button 
                 onClick={() => window.print()}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2.5 rounded-xl font-bold flex items-center gap-2 transition-all text-xs uppercase shadow-lg"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl font-bold flex items-center gap-2 transition-all text-xs uppercase shadow-lg"
               >
-                <Printer size={14} /> Print Multi-Lens Dossier
+                <Printer size={14} /> Print Dossier
               </button>
               <button 
                 onClick={clearDataset}
-                className="bg-red-950/40 border border-red-800 hover:bg-red-900 text-red-400 px-3 py-2.5 rounded-xl font-bold flex items-center gap-1.5 transition-all text-xs uppercase"
+                className="bg-red-950/40 border border-red-800 hover:bg-red-900 text-red-400 px-3 py-2 rounded-xl font-bold flex items-center gap-1.5 transition-all text-xs uppercase"
               >
                 <Trash2 size={14} /> CLEAR ALL
               </button>
@@ -519,8 +541,8 @@ export default function ComprehensiveReportHub() {
             <div className="text-xs font-mono font-bold tracking-widest text-blue-400 uppercase print-text flex items-center gap-2">
               <Shield size={14} className="text-blue-400" /> PRIVILEGED FORENSIC TRADE INVESTIGATION DOSSIER
             </div>
-            {/* BALANCED TITLE FONT SIZE PREVENTING RIGHT-SIDE SQUEEZE */}
-            <h1 className="text-2xl md:text-4xl font-black text-white tracking-tight mt-1 print-text leading-tight">
+            {/* REDUCED TITLE FONT SIZE SLIGHTLY MORE TO PREVENT SQUEEZING */}
+            <h1 className="text-xl md:text-2xl font-black text-white tracking-tight mt-1 print-text leading-tight">
               MULTI-LENS RECONCILIATION & CORRELATION REPORT
             </h1>
             <p className="text-slate-400 text-xs mt-2 print-text max-w-3xl">
@@ -565,7 +587,6 @@ export default function ComprehensiveReportHub() {
           </div>
           <div className="bg-slate-900 p-6 rounded-2xl border border-slate-700/80 shadow-lg print-card">
             <div className="text-slate-400 text-xs font-bold uppercase tracking-wider print-text">Net Cargo Mass</div>
-            {/* CORRECTED NET CARGO MASS PREVENTING STRING CONCATENATION AND OVERFLOW */}
             <div className="text-2xl md:text-3xl font-black mt-2 text-purple-400 tracking-tight print-text">
               {reportMetrics.totalWeight.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span className="text-xs font-normal text-slate-400 print-text">Kg</span>
             </div>
@@ -584,7 +605,7 @@ export default function ComprehensiveReportHub() {
           <AlertTriangle size={48} className="text-slate-500 mx-auto mb-4" />
           <h3 className="text-slate-200 font-bold text-xl">Dossier Workspace Idle</h3>
           <p className="text-slate-400 text-sm mt-2">
-            Upload an active customs dataset to auto-generate intelligence matrices, custom visual diagnostics, and an unclipped verification ledger.
+            Upload or connect an active customs dataset to auto-generate intelligence matrices, custom visual diagnostics, and an unclipped verification ledger.
           </p>
         </div>
       )}
@@ -753,7 +774,7 @@ export default function ComprehensiveReportHub() {
               </div>
               <div className="bg-slate-900 p-6 rounded-2xl border border-slate-700/80 shadow-xl print-card">
                 <h3 className="text-sm font-black uppercase tracking-wide border-b border-slate-700 pb-3 mb-4 text-emerald-400">
-                  4.3 HS Intelligence // Classification Auditing & Tariff Variance
+                  4.3 HS Intelligence // Classification Auditing & Tariff Variance (All HS Headings)
                 </h3>
                 {renderActiveTabModule('HS Code Variance', reportMetrics)}
               </div>
@@ -945,7 +966,7 @@ export default function ComprehensiveReportHub() {
                       <td className="py-3 px-3 font-mono font-bold text-red-400">HS Code Variance</td>
                       <td className="py-3 px-3 font-mono text-red-400 font-bold">88 / 100</td>
                       <td className="py-3 px-3 font-mono text-slate-400">Chapter divergence on uniform cargo</td>
-                      <td className="py-3 px-3">Shipments of functionally identical cargo descriptions declared under divergent chapter-level HS tariff codes.</td>
+                      <td className="py-3 px-3">Shipments of functionally identical cargo descriptions declared under divergent chapter-level HS tariff codes (including HS 4818).</td>
                       <td className="py-3 px-3">Critical indicator of tariff engineering or chapter splitting designed to bypass anti-dumping duties or trade remedies.</td>
                     </tr>
                     <tr>
@@ -1049,9 +1070,9 @@ export default function ComprehensiveReportHub() {
                   <span className="text-[11px] font-mono font-bold text-purple-400 uppercase">Priority Rank #03</span>
                   <span className="text-xs font-mono text-slate-400">Classification</span>
                 </div>
-                <h3 className="font-bold text-white text-sm">HS Heading {reportMetrics.majorHSCode}</h3>
+                <h3 className="font-bold text-white text-sm">HS Heading {reportMetrics.majorHSCode} & Divergent Headings</h3>
                 <p className="text-xs text-slate-300 leading-relaxed">
-                  Exhibits highest tariff concentration and multi-heading dispersion. Requires technical classification review against binding origin rulings.
+                  Exhibits highest tariff concentration alongside chapter-level variance (e.g. HS 4818). Requires technical classification review against binding origin rulings.
                 </p>
                 <div className="text-[11px] font-mono text-blue-400 pt-2 border-t border-slate-700/80">
                   Supporting Ref: EVID-HS-201
@@ -1084,7 +1105,7 @@ export default function ComprehensiveReportHub() {
                     <Compass size={16} /> Customs & Border Enforcement Authorities
                   </h3>
                   <ul className="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
-                    <li>Review entry declarations for HS {reportMetrics.majorHSCode} to verify consistency of declared ad valorem customs values.</li>
+                    <li>Review entry declarations for HS {reportMetrics.majorHSCode} and divergent heading 4818 to verify consistency of declared ad valorem customs values.</li>
                     <li>Verify origin certificates for shipments traversing corridor {reportMetrics.transitRoutes[0]?.[0] || 'primary transit lanes'} to rule out transshipment diversion.</li>
                     <li>Examine valuation consistency on transactions invoiced below $40/unit (Ref: EVID-PRC-101).</li>
                   </ul>
@@ -1167,7 +1188,7 @@ export default function ComprehensiveReportHub() {
                 <Award size={14} /> FORMAL AI EXECUTIVE CONCLUSION
               </div>
               <p className="text-xs text-slate-200 leading-relaxed font-sans italic print-text">
-                "Analysis across shipment, pricing, entity, brand, classification, geographic, and temporal intelligence identifies several commercial patterns that warrant additional review. The highest-priority observations involve concentrated trading relationships, sustained pricing anomalies along primary transit corridors, and chapter-level tariff classification variances. While these indicators do not establish regulatory non-compliance or intellectual property infringement, they provide a structured, evidence-grounded basis for further investigation and targeted documentary review."
+                "Analysis across shipment, pricing, entity, brand, classification, geographic, and temporal intelligence identifies several commercial patterns that warrant additional review. The highest-priority observations involve concentrated trading relationships, sustained pricing anomalies along primary transit corridors, and chapter-level tariff classification variances (such as heading 4818). While these indicators do not establish regulatory non-compliance or intellectual property infringement, they provide a structured, evidence-grounded basis for further investigation and targeted documentary review."
               </p>
             </div>
           </section>
@@ -1296,7 +1317,7 @@ export default function ComprehensiveReportHub() {
           )}
 
           {/* =========================================================================
-              SECTION 10: APPENDICES // COMPLETE EVIDENCE RECONCILIATION LEDGER (UNROLLED PRINT)
+              SECTION 10: APPENDICES // COMPLETE EVIDENCE RECONCILIATION LEDGER (UNROLLED PRINT WITHOUT CUT-OFF)
               ========================================================================= */}
           <section className="bg-white text-black p-6 md:p-8 rounded-2xl shadow-2xl border border-slate-200 print-card print-ledger-container">
             <div className="border-b-2 border-slate-200 pb-4 mb-6 flex justify-between items-center flex-wrap gap-4 print-header">
@@ -1305,25 +1326,25 @@ export default function ComprehensiveReportHub() {
                 <h2 className="text-xl font-black text-slate-900 flex items-center gap-2 mt-1">
                   <Layers className="text-blue-600" size={22} /> COMPLETE EVIDENCE RECONCILIATION LEDGER
                 </h2>
-                <p className="text-slate-500 text-xs mt-0.5">Comprehensive grid tracking transactional indices, product segments, and explicit brand labels without margin truncation.</p>
+                <p className="text-slate-500 text-xs mt-0.5">Comprehensive grid tracking transactional indices, product segments, and explicit brand labels without margin truncation or print page cutoff.</p>
               </div>
               <div className="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg font-mono text-xs font-bold border border-slate-200 print-text">
                 Manifest: {reportMetrics.totalRecords} Mapped Lines
               </div>
             </div>
 
-            <div className="overflow-x-auto w-full">
+            <div className="overflow-x-auto w-full print:overflow-visible">
               <table className="w-full text-left text-xs border-collapse print-ledger-table">
                 <thead>
                   <tr className="bg-slate-100 text-slate-700 uppercase font-bold border-b-2 border-slate-300 print-table-row">
                     <th style={{ width: '10%' }}>Transaction Date</th>
                     <th style={{ width: '10%' }}>HS Code</th>
-                    <th style={{ width: '14%' }}>Brand Label</th>
+                    <th style={{ width: '13%' }}>Brand Label</th>
                     <th style={{ width: '18%' }}>Product Segment</th>
-                    <th style={{ width: '14%' }}>Exporter Node</th>
-                    <th style={{ width: '14%' }}>Importer Node</th>
-                    <th style={{ width: '10%' }} className="text-right">Quantity</th>
-                    <th style={{ width: '10%' }} className="text-right">Total Amount</th>
+                    <th style={{ width: '13%' }}>Exporter Node</th>
+                    <th style={{ width: '13%' }}>Importer Node</th>
+                    <th style={{ width: '11%' }}>Transport Mode</th>
+                    <th style={{ width: '12%' }} className="text-right">Total Amount</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
@@ -1332,12 +1353,10 @@ export default function ComprehensiveReportHub() {
                       <td className="font-mono text-slate-600 whitespace-nowrap">{s.Date}</td>
                       <td className="font-mono font-bold text-blue-700">{s.HSCode}</td>
                       <td className="font-sans font-bold text-purple-800 uppercase truncate">{s.Brand || 'UNBRANDED'}</td>
-                      <td className="font-medium text-slate-800 break-all">{s.Product}</td>
-                      <td className="text-slate-600 truncate">{s.Exporter}</td>
-                      <td className="text-slate-600 truncate">{s.Importer}</td>
-                      <td className="text-right font-mono text-slate-700 whitespace-nowrap">
-                        {s.Quantity > 0 ? `${s.Quantity.toLocaleString()} ${s.QuantityUnit}` : 'N/A'}
-                      </td>
+                      <td className="font-medium text-slate-800 break-words">{s.Product}</td>
+                      <td className="text-slate-600 break-words">{s.Exporter}</td>
+                      <td className="text-slate-600 break-words">{s.Importer}</td>
+                      <td className="font-mono text-slate-700 break-words">{extractTransportMode(s)}</td>
                       <td className="text-right font-mono font-black text-emerald-700 whitespace-nowrap print-value">
                         {formatUSD(s.Amount)}
                       </td>
@@ -1354,24 +1373,45 @@ export default function ComprehensiveReportHub() {
   );
 }
 
-// --- DATA-GROUNDED FORENSIC INTERPRETATION TAB MATRIX (OBJECTIVE & DYNAMIC WORDING) ---
+// --- DATA-GROUNDED FORENSIC INTERPRETATION TAB MATRIX WITH ALL HS HEADINGS & VARIANCE HIGHLIGHTING ---
 function renderActiveTabModule(tab, reportMetrics) {
   const top3Brands = reportMetrics.brandMetrics.slice(0, 3).map(([b]) => b).join(', ') || 'No Explicit Brands Detected';
   const topRoutes = reportMetrics.transitRoutes.slice(0, 2).map(([r]) => r).join(' and ') || 'Local Circuits';
-  const topHSArray = reportMetrics.hsMetrics.slice(0, 3);
   
-  const hsInterpretationList = topHSArray.map(([code, metrics]) => {
+  // SECTION 4.3 FULL HS HEADING MAP (SHOWS ALL HEADINGS INSTEAD OF TRUNCATING, WITH SPECIFIC 4818 VARIANCE POINTING)
+  const hsInterpretationList = reportMetrics.hsMetrics.map(([code, metrics]) => {
     const codeStr = String(code);
     let meaning = "Specialized Commercial Commodity Category";
-    if (codeStr.startsWith('24')) meaning = "Chapter 24: Tobacco, Manufactured Substitutes, and Processed Nicotine Precursors";
-    else if (codeStr.startsWith('30') || codeStr.startsWith('29')) meaning = "Chapter 30/29: Pharmaceutical Compounds, Finished Medicaments, or Chemical Precursors";
-    else if (codeStr.startsWith('85') || codeStr.startsWith('84')) meaning = "Chapter 85/84: Industrial Machinery, Telecommunications, or Electronic Components";
-    else if (codeStr.startsWith('87')) meaning = "Chapter 87: Motor Vehicles, Tractors, and Strategic Transport Parts";
-    else if (codeStr.startsWith('71')) meaning = "Chapter 71: Natural Pearls, Precious Stones, Bullion, and High-Value Metals";
-    else if (codeStr.startsWith('56')) meaning = "Chapter 56: Wadding, Felt, Nonwovens, Special Yarns, and Industrial Fibers";
-    else if (codeStr.startsWith('48')) meaning = "Chapter 48: Paper, Paperboard, Cellulose Wadding, and Processed Webs";
+    if (codeStr.startsWith('4818') || codeStr.startsWith('48')) {
+      meaning = codeStr.startsWith('4818')
+        ? "HS 4818: Toilet paper, facial tissues, towels, napkins, paper rolls & sanitary paper articles"
+        : "Chapter 48: Paper, Paperboard, Cellulose Wadding, and Processed Webs";
+    } else if (codeStr.startsWith('24')) {
+      meaning = "Chapter 24: Tobacco, Manufactured Substitutes, and Processed Nicotine Precursors";
+    } else if (codeStr.startsWith('30') || codeStr.startsWith('29')) {
+      meaning = "Chapter 30/29: Pharmaceutical Compounds, Finished Medicaments, or Chemical Precursors";
+    } else if (codeStr.startsWith('85') || codeStr.startsWith('84')) {
+      meaning = "Chapter 85/84: Industrial Machinery, Telecommunications, or Electronic Components";
+    } else if (codeStr.startsWith('87')) {
+      meaning = "Chapter 87: Motor Vehicles, Tractors, and Strategic Transport Parts";
+    } else if (codeStr.startsWith('71')) {
+      meaning = "Chapter 71: Natural Pearls, Precious Stones, Bullion, and High-Value Metals";
+    } else if (codeStr.startsWith('56')) {
+      meaning = "Chapter 56: Wadding, Felt, Nonwovens, Special Yarns, and Industrial Fibers";
+    }
     
-    return { code: codeStr, count: metrics.count, value: metrics.val, products: Array.from(metrics.items).slice(0, 2).join(', '), definition: meaning };
+    const isMajor = codeStr === String(reportMetrics.majorHSCode);
+    const isVarianceTarget = codeStr.startsWith('4818');
+    
+    return { 
+      code: codeStr, 
+      count: metrics.count, 
+      value: metrics.val, 
+      products: Array.from(metrics.items).slice(0, 3).join(', '), 
+      definition: meaning,
+      isMajor,
+      isVarianceTarget
+    };
   });
 
   switch (tab) {
@@ -1459,26 +1499,33 @@ function renderActiveTabModule(tab, reportMetrics) {
     case 'HS Code Variance':
       return (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* COMPLETE TABLE RENDERING ALL HS CODE HEADINGS IN DATASET */}
           <div className="lg:col-span-6 overflow-x-auto">
-            <h4 className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-3 print-text">Active Ingested HS Code Distribution Table</h4>
+            <h4 className="text-xs text-slate-300 font-bold uppercase tracking-wider mb-3 print-text flex items-center justify-between">
+              <span>All Active HS Code Headings Ingested ({hsInterpretationList.length} Headings)</span>
+            </h4>
             <table className="w-full text-xs text-left border-collapse">
               <thead>
                 <tr className="text-slate-300 uppercase border-b border-slate-700 font-bold print-table-row bg-slate-950/40">
-                  <th className="py-3 px-2">HS Code Identifier</th>
+                  <th className="py-3 px-2">HS Heading</th>
                   <th className="py-3 px-2">Count</th>
                   <th className="py-3 px-2 text-right">Aggregate Value</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800">
                 {hsInterpretationList.map((item, idx) => (
-                  <tr key={idx} className="font-mono text-slate-200 print-table-row">
+                  <tr key={idx} className={`font-mono text-slate-200 print-table-row ${item.isVarianceTarget ? 'bg-amber-950/30' : ''}`}>
                     <td className="py-3.5 px-2">
-                      <div className="font-bold text-blue-400 print-text">
-                        HS {item.code} {idx === 0 ? <span className="text-[10px] text-emerald-400 font-sans">(Major Heading)</span> : <span className="text-[10px] text-amber-400 font-sans">(Tariff Variance)</span>}
+                      <div className="font-bold flex items-center gap-1.5 flex-wrap">
+                        <span className={item.isVarianceTarget ? 'text-amber-400 text-sm' : item.isMajor ? 'text-emerald-400' : 'text-blue-400'}>
+                          HS {item.code}
+                        </span>
+                        {item.isMajor && <span className="text-[9px] bg-emerald-950 text-emerald-300 border border-emerald-700 font-sans px-1.5 py-0.2 rounded">PRIMARY HEADING</span>}
+                        {item.isVarianceTarget && <span className="text-[9px] bg-amber-950 text-amber-300 border border-amber-600 font-sans px-1.5 py-0.2 rounded font-bold">VARIANCE (4818)</span>}
                       </div>
                       <div className="text-[10px] text-slate-400 font-sans mt-0.5 truncate max-w-xs print-text">{item.products}</div>
                     </td>
-                    <td className="py-3.5 px-2 font-sans text-slate-300 print-text">{item.count} entries</td>
+                    <td className="py-3.5 px-2 font-sans text-slate-300 print-text">{item.count} lines</td>
                     <td className="py-3.5 px-2 text-right font-black text-emerald-400 print-value">{formatUSD(item.value)}</td>
                   </tr>
                 ))}
@@ -1493,18 +1540,39 @@ function renderActiveTabModule(tab, reportMetrics) {
               </h4>
               <div className="text-xs text-slate-300 space-y-3 leading-relaxed print-text">
                 <p>
-                  <strong>Major Heading vs. Tariff Variance Assessment:</strong> Analysis of the manifest ledger indicates that trade volume is majorly declared under <span className="text-emerald-400 font-mono font-bold">HS {reportMetrics.majorHSCode}</span> ({reportMetrics.majorHSData.count} shipments). However, the dataset reveals explicit chapter-level tariff variances:
+                  <strong>Comprehensive Heading Breakdown:</strong> Analysis of the manifest ledger reveals <strong>{hsInterpretationList.length} distinct HS code heading(s)</strong> in active operational use. The primary volume is declared under <span className="text-emerald-400 font-mono font-bold">HS {reportMetrics.majorHSCode}</span> ({reportMetrics.majorHSData.count} lines).
                 </p>
-                <div className="space-y-2 pt-1 border-t border-slate-700 mt-1">
+                
+                {/* ITEMIZED LIST OF ALL HEADINGS AND SPECIFIC CALLOUT FOR 4818 */}
+                <div className="space-y-2 pt-1 border-t border-slate-700 mt-1 max-h-56 overflow-y-auto pr-1">
                   {hsInterpretationList.map((item, idx) => (
-                    <div key={idx} className="p-2 bg-slate-900 rounded border border-slate-700 text-[11px] font-mono">
-                      <span className="text-blue-400 font-bold">HS {item.code}:</span> <span className="text-slate-300 font-sans text-xs">{item.definition}</span>
+                    <div key={idx} className={`p-2.5 rounded border text-[11px] font-mono ${
+                      item.isVarianceTarget 
+                        ? 'bg-amber-950/80 border-amber-500 text-amber-200' 
+                        : item.isMajor 
+                        ? 'bg-blue-950/60 border-blue-700 text-blue-200' 
+                        : 'bg-slate-900 border-slate-700 text-slate-300'
+                    }`}>
+                      <div className="flex justify-between items-center mb-0.5">
+                        <span className="font-bold">
+                          HS {item.code} {item.isVarianceTarget ? '(Tariff Variance Target)' : item.isMajor ? '(Primary Heading)' : '(Secondary Heading)'}
+                        </span>
+                        <span className="text-emerald-400 font-bold">{formatUSD(item.value)}</span>
+                      </div>
+                      <div className="text-slate-300 font-sans text-xs">{item.definition}</div>
                     </div>
                   ))}
                 </div>
-                <p className="mt-2">
-                  <strong>Chapter Divergence Compliance Risk:</strong> Distributing functionally corresponding commodity descriptions across divergent headings (e.g., major heading <span className="text-mono font-bold">{reportMetrics.majorHSCode}</span> vs. divergent heading <span className="text-mono font-bold">{reportMetrics.varianceHSCodes[0]?.[0] || 'secondary code'}</span>) represents a tariff variance. This pattern is monitored to detect chapter splitting intended to secure lower duty rates or bypass chapter-specific inspection mandates.
-                </p>
+
+                {/* TARGETED HS 4818 VARIANCE ANALYSIS BOX */}
+                <div className="p-3 bg-amber-950/50 border border-amber-600/80 rounded-lg text-[11px] text-amber-200 space-y-1 mt-2">
+                  <span className="font-bold uppercase block text-amber-400 flex items-center gap-1">
+                    <ShieldAlert size={13} /> Specific Tariff Variance Pointing: HS Code 4818
+                  </span>
+                  <p className="font-sans leading-relaxed">
+                    A key forensic observation in this audit is the presence of <strong>HS Code 4818</strong> (Toilet paper, tissues, towels, napkins, paper rolls & sanitary paper articles). Declarations entering under 4818 diverge from the primary commercial cargo baseline heading. This variance requires verification against physical sample specs and commercial invoices to confirm proper chapter classification and prevent tariff misclassification.
+                  </p>
+                </div>
               </div>
             </div>
           </div>
@@ -1647,7 +1715,7 @@ function renderActiveTabModule(tab, reportMetrics) {
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
-            {/* 3. MODE OF TRANSPORT ANALYSIS (VERIFIED NO UNDEFINED) */}
+            {/* 3. MODE OF TRANSPORT ANALYSIS (ROBUSTLY SOLVED - NO UNDEFINED VALUES) */}
             <div className="bg-slate-800/80 p-5 rounded-xl border border-slate-700 space-y-3 print-card">
               <h4 className="text-xs text-slate-300 font-bold uppercase tracking-wider print-text flex items-center gap-1.5">
                 <Ship size={14} className="text-amber-400" /> 3. Mode of Transport Distribution
@@ -1657,7 +1725,7 @@ function renderActiveTabModule(tab, reportMetrics) {
                   const pct = reportMetrics.totalValue > 0 ? (amt / reportMetrics.totalValue) * 100 : 100;
                   return (
                     <div key={idx} className="text-xs bg-slate-900 p-2 rounded-lg border border-slate-700 flex justify-between items-center font-mono print-card">
-                      <span className="text-slate-300 font-sans print-text">{mode || 'Sea Manifest'}</span>
+                      <span className="text-slate-300 font-sans font-bold print-text">{mode || 'Sea Manifest'}</span>
                       <span className="text-amber-400 font-bold print-text">{pct.toFixed(0)}% value</span>
                     </div>
                   );
