@@ -415,34 +415,56 @@ export default function ComprehensiveReportHub() {
   return (
     <div className="max-w-[1700px] mx-auto p-4 md:p-8 bg-slate-950 text-slate-100 min-h-screen font-sans">
       
-      {/* PRINT-MEDIA MULTI-LENS DOSSIER STYLESHEET ENHANCEMENTS WITH COMPLETE UNCLIPPED TABLE PRINTING */}
+      {/* PRINT-MEDIA MULTI-LENS DOSSIER STYLESHEET ENHANCEMENTS (+1 FONT SIZE WHILE PREVENTING BOX OVERFLOW) */}
       <style>{`
         @media print { 
           .non-printable { display: none !important; } 
-          body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; }
+          body { background: white !important; color: black !important; padding: 0 !important; margin: 0 !important; font-size: 13px !important; }
           .overflow-x-auto { overflow: visible !important; }
           .print-unrolled-container { display: block !important; background: transparent !important; color: black !important; }
-          .print-card { border: 1px solid #cbd5e1 !important; background: white !important; color: black !important; page-break-inside: avoid; margin-bottom: 24px; box-shadow: none !important; padding: 20px !important; border-radius: 8px !important; }
+          .print-card { 
+            border: 1px solid #cbd5e1 !important; 
+            background: white !important; 
+            color: black !important; 
+            page-break-inside: avoid; 
+            margin-bottom: 18px !important; 
+            box-shadow: none !important; 
+            padding: 16px !important; 
+            border-radius: 8px !important; 
+          }
+          
+          /* +1 FONT SIZE BUMP OVERRIDES ACROSS PRINT DOSSIER WITH BOX-FIT PROTECTION */
+          .print-card * { line-height: 1.45 !important; }
+          .text-\\[9px\\] { font-size: 10px !important; }
+          .text-\\[10px\\] { font-size: 11px !important; }
+          .text-\\[11px\\] { font-size: 12px !important; }
+          .text-xs { font-size: 13px !important; }
+          .text-sm { font-size: 15px !important; }
+          .text-base { font-size: 17px !important; }
+          .text-xl { font-size: 21px !important; }
+          .text-2xl { font-size: 25px !important; }
+          
           .print-text { color: black !important; }
           .print-value { color: #15803d !important; font-weight: 900 !important; }
           .print-header { border-bottom: 3px solid #0f172a !important; color: black !important; padding-bottom: 12px !important; }
           .print-table-row { border-bottom: 1px solid #94a3b8 !important; color: black !important; page-break-inside: avoid; }
           
-          /* Reconciliation Ledger Full Multi-Page Unclipped Print Rules */
+          /* Reconciliation Ledger Full Multi-Page Unclipped Print Rules (+1 Font Size: 9px) */
           .print-ledger-container { display: block !important; width: 100% !important; overflow: visible !important; page-break-inside: auto !important; }
-          .print-ledger-table { width: 100% !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8px !important; word-wrap: break-word !important; }
+          .print-ledger-table { width: 100% !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 9px !important; word-wrap: break-word !important; }
           .print-ledger-table thead { display: table-header-group !important; }
           .print-ledger-table tbody { display: table-row-group !important; }
           .print-ledger-table tr { page-break-inside: avoid !important; page-break-after: auto !important; }
-          .print-ledger-table th, .print-ledger-table td { padding: 5px 4px !important; word-wrap: break-word !important; overflow: visible !important; border: 1px solid #cbd5e1 !important; white-space: normal !important; }
+          .print-ledger-table th, .print-ledger-table td { padding: 4px 3px !important; word-wrap: break-word !important; overflow: visible !important; border: 1px solid #cbd5e1 !important; white-space: normal !important; }
           .print-ledger-table th { background: #f8fafc !important; color: #0f172a !important; font-weight: 900 !important; }
           
-          .print-textarea-unroll { display: block !important; white-space: pre-wrap !important; border: 1px solid #cbd5e1 !important; padding: 12px !important; background: #f8fafc !important; font-size: 11px !important; color: black !important; width: 100% !important; }
+          /* Textarea Unroll (+1 Font Size: 12px) */
+          .print-textarea-unroll { display: block !important; white-space: pre-wrap !important; border: 1px solid #cbd5e1 !important; padding: 12px !important; background: #f8fafc !important; font-size: 12px !important; color: black !important; width: 100% !important; }
           .print-unroll-scroll { max-height: none !important; overflow: visible !important; height: auto !important; }
           
           @page {
             size: A4 portrait;
-            margin: 15mm;
+            margin: 12mm;
           }
           
           .page-break-after { page-break-after: always !important; }
@@ -454,7 +476,7 @@ export default function ComprehensiveReportHub() {
             left: 0;
             right: 0;
             text-align: center;
-            font-size: 8px;
+            font-size: 9px !important;
             color: #64748b !important;
             border-top: 1px solid #cbd5e1;
             padding-top: 4px;
@@ -505,7 +527,7 @@ export default function ComprehensiveReportHub() {
           </button>
         </div>
 
-        {/* TOP ACTION CONTROLS (LOAD ARTIFACT CSV BUTTON REMOVED AS REQUESTED) */}
+        {/* TOP ACTION CONTROLS */}
         <div className="lg:col-span-3 flex items-center justify-end gap-3 flex-wrap">
           {shipments.length > 0 && (
             <>
@@ -541,7 +563,6 @@ export default function ComprehensiveReportHub() {
             <div className="text-xs font-mono font-bold tracking-widest text-blue-400 uppercase print-text flex items-center gap-2">
               <Shield size={14} className="text-blue-400" /> PRIVILEGED FORENSIC TRADE INVESTIGATION DOSSIER
             </div>
-            {/* REDUCED TITLE FONT SIZE SLIGHTLY MORE TO PREVENT SQUEEZING */}
             <h1 className="text-xl md:text-2xl font-black text-white tracking-tight mt-1 print-text leading-tight">
               MULTI-LENS RECONCILIATION & CORRELATION REPORT
             </h1>
