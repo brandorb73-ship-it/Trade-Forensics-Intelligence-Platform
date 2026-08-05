@@ -64,7 +64,7 @@ export default function GlobalAnalyticsVisualHub() {
     const intermediateNodes = new Set();
     const entityLinks = [];
     const timelineEvents = [];
-    const logisticalVectors = { AIR: 0, OCEAN: 0, MULTIMODAL: 0 };
+    const logisticalVectors = { AIR: 0, OCEAN: 0, MULTIMODAL: 0, 'NOT DECLARED': 0 };
     const crossTabMatrix = {};
     
     let maxCrossTabValue = 0;
@@ -97,24 +97,41 @@ export default function GlobalAnalyticsVisualHub() {
       const exporter = row.Exporter || row.Shipper || 'UNKNOWN SHADOW EXPORTER';
       const date = row.Date || '2026 Audit';
 
-      // Dynamic & Robust Mode of Transportation extraction from uploaded CSV headers
-      const rawMode = String(
-        row['Mode of Transportation'] ||
-        row['Mode Of Transportation'] ||
-        row.ModeOfTransportation ||
-        row.TransportMode ||
-        row.Transport_Mode ||
-        row.Mode ||
-        row.Transport ||
-        row.LogisticalVector ||
-        row.ShipmentMode ||
-        row['Shipment Mode'] ||
-        row.CarrierMode ||
-        ''
-      ).toUpperCase().trim();
+      // Bulletproof Mode of Transportation extraction handling BOM, spaces, case sensitivity, and empty cells
+      let rawModeVal = '';
+      for (const key of Object.keys(row)) {
+        const cleanKey = String(key).replace(/[\uFEFF\xA0]/g, '').trim().toUpperCase();
+        if (
+          cleanKey === 'MODE OF TRANSPORTATION' ||
+          cleanKey === 'MODEOFTRANSPORTATION' ||
+          cleanKey === 'MODE OF TRANSPORT' ||
+          cleanKey === 'TRANSPORTATION MODE' ||
+          cleanKey === 'TRANSPORT MODE' ||
+          cleanKey === 'TRANSPORT_MODE' ||
+          cleanKey === 'SHIPMENT MODE' ||
+          cleanKey === 'LOGISTICAL VECTOR' ||
+          cleanKey === 'MODE'
+        ) {
+          rawModeVal = row[key];
+          break;
+        }
+      }
 
-      let vector = 'MULTIMODAL';
+      const rawMode = String(rawModeVal || '').toUpperCase().trim();
+
+      let vector = 'NOT DECLARED';
       if (
+        !rawMode ||
+        rawMode === '' ||
+        rawMode === 'NOT DECLARED' ||
+        rawMode === 'NULL' ||
+        rawMode === 'NA' ||
+        rawMode === 'N/A' ||
+        rawMode === '-' ||
+        rawMode === 'EMPTY'
+      ) {
+        vector = 'NOT DECLARED';
+      } else if (
         rawMode.includes('AIR') || 
         rawMode.includes('FLIGHT') || 
         rawMode.includes('PLANE') || 
@@ -139,30 +156,12 @@ export default function GlobalAnalyticsVisualHub() {
         rawMode.includes('RAIL') || 
         rawMode.includes('ROAD') || 
         rawMode.includes('TRUCK') || 
-        rawMode.includes('LAND')
+        rawMode.includes('LAND') ||
+        rawMode === 'M'
       ) {
         vector = 'MULTIMODAL';
       } else {
-        // If empty or unknown, infer from transit hubs/port nomenclature, otherwise categorize as MULTIMODAL
-        const routeString = `${rawOrigin} ${dest} ${row.TransitHub || ''} ${row.TransshipmentPort || ''}`.toUpperCase();
-        if (
-          routeString.includes('PORT') || 
-          routeString.includes('SEA') || 
-          routeString.includes('HARBOUR') || 
-          routeString.includes('BAY') || 
-          routeString.includes('OCEAN') || 
-          routeString.includes('MARITIME')
-        ) {
-          vector = 'OCEAN';
-        } else if (
-          routeString.includes('AIRPORT') || 
-          routeString.includes('INTL AIR') || 
-          routeString.includes('AERO')
-        ) {
-          vector = 'AIR';
-        } else {
-          vector = 'MULTIMODAL';
-        }
+        vector = 'NOT DECLARED';
       }
 
       totalValue += val;
@@ -182,7 +181,7 @@ export default function GlobalAnalyticsVisualHub() {
       if (logisticalVectors[vector] !== undefined) {
         logisticalVectors[vector] += val;
       } else {
-        logisticalVectors.MULTIMODAL += val;
+        logisticalVectors['NOT DECLARED'] += val;
       }
 
       entityLinks.push({ 
@@ -1020,13 +1019,32 @@ export default function GlobalAnalyticsVisualHub() {
                     <div key={mode} className="space-y-1 font-mono">
                       <div className="flex justify-between text-xs font-semibold text-white">
                         <span className="flex items-center gap-1.5 uppercase font-semibold">
-                          {mode === 'AIR' ? <Plane size={13} className="text-blue-400" /> : <Ship size={13} className="text-teal-400" />}
-                          {mode} CARGO
+                          {mode === 'AIR' ? (
+                            <Plane size={13} className="text-blue-400" />
+                          ) : mode === 'OCEAN' ? (
+                            <Ship size={13} className="text-teal-400" />
+                          ) : mode === 'MULTIMODAL' ? (
+                            <Network size={13} className="text-purple-400" />
+                          ) : (
+                            <HelpCircle size={13} className="text-slate-400" />
+                          )}
+                          {mode === 'NOT DECLARED' ? 'NOT DECLARED (UNSPECIFIED)' : `${mode} CARGO`}
                         </span>
                         <span className="text-purple-400 font-semibold">${value.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
                       </div>
                       <div className="w-full bg-slate-950 h-2.5 rounded-full border border-slate-800 overflow-hidden">
-                        <div className="bg-gradient-to-r from-purple-600 to-blue-500 h-full rounded-full" style={{ width: `${pct}%` }} />
+                        <div 
+                          className={`h-full rounded-full ${
+                            mode === 'AIR'
+                              ? 'bg-gradient-to-r from-blue-600 to-cyan-400'
+                              : mode === 'OCEAN'
+                              ? 'bg-gradient-to-r from-teal-600 to-emerald-400'
+                              : mode === 'MULTIMODAL'
+                              ? 'bg-gradient-to-r from-purple-600 to-blue-500'
+                              : 'bg-gradient-to-r from-slate-600 to-slate-400'
+                          }`}
+                          style={{ width: `${pct}%` }} 
+                        />
                       </div>
                     </div>
                   );
